@@ -1110,11 +1110,15 @@ values ('admin', 'admin123', 'Administrator', 'ADMIN')
 on conflict (username) do nothing;`;
 
 function loadConfig() {
-  const cfg = localStorage.getItem('absensi_config');
-  if (cfg) {
-    CONFIG = JSON.parse(cfg);
-    initSupabase();
-    return true;
+  try {
+    const cfg = localStorage.getItem('absensi_config');
+    if (cfg) {
+      CONFIG = JSON.parse(cfg);
+      initSupabase();
+      return true;
+    }
+  } catch(e) {
+    console.warn('Tidak bisa baca localStorage:', e);
   }
   return false;
 }
@@ -1135,22 +1139,41 @@ async function saveConfig() {
   const school = document.getElementById('cfgSchool').value.trim();
   const url = document.getElementById('cfgUrl').value.trim();
   const key = document.getElementById('cfgKey').value.trim();
-  const msgEl = document.getElementById('cfgMsg');
   if (!url || !key) { showCfgMsg('URL dan Key harus diisi!', 'error'); return; }
-  if (!url.includes('supabase.co')) { showCfgMsg('URL tidak valid. Format: https://xxx.supabase.co', 'error'); return; }
-  showCfgMsg('Menguji koneksi...', 'info');
+  if (!url.startsWith('https://') || !url.includes('supabase.co')) {
+    showCfgMsg('URL tidak valid. Format: https://xxxxx.supabase.co', 'error'); return;
+  }
+  if (key.length < 100) { showCfgMsg('Anon Key terlalu pendek, pastikan copy lengkap!', 'error'); return; }
+  showCfgMsg('⏳ Menguji koneksi ke Supabase...', 'info');
+  const btnSave = document.querySelector('#setupOverlay .btn-primary');
+  if (btnSave) btnSave.disabled = true;
   try {
     const { createClient } = supabaseExport;
     const testClient = createClient(url, key);
+    // Coba koneksi — error tabel belum ada (42P01) atau tidak ada row (PGRST116) tetap OK
     const { error } = await testClient.from('users').select('id').limit(1);
-    if (error && error.code !== 'PGRST116' && error.code !== '42P01') {
-      throw new Error('Koneksi gagal: ' + error.message);
+    const ALLOWED_ERRORS = ['PGRST116', '42P01', 'PGRST204', '406'];
+    if (error) {
+      const isAllowed = ALLOWED_ERRORS.includes(error.code) || 
+                        (error.message && error.message.includes('does not exist')) ||
+                        (error.message && error.message.includes('relation'));
+      if (!isAllowed) {
+        throw new Error(error.message || 'Koneksi gagal');
+      }
     }
+    // Koneksi OK — simpan config
     CONFIG = { school: school || 'Sekolah', url, key };
-    localStorage.setItem('absensi_config', JSON.stringify(CONFIG));
-    initSupabase();
+    try {
+      localStorage.setItem('absensi_config', JSON.stringify(CONFIG));
+    } catch(lsErr) {
+      // localStorage mungkin diblokir, lanjutkan saja tanpa simpan
+      console.warn('localStorage tidak tersedia:', lsErr);
+    }
+    showCfgMsg('✅ Koneksi berhasil! Memuat aplikasi...', 'success');
+    setTimeout(() => initSupabase(), 800);
   } catch (e) {
-    showCfgMsg('Error: ' + e.message + '. Pastikan URL & Key benar.', 'error');
+    showCfgMsg('❌ ' + e.message + ' — Periksa URL & Anon Key Supabase Anda.', 'error');
+    if (btnSave) btnSave.disabled = false;
   }
 }
 
@@ -1158,6 +1181,12 @@ function showCfgMsg(msg, type) {
   const el = document.getElementById('cfgMsg');
   el.textContent = msg;
   el.className = 'msg ' + type;
+  el.style.padding = '10px';
+  el.style.borderRadius = '8px';
+  if (type === 'error') el.style.background = 'rgba(239,68,68,0.1)';
+  else if (type === 'success') el.style.background = 'rgba(34,197,94,0.1)';
+  else if (type === 'info') el.style.background = 'rgba(59,130,246,0.1)';
+  else el.style.background = 'transparent';
 }
 
 function showSQLGuide() {
