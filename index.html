@@ -928,12 +928,17 @@ async function cekKoneksiFonnte() {
     const res = await fetch('https://api.fonnte.com/validate', {
       method: 'POST', headers: { 'Authorization': FONNTE_TOKEN }
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === true || data.status === 'true') {
-        statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b> | No: ${sanitizeHTML(data.device || '-')}`;
-      } else {
-        statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
+if (res.ok) {
+  const data = await res.json();
+  if (data.status === true || data.status === 'true') {
+    statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b>`;
+  } else {
+    statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
+  }
+} else {
+  // Bisa jadi CORS / metode tidak didukung, bukan berarti token salah
+  statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak dapat memverifikasi dari browser (CORS/network). Token mungkin tetap valid — coba kirim WA langsung untuk memastikan.</span>`;
+}
       }
     } else {
       statusEl.innerHTML = `<span class="text-red-600">❌ Server error (${res.status})</span>`;
