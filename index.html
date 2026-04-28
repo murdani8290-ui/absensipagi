@@ -886,68 +886,58 @@
 // ============================================
 // FONNTE CONFIG
 // ============================================
+// ============================================
+// FONNTE CONFIG - via Supabase Edge Function
+// ============================================
 const FONNTE_TOKEN = 'JpheArK4npgMrgZN8d5v';
+const FONNTE_PROXY_URL = 'https://pgrcbuwaciukbpfxupjz.supabase.co/functions/v1/fonnte-proxy';
 
-// ✅ PERBAIKAN UTAMA: Fungsi kirimWA menggunakan CORS proxy
-// Tanpa proxy, browser memblokir Authorization header ke api.fonnte.com
 async function kirimWA(target, pesan) {
-  const CORS_PROXY = 'https://corsproxy.io/?url=';
-  const FONNTE_URL = 'https://api.fonnte.com/send';
-
   try {
-    const formData = new FormData();
-    formData.append('target', target);
-    formData.append('message', pesan);
-    formData.append('countryCode', '62');
-
-    const res = await fetch(CORS_PROXY + encodeURIComponent(FONNTE_URL), {
+    const res = await fetch(FONNTE_PROXY_URL, {
       method: 'POST',
-      headers: { 'Authorization': FONNTE_TOKEN },
-      body: formData
-      // TIDAK pakai mode: 'no-cors' — mode itu yg bikin header Authorization dibuang browser
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'send', target, message: pesan, countryCode: '62' })
     });
-
-    if (res.ok) {
-      const data = await res.json();
-      console.log('✅ WA terkirim ke', target, data);
-      return true;
-    } else {
-      console.error('❌ WA gagal, status:', res.status);
-      return false;
-    }
+    if (!res.ok) { console.error('❌ Proxy HTTP error:', res.status); return false; }
+    const result = await res.json();
+    console.log('✅ WA terkirim ke', target, result.data);
+    return result.ok === true;
   } catch (err) {
-    console.error('❌ Fonnte WA error:', err);
+    console.error('❌ kirimWA error:', err);
     return false;
   }
 }
 
-// ✅ PERBAIKAN: cekKoneksiFonnte juga pakai CORS proxy
 async function cekKoneksiFonnte() {
   const statusEl = document.getElementById('statusFonnte');
   const btn = document.getElementById('btnCekFonnte');
-  const CORS_PROXY = 'https://corsproxy.io/?url=';
-  const VALIDATE_URL = 'https://api.fonnte.com/validate';
-
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Mengecek...';
   statusEl.textContent = 'Menghubungi server Fonnte...';
   try {
-    const res = await fetch(CORS_PROXY + encodeURIComponent(VALIDATE_URL), {
+    const res = await fetch(FONNTE_PROXY_URL, {
       method: 'POST',
-      headers: { 'Authorization': FONNTE_TOKEN }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'validate' })
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.status === true || data.status === 'true') {
-        statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b> | No: ${sanitizeHTML(data.device || '-')}`;
-      } else {
-        statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
-      }
+    if (!res.ok) {
+      statusEl.innerHTML = `<span class="text-red-600">❌ Edge Function error HTTP ${res.status}. Pastikan sudah di-deploy dengan nama <b>fonnte-proxy</b>.</span>`;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
+      return;
+    }
+    const result = await res.json();
+    const data = result.data || {};
+    if (data.status === true || data.status === 'true') {
+      statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b> | No: ${sanitizeHTML(data.device || '-')}`;
+    } else if (data.status === false) {
+      statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device Fonnte offline.</span>`;
     } else {
-      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Server merespons dengan status ${res.status}. Token mungkin tetap valid — coba kirim WA langsung.</span>`;
+      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Edge Function OK, tapi respons Fonnte tidak terduga. Token kemungkinan valid — coba kirim WA langsung.</span>`;
     }
   } catch (err) {
-    statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak bisa terhubung ke Fonnte. Periksa koneksi internet Anda.</span>`;
+    statusEl.innerHTML = `<span class="text-red-600">❌ Gagal menghubungi Edge Function: ${sanitizeHTML(err.message)}</span>`;
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
