@@ -930,19 +930,11 @@ async function cekKoneksiFonnte() {
     const result = await res.json();
     const data = result.data || {};
     if (data.status === true || data.status === 'true') {
-      statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b> | No: ${sanitizeHTML(data.device || '-')}`;
-    } else if (data.status === false) {
-      statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device Fonnte offline.</span>`;
-    } else {
-      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Edge Function OK, tapi respons Fonnte tidak terduga. Token kemungkinan valid — coba kirim WA langsung.</span>`;
-    }
-  } catch (err) {
-    statusEl.innerHTML = `<span class="text-red-600">❌ Gagal menghubungi Edge Function: ${sanitizeHTML(err.message)}</span>`;
-  }
-  btn.disabled = false;
-  btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
-}
-
+  statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b>`;
+} else if (data.status === false && data.reason === 'target required') {
+  statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Token valid dan device aktif.`;
+} else if (data.status === false) {
+  statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device Fonnte offline.</span>`;
 function formatHP(hp) {
   if (!hp) return null;
   let h = hp.toString().replace(/\D/g, '');
