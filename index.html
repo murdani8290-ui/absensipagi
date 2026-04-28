@@ -9,6 +9,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SIPAGI">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="apple-touch-icon" href="https://sman10pinrang.sch.id/wp-content/uploads/2021/02/cropped-cropped-pake-logo-ini-sman-10-png.png">
   <!-- SheetJS untuk export Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
@@ -764,6 +772,10 @@
 </div>
 <footer class="bg-gray-50 py-4 text-center border-t border-gray-200">
   <p class="text-xs text-gray-500">© 2025 SIPAGI · <span class="font-semibold text-blue-600">SMAN 10 Pinrang</span></p>
+  <button id="btnInstallPWA" onclick="installPWA()"
+    class="hidden mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2 mx-auto">
+    <i class="fas fa-download"></i> Install Aplikasi SIPAGI
+  </button>
 </footer>
 </div>
 </div>
@@ -1302,51 +1314,67 @@ async function downloadAdminExcelBulanan() {
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}${kelasFilter ? '&kelas=eq.' + encodeURIComponent(kelasFilter) : ''}`);
     const absenMap = {};
     (absensi || []).forEach(a => { absenMap[a.nis] = a; });
-    exportExcelPivot(semua, absenMap, bulan, kelasFilter || 'Semua Kelas');
+    exportExcelPivot(semua, absenMap, bulan, kelasFilter || 'Semua_Kelas');
   } catch (err) { alert('Gagal: ' + err.message); }
 }
 
-function exportExcelPivot(siswa, absenMap, bulan, namaSheet) {
+const STATUS_FULL_EXPORT = { H:'Hadir', S:'Sakit', I:'Izin', A:'Alpa', '':'', null:'' };
+const BULAN_NAMA = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+function exportExcelPivot(siswa, absenMap, bulan, namaFileKelas) {
   if (!siswa || !siswa.length) { alert('Tidak ada data siswa!'); return; }
   const [tahun, bln] = bulan.split('-').map(Number);
   const jumlahHari = new Date(tahun, bln, 0).getDate();
 
-  // Header baris 1
+  // Header tanggal: "25-Jan", "26-Jan", dst
   const headerTgl = [];
   for (let d = 1; d <= jumlahHari; d++) {
-    const tgl = new Date(tahun, bln-1, d);
-    const hari = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][tgl.getDay()];
-    headerTgl.push(`${d}-${['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][bln-1]} (${hari})`);
+    headerTgl.push(`${d}-${BULAN_NAMA[bln-1]}`);
   }
-  const header = ['NIS', 'Nama', 'Kelas', ...headerTgl, 'H', 'S', 'I', 'A'];
+  const header = ['NIS', 'Nama', 'Kelas', ...headerTgl, 'Hadir', 'Sakit', 'Izin', 'Alpa'];
 
-  const rows = siswa.map(s => {
-    const rec = absenMap[s.nis] || {};
-    let h=0, sk=0, iz=0, al=0;
-    const cols = [];
-    for (let d = 1; d <= jumlahHari; d++) {
-      const col = 'tgl_' + String(d).padStart(2,'0');
-      const val = rec[col] || '';
-      cols.push(val);
-      if (val==='H') h++;
-      else if (val==='S') sk++;
-      else if (val==='I') iz++;
-      else if (val==='A') al++;
-    }
-    return [s.nis, s.nama, s.kelas, ...cols, h, sk, iz, al];
+  // Kelompokkan siswa per kelas
+  const byKelas = {};
+  siswa.forEach(s => {
+    if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
+    byKelas[s.kelas].push(s);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-  // Style kolom lebar
-  ws['!cols'] = [
-    {wch:12},{wch:28},{wch:10},
-    ...Array(jumlahHari).fill({wch:14}),
-    {wch:5},{wch:5},{wch:5},{wch:5}
-  ];
-
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, namaSheet.replace(/[\\\/\*\?\[\]:]/g,'').slice(0,31));
-  XLSX.writeFile(wb, `Absensi_${namaSheet}_${bulan}.xlsx`);
+  const kelasList = Object.keys(byKelas).sort();
+
+  kelasList.forEach(kelas => {
+    const siswakelas = byKelas[kelas];
+    const rows = siswakelas.map(s => {
+      const rec = absenMap[s.nis] || {};
+      let h=0, sk=0, iz=0, al=0;
+      const cols = [];
+      for (let d = 1; d <= jumlahHari; d++) {
+        const col = 'tgl_' + String(d).padStart(2,'0');
+        const val = rec[col] || '';
+        const label = STATUS_FULL_EXPORT[val] ?? '';
+        cols.push(label);
+        if (val==='H') h++;
+        else if (val==='S') sk++;
+        else if (val==='I') iz++;
+        else if (val==='A') al++;
+      }
+      return [s.nis, s.nama, s.kelas, ...cols, h, sk, iz, al];
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [
+      {wch:12},{wch:28},{wch:10},
+      ...Array(jumlahHari).fill({wch:8}),
+      {wch:7},{wch:7},{wch:5},{wch:5}
+    ];
+    // Nama sheet: "Absensi - XI 3" (max 31 karakter)
+    const sheetName = `Absensi - ${kelas}`.replace(/[\\\/\*\?\[\]:]/g,'').slice(0,31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const namaFile = `Absensi_${namaFileKelas.replace(/\s+/g,'_')}_${bulan}.xlsx`;
+  XLSX.writeFile(wb, namaFile);
 }
 
 // ============================================================
@@ -2178,6 +2206,38 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('waKirimTanggal').value = todayStr();
   renderDayButtons();
   startLiveClock();
+
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  }
+
+  // PWA Install Prompt
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Tampilkan tombol install di footer
+    const btn = document.getElementById('btnInstallPWA');
+    if (btn) btn.classList.remove('hidden');
+  });
+  window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('btnInstallPWA');
+    if (btn) btn.classList.add('hidden');
+    deferredPrompt = null;
+  });
+  window.installPWA = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      const btn = document.getElementById('btnInstallPWA');
+      if (btn) btn.classList.add('hidden');
+    }
+    deferredPrompt = null;
+  };
 });
 </script>
 </body>
