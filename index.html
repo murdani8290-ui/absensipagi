@@ -405,7 +405,12 @@
 
       <!-- Import CSV -->
       <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
-        <h4 class="font-semibold text-blue-800 mb-2"><i class="fas fa-file-csv mr-2"></i>Import CSV</h4>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-semibold text-blue-800"><i class="fas fa-file-csv mr-2"></i>Import CSV</h4>
+          <button onclick="downloadTemplateSiswa()" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1">
+            <i class="fas fa-download"></i> Template CSV
+          </button>
+        </div>
         <p class="text-xs text-blue-600 mb-3">Format kolom: <code class="bg-blue-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code></p>
         <div class="import-drop" id="csvDropSiswa" onclick="document.getElementById('csvFileSiswa').click()">
           <input type="file" id="csvFileSiswa" accept=".csv,.xlsx,.xls" onchange="handleImportSiswaFile(this)">
@@ -478,7 +483,12 @@
 
       <!-- Import CSV Guru -->
       <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
-        <h4 class="font-semibold text-blue-800 mb-2"><i class="fas fa-file-csv mr-2"></i>Import CSV Guru</h4>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-semibold text-blue-800"><i class="fas fa-file-csv mr-2"></i>Import CSV Guru</h4>
+          <button onclick="downloadTemplateGuru()" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1">
+            <i class="fas fa-download"></i> Template CSV
+          </button>
+        </div>
         <p class="text-xs text-blue-600 mb-3">Kolom: <code class="bg-blue-100 px-1 rounded">username,password,nama,kelas_wali,role,hp</code></p>
         <div class="import-drop" onclick="document.getElementById('csvFileGuru').click()">
           <input type="file" id="csvFileGuru" accept=".csv,.xlsx,.xls" onchange="handleImportGuruFile(this)">
@@ -2044,6 +2054,42 @@ async function kirimRekapWaliKelas() {
     resultEl.innerHTML=`<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${sent} wali kelas.</span>`;
   } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAWali', false);
+}
+
+// ============================================================
+// DOWNLOAD TEMPLATE CSV
+// ============================================================
+function downloadTemplateSiswa() {
+  const rows = [
+    ['NIS', 'Nama', 'Kelas', 'HP_Ortu'],
+    ['242001', 'Ahmad Fauzi', 'XI IPA 1', '081234567890'],
+    ['242002', 'Budi Santoso', 'XI IPA 1', '082345678901'],
+    ['242003', 'Citra Dewi', 'XI IPA 2', ''],
+    ['242004', 'Dina Marlina', 'XI IPA 2', '083456789012'],
+    ['242005', 'Eko Prasetyo', 'XI IPS 1', '084567890123'],
+  ];
+  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n'); // BOM untuk Excel
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'template_import_siswa.csv';
+  a.click();
+}
+
+function downloadTemplateGuru() {
+  const rows = [
+    ['username', 'password', 'nama', 'kelas_wali', 'role', 'hp'],
+    ['pkkarim', 'pass123', 'Pak Karim', 'XI IPA 1', 'WALI', '081234567890'],
+    ['busari', 'pass456', 'Bu Sari', 'XI IPA 2', 'WALI', '082345678901'],
+    ['pkbudi', 'pass789', 'Pak Budi', '', 'GURU', '083456789012'],
+    ['admin01', 'adminpass', 'Administrator', '', 'ADMIN', '084567890123'],
+  ];
+  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'template_import_guru.csv';
+  a.click();
 }
 
 // ============================================================
