@@ -9,14 +9,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <!-- SheetJS untuk export Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.8); opacity: 1; }
-      100% { transform: scale(2); opacity: 0; }
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    @keyframes pulse-green{0%,100%{opacity:1}50%{opacity:0.4}}
     .animate-fade-in{animation:fadeIn 0.3s ease-out}
     .animate-spin{animation:spin 1s linear infinite}
     #reader{width:100%;border-radius:12px;overflow:hidden}
@@ -26,212 +26,61 @@
     .custom-scrollbar::-webkit-scrollbar-thumb{background:#c1c1c1;border-radius:3px}
     .stat-card{transition:all 0.2s ease}
     .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-    .timer-bar{transition:width 1s linear}
     .section{display:none}
     .section.active{display:block;animation:fadeIn 0.3s ease-out}
     .role-btn.active{background:linear-gradient(135deg,#dbeafe 0%,#bfdbfe 100%)}
-    .wa-status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
-    .wa-status-online { background:#22c55e; animation: pulse-green 2s infinite; }
-    @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-    /* ===== SCHEDULER STYLES ===== */
-    .scheduler-card {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      border: 1px solid #334155;
-      border-radius: 16px;
-      overflow: hidden;
-      position: relative;
-    }
-    .scheduler-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #f59e0b, #ef4444, #f59e0b);
-      background-size: 200% 100%;
-      animation: shimmer 2s linear infinite;
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-    .scheduler-active .scheduler-card::before {
-      background: linear-gradient(90deg, #22c55e, #16a34a, #22c55e);
-      background-size: 200% 100%;
-      animation: shimmer 1s linear infinite;
-    }
-
-    .scheduler-clock {
-      font-family: 'Courier New', monospace;
-      font-size: 2rem;
-      font-weight: bold;
-      color: #f8fafc;
-      letter-spacing: 0.1em;
-      text-shadow: 0 0 20px rgba(59,130,246,0.5);
-    }
-    .scheduler-clock.active-glow {
-      color: #4ade80;
-      text-shadow: 0 0 20px rgba(74,222,128,0.7);
-      animation: blink 1s ease-in-out infinite;
-    }
-
-    .sched-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-    }
-    .sched-badge-off {
-      background: rgba(100,116,139,0.3);
-      color: #94a3b8;
-      border: 1px solid rgba(100,116,139,0.4);
-    }
-    .sched-badge-on {
-      background: rgba(34,197,94,0.2);
-      color: #4ade80;
-      border: 1px solid rgba(34,197,94,0.4);
-    }
-    .sched-badge-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-    }
-    .sched-badge-off .sched-badge-dot { background: #64748b; }
-    .sched-badge-on .sched-badge-dot {
-      background: #22c55e;
-      box-shadow: 0 0 6px #22c55e;
-      animation: pulse-green 1s infinite;
-    }
-
-    .trigger-timeline {
-      display: flex;
-      gap: 0;
-      align-items: center;
-      margin: 12px 0;
-    }
-    .trigger-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1;
-    }
-    .trigger-step-icon {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      position: relative;
-      z-index: 1;
-    }
-    .trigger-step-icon.done {
-      background: rgba(34,197,94,0.2);
-      border: 2px solid #22c55e;
-      color: #4ade80;
-    }
-    .trigger-step-icon.pending {
-      background: rgba(100,116,139,0.2);
-      border: 2px solid #475569;
-      color: #64748b;
-    }
-    .trigger-step-icon.running {
-      background: rgba(251,191,36,0.2);
-      border: 2px solid #f59e0b;
-      color: #fbbf24;
-      animation: blink 0.8s ease-in-out infinite;
-    }
-    .trigger-step-label {
-      font-size: 9px;
-      margin-top: 4px;
-      color: #94a3b8;
-      text-align: center;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-    }
-    .trigger-line {
-      flex: 1;
-      height: 2px;
-      background: #334155;
-      margin: 0 -2px;
-      margin-bottom: 22px;
-    }
-    .trigger-line.done { background: #22c55e; }
-
-    .sched-log {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      padding: 10px;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      color: #94a3b8;
-      max-height: 120px;
-      overflow-y: auto;
-      line-height: 1.6;
-    }
-    .sched-log::-webkit-scrollbar { width: 4px; }
-    .sched-log::-webkit-scrollbar-track { background: transparent; }
-    .sched-log::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-    .log-success { color: #4ade80; }
-    .log-error { color: #f87171; }
-    .log-info { color: #60a5fa; }
-    .log-warn { color: #fbbf24; }
-
-    .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-    .toggle-track {
-      width: 48px; height: 26px;
-      background: #334155;
-      border-radius: 999px;
-      position: relative;
-      transition: background 0.3s;
-      flex-shrink: 0;
-    }
-    .toggle-track.on { background: #22c55e; }
-    .toggle-thumb {
-      width: 20px; height: 20px;
-      background: white;
-      border-radius: 50%;
-      position: absolute;
-      top: 3px; left: 3px;
-      transition: transform 0.3s;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    }
-    .toggle-track.on .toggle-thumb { transform: translateX(22px); }
-
-    .dark-time-input {
-      background: rgba(15,23,42,0.8);
-      border: 1px solid #334155;
-      color: #f8fafc;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-family: 'Courier New', monospace;
-      font-size: 1.1rem;
-      font-weight: bold;
-      width: 100%;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .dark-time-input:focus { border-color: #3b82f6; }
-
-    .next-trigger-badge {
-      background: rgba(251,191,36,0.1);
-      border: 1px solid rgba(251,191,36,0.3);
-      border-radius: 8px;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .next-trigger-time {
-      font-family: 'Courier New', monospace;
-      font-size: 1.3rem;
-      font-weight: bold;
-      color: #fbbf24;
-    }
+    .wa-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+    .wa-status-online{background:#22c55e;animation:pulse-green 2s infinite}
+    /* SCHEDULER */
+    .scheduler-card{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border:1px solid #334155;border-radius:16px;overflow:hidden;position:relative}
+    .scheduler-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f59e0b,#ef4444,#f59e0b);background-size:200% 100%;animation:shimmer 2s linear infinite}
+    .scheduler-active .scheduler-card::before{background:linear-gradient(90deg,#22c55e,#16a34a,#22c55e);background-size:200% 100%;animation:shimmer 1s linear infinite}
+    .scheduler-clock{font-family:'Courier New',monospace;font-size:2rem;font-weight:bold;color:#f8fafc;letter-spacing:0.1em;text-shadow:0 0 20px rgba(59,130,246,0.5)}
+    .scheduler-clock.active-glow{color:#4ade80;text-shadow:0 0 20px rgba(74,222,128,0.7);animation:blink 1s ease-in-out infinite}
+    .sched-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.05em}
+    .sched-badge-off{background:rgba(100,116,139,0.3);color:#94a3b8;border:1px solid rgba(100,116,139,0.4)}
+    .sched-badge-on{background:rgba(34,197,94,0.2);color:#4ade80;border:1px solid rgba(34,197,94,0.4)}
+    .sched-badge-dot{width:6px;height:6px;border-radius:50%}
+    .sched-badge-off .sched-badge-dot{background:#64748b}
+    .sched-badge-on .sched-badge-dot{background:#22c55e;box-shadow:0 0 6px #22c55e;animation:pulse-green 1s infinite}
+    .trigger-timeline{display:flex;gap:0;align-items:center;margin:12px 0}
+    .trigger-step{display:flex;flex-direction:column;align-items:center;flex:1}
+    .trigger-step-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;z-index:1}
+    .trigger-step-icon.done{background:rgba(34,197,94,0.2);border:2px solid #22c55e;color:#4ade80}
+    .trigger-step-icon.pending{background:rgba(100,116,139,0.2);border:2px solid #475569;color:#64748b}
+    .trigger-step-icon.running{background:rgba(251,191,36,0.2);border:2px solid #f59e0b;color:#fbbf24;animation:blink 0.8s ease-in-out infinite}
+    .trigger-step-label{font-size:9px;margin-top:4px;color:#94a3b8;text-align:center;font-weight:600;letter-spacing:0.05em}
+    .trigger-line{flex:1;height:2px;background:#334155;margin:0 -2px;margin-bottom:22px}
+    .trigger-line.done{background:#22c55e}
+    .sched-log{background:rgba(0,0,0,0.4);border:1px solid #1e293b;border-radius:8px;padding:10px;font-family:'Courier New',monospace;font-size:11px;color:#94a3b8;max-height:120px;overflow-y:auto;line-height:1.6}
+    .sched-log::-webkit-scrollbar{width:4px}
+    .sched-log::-webkit-scrollbar-track{background:transparent}
+    .sched-log::-webkit-scrollbar-thumb{background:#334155;border-radius:2px}
+    .log-success{color:#4ade80}.log-error{color:#f87171}.log-info{color:#60a5fa}.log-warn{color:#fbbf24}
+    .toggle-wrap{display:flex;align-items:center;gap:10px;cursor:pointer}
+    .toggle-track{width:48px;height:26px;background:#334155;border-radius:999px;position:relative;transition:background 0.3s;flex-shrink:0}
+    .toggle-track.on{background:#22c55e}
+    .toggle-thumb{width:20px;height:20px;background:white;border-radius:50%;position:absolute;top:3px;left:3px;transition:transform 0.3s;box-shadow:0 1px 4px rgba(0,0,0,0.4)}
+    .toggle-track.on .toggle-thumb{transform:translateX(22px)}
+    .dark-time-input{background:rgba(15,23,42,0.8);border:1px solid #334155;color:#f8fafc;border-radius:8px;padding:8px 12px;font-family:'Courier New',monospace;font-size:1.1rem;font-weight:bold;width:100%;outline:none;transition:border-color 0.2s}
+    .dark-time-input:focus{border-color:#3b82f6}
+    .next-trigger-badge{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px}
+    .next-trigger-time{font-family:'Courier New',monospace;font-size:1.3rem;font-weight:bold;color:#fbbf24}
+    /* IMPORT AREA */
+    .import-drop{border:2px dashed #d1d5db;border-radius:12px;padding:24px;text-align:center;transition:all 0.2s;cursor:pointer}
+    .import-drop:hover,.import-drop.drag-over{border-color:#3b82f6;background:#eff6ff}
+    .import-drop input[type=file]{display:none}
+    /* PIVOT TABLE */
+    .pivot-table{font-size:11px}
+    .pivot-table th{background:#f3f4f6;padding:4px 6px;white-space:nowrap;position:sticky;top:0;z-index:2}
+    .pivot-table td{padding:3px 5px;white-space:nowrap;text-align:center}
+    .pivot-table tr:nth-child(even){background:#f9fafb}
+    .status-H{background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 4px;font-weight:600;font-size:10px}
+    .status-S{background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 4px;font-weight:600;font-size:10px}
+    .status-I{background:#e0f2fe;color:#075985;border-radius:4px;padding:1px 4px;font-weight:600;font-size:10px}
+    .status-A{background:#fee2e2;color:#991b1b;border-radius:4px;padding:1px 4px;font-weight:600;font-size:10px}
+    .day-btn{padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700;background:#1e293b;color:#64748b;transition:all 0.2s}
+    .day-btn.active-day{background:#22c55e;color:white}
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen p-4 md:p-6">
@@ -266,7 +115,7 @@
   </button>
 </nav>
 
-<!-- ===== SISWA SECTION ===== -->
+<!-- ===== SISWA ===== -->
 <section id="sectionSiswa" class="section active">
   <div id="inputNisArea">
     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
@@ -300,7 +149,7 @@
   <div id="resultSiswa" class="hidden mt-4 p-5 rounded-xl text-center"></div>
 </section>
 
-<!-- ===== GURU PIKET SECTION ===== -->
+<!-- ===== GURU PIKET ===== -->
 <section id="sectionGuru" class="section">
   <div id="loginGuruArea">
     <div class="text-center mb-6">
@@ -326,16 +175,15 @@
       </div>
     </div>
     <div class="flex gap-3 mt-6">
-      <button class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnLoginGuruQR" onclick="loginPiket('qr')">
+      <button class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all" id="btnLoginGuruQR" onclick="loginPiket('qr')">
         <i class="fas fa-qrcode mr-2"></i>Buat QR
       </button>
-      <button class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnLoginGuruManual" onclick="loginPiket('manual')">
+      <button class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all" id="btnLoginGuruManual" onclick="loginPiket('manual')">
         <i class="fas fa-edit mr-2"></i>Manual
       </button>
     </div>
     <p id="msgGuru" class="text-sm text-center mt-4 min-h-[20px]"></p>
   </div>
-
   <div id="qrGeneratorArea" class="hidden">
     <div class="bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl p-6 text-center border border-blue-200">
       <p class="text-sm text-gray-600 mb-2">Guru Piket:</p>
@@ -344,7 +192,7 @@
       <div class="mt-4">
         <p class="text-sm text-gray-600">QR diperbarui dalam: <span id="countdown" class="font-bold text-blue-600 text-lg">20</span>s</p>
         <div class="w-full h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-          <div id="timerBar" class="timer-bar h-full bg-blue-500 rounded-full" style="width:100%"></div>
+          <div id="timerBar" class="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-linear" style="width:100%"></div>
         </div>
       </div>
     </div>
@@ -352,16 +200,11 @@
       <i class="fas fa-sign-out-alt mr-2"></i>Keluar
     </button>
   </div>
-
   <div id="manualInputArea" class="hidden">
     <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
       <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
         <h4 class="font-semibold text-gray-800"><i class="fas fa-edit text-amber-500 mr-2"></i>Input Manual</h4>
         <span class="text-sm text-gray-500">Petugas: <b id="namaGuruManual" class="text-blue-600"></b></span>
-      </div>
-      <p class="text-xs text-gray-500 mb-3"><i class="fas fa-info-circle mr-1"></i>Ketik minimal 4 karakter untuk mencari siswa</p>
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
-        <p class="text-xs text-blue-700"><i class="fas fa-lightbulb mr-1"></i><strong>Tips:</strong> Status yang sudah ada bisa ditimpa dengan input manual ini.</p>
       </div>
       <div class="relative">
         <label class="block text-sm font-medium text-gray-700 mb-1">Cari Siswa (Nama / NIS)</label>
@@ -378,13 +221,13 @@
       <div class="mt-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">Status Kehadiran</label>
         <select id="manualStatus" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors bg-white">
-          <option value="Hadir">✅ Hadir</option>
-          <option value="Sakit">🤒 Sakit</option>
-          <option value="Izin">📋 Izin</option>
-          <option value="Alpa">❌ Alpa / Tidak Hadir</option>
+          <option value="H">✅ Hadir</option>
+          <option value="S">🤒 Sakit</option>
+          <option value="I">📋 Izin</option>
+          <option value="A">❌ Alpa</option>
         </select>
       </div>
-      <button class="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnSimpanManual" onclick="saveManualAttendance()">
+      <button class="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all" id="btnSimpanManual" onclick="saveManualAttendance()">
         <i class="fas fa-save mr-2"></i>Simpan Data
       </button>
       <div id="manualResult" class="mt-3 text-center text-sm min-h-[24px]"></div>
@@ -395,7 +238,7 @@
   </div>
 </section>
 
-<!-- ===== WALI KELAS SECTION ===== -->
+<!-- ===== WALI KELAS ===== -->
 <section id="sectionWali" class="section">
   <div id="loginWaliArea">
     <div class="text-center mb-6">
@@ -420,12 +263,11 @@
         </div>
       </div>
     </div>
-    <button class="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnLoginWali" onclick="loginWali()">
+    <button class="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all" id="btnLoginWali" onclick="loginWali()">
       <i class="fas fa-sign-in-alt mr-2"></i>Masuk
     </button>
     <p id="msgWali" class="text-sm text-center mt-4 min-h-[20px]"></p>
   </div>
-
   <div id="dashboardWali" class="hidden">
     <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 border border-indigo-200 mb-4">
       <h3 class="text-xl font-bold text-indigo-800">Halo, <span id="waliNama"></span> 👋</h3>
@@ -438,11 +280,10 @@
         <input type="date" id="waliRekapDate" class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors">
         <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all" onclick="loadWaliDataByDate()"><i class="fas fa-sync-alt"></i></button>
       </div>
-      <p class="text-xs text-gray-500 mt-2"><i class="fas fa-info-circle mr-1"></i>Menampilkan data: <b id="displayTanggalWali"></b></p>
+      <p class="text-xs text-gray-500 mt-2">Menampilkan: <b id="displayTanggalWali"></b></p>
     </div>
-    <p class="text-sm text-gray-600 mb-3"><i class="fas fa-hand-pointer mr-1"></i>Klik kotak untuk lihat daftar nama:</p>
     <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="stat-card bg-white p-4 rounded-xl border-b-4 border-blue-500 shadow cursor-pointer" onclick="showWaliList('hadir')">
+      <div class="stat-card bg-white p-4 rounded-xl border-b-4 border-blue-500 shadow cursor-pointer" onclick="showWaliList('H')">
         <p class="text-xs text-gray-500 uppercase">Hadir</p>
         <p class="text-3xl font-bold text-blue-600" id="valHadir">0</p>
       </div>
@@ -450,11 +291,11 @@
         <p class="text-xs text-gray-500 uppercase">Belum Absen</p>
         <p class="text-3xl font-bold text-gray-600" id="valBelum">0</p>
       </div>
-      <div class="stat-card bg-white p-4 rounded-xl border-b-4 border-amber-500 shadow cursor-pointer" onclick="showWaliList('sakit')">
+      <div class="stat-card bg-white p-4 rounded-xl border-b-4 border-amber-500 shadow cursor-pointer" onclick="showWaliList('SI')">
         <p class="text-xs text-gray-500 uppercase">Sakit/Izin</p>
         <p class="text-3xl font-bold text-amber-600" id="valSakit">0</p>
       </div>
-      <div class="stat-card bg-white p-4 rounded-xl border-b-4 border-red-500 shadow cursor-pointer" onclick="showWaliList('alpa')">
+      <div class="stat-card bg-white p-4 rounded-xl border-b-4 border-red-500 shadow cursor-pointer" onclick="showWaliList('A')">
         <p class="text-xs text-gray-500 uppercase">Alpa</p>
         <p class="text-3xl font-bold text-red-600" id="valAlpa">0</p>
       </div>
@@ -475,20 +316,24 @@
         </table>
       </div>
     </div>
-    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-      <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-file-csv text-indigo-500 mr-2"></i>Unduh Laporan Bulanan</h4>
+    <!-- Download Laporan Bulanan -->
+    <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
+      <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-file-excel text-green-600 mr-2"></i>Unduh Laporan Bulanan</h4>
       <div class="flex gap-2">
         <input type="month" id="bulanLaporan" class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors">
-        <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all" id="btnUnduhLaporan" onclick="downloadReport()"><i class="fas fa-download"></i></button>
+        <button class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all" onclick="downloadLaporanBulanan('wali')">
+          <i class="fas fa-download mr-1"></i>Excel
+        </button>
       </div>
+      <p class="text-xs text-gray-500 mt-2">Format: NIS | Nama | Kelas | tgl per kolom</p>
     </div>
-    <button class="w-full mt-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all" onclick="logoutWali()">
+    <button class="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all" onclick="logoutWali()">
       <i class="fas fa-sign-out-alt mr-2"></i>Keluar
     </button>
   </div>
 </section>
 
-<!-- ===== ADMIN SECTION ===== -->
+<!-- ===== ADMIN ===== -->
 <section id="sectionAdmin" class="section">
   <div id="loginAdminArea">
     <div class="text-center mb-6">
@@ -513,7 +358,7 @@
         </div>
       </div>
     </div>
-    <button class="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-all" id="btnLoginAdmin" onclick="loginAdmin()">
+    <button class="w-full mt-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all" id="btnLoginAdmin" onclick="loginAdmin()">
       <i class="fas fa-sign-in-alt mr-2"></i>Masuk Admin
     </button>
     <p id="msgAdmin" class="text-sm text-center mt-4 min-h-[20px]"></p>
@@ -521,31 +366,32 @@
 
   <div id="dashboardAdmin" class="hidden">
     <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200 mb-4">
-      <h3 class="text-xl font-bold text-purple-800 mb-4"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard Admin - SIPAGI</h3>
+      <h3 class="text-xl font-bold text-purple-800 mb-4"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard Admin</h3>
       <div class="grid grid-cols-2 gap-3">
         <div class="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-sm">
           <p class="text-xs text-gray-500 uppercase">Hadir Hari Ini</p>
           <p class="text-2xl font-bold text-blue-600" id="admHadir">0</p>
         </div>
         <div class="bg-white p-4 rounded-xl border-l-4 border-red-500 shadow-sm">
-          <p class="text-xs text-gray-500 uppercase">Tidak Hadir</p>
+          <p class="text-xs text-gray-500 uppercase">Alpa Hari Ini</p>
           <p class="text-2xl font-bold text-red-600" id="admAlfa">0</p>
         </div>
       </div>
     </div>
 
     <!-- Admin Tabs -->
-    <div class="flex gap-2 mb-4 flex-wrap">
-      <button class="admin-tab flex-1 py-2 px-3 bg-blue-100 text-blue-700 font-medium rounded-lg transition-all hover:bg-blue-200" onclick="showAdminTab('siswa')" id="tabBtnSiswa"><i class="fas fa-users mr-1"></i>Siswa</button>
-      <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('guru')" id="tabBtnGuru"><i class="fas fa-user-tie mr-1"></i>Guru</button>
-      <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('rekap')" id="tabBtnRekap"><i class="fas fa-clipboard-list mr-1"></i>Rekap</button>
-      <button class="admin-tab flex-1 py-2 px-3 bg-gray-100 text-gray-600 font-medium rounded-lg transition-all hover:bg-gray-200" onclick="showAdminTab('autoalpa')" id="tabBtnAutoalpa"><i class="fas fa-clock mr-1"></i>Auto Alpa</button>
+    <div class="flex gap-1 mb-4 flex-wrap">
+      <button class="admin-tab flex-1 py-2 px-2 bg-blue-100 text-blue-700 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('siswa')" id="tabBtnSiswa"><i class="fas fa-users mr-1"></i>Siswa</button>
+      <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('guru')" id="tabBtnGuru"><i class="fas fa-user-tie mr-1"></i>Guru</button>
+      <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('rekap')" id="tabBtnRekap"><i class="fas fa-clipboard-list mr-1"></i>Rekap</button>
+      <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('autoalpa')" id="tabBtnAutoalpa"><i class="fas fa-clock mr-1"></i>Auto</button>
     </div>
 
     <!-- Tab Siswa -->
     <div id="admTabSiswa" class="admin-panel">
-      <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <h4 class="font-semibold text-gray-800 mb-3">Tambah Siswa Baru</h4>
+      <!-- Tambah Manual -->
+      <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Tambah Siswa Manual</h4>
         <div class="grid grid-cols-3 gap-2 mb-2">
           <input type="text" id="newNis" placeholder="NIS" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
           <input type="text" id="newNama" placeholder="Nama" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
@@ -556,36 +402,93 @@
           <i class="fas fa-plus mr-1"></i>Tambah Siswa
         </button>
       </div>
-      <div class="mt-4 max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl">
+
+      <!-- Import CSV -->
+      <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
+        <h4 class="font-semibold text-blue-800 mb-2"><i class="fas fa-file-csv mr-2"></i>Import CSV</h4>
+        <p class="text-xs text-blue-600 mb-3">Format kolom: <code class="bg-blue-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code></p>
+        <div class="import-drop" id="csvDropSiswa" onclick="document.getElementById('csvFileSiswa').click()">
+          <input type="file" id="csvFileSiswa" accept=".csv,.xlsx,.xls" onchange="handleImportSiswaFile(this)">
+          <i class="fas fa-cloud-upload-alt text-2xl text-blue-400 mb-2 block"></i>
+          <p class="text-sm text-gray-600">Klik atau drag & drop file CSV/Excel</p>
+        </div>
+        <div id="csvImportSiswaResult" class="mt-2 text-sm"></div>
+      </div>
+
+      <!-- Copy-Paste Import -->
+      <div class="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
+        <h4 class="font-semibold text-green-800 mb-2"><i class="fas fa-paste mr-2"></i>Import Copy-Paste</h4>
+        <p class="text-xs text-green-600 mb-2">Setiap baris: <code class="bg-green-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code> (HP opsional)</p>
+        <textarea id="pasteSiswa" rows="5" placeholder="242001,Ahmad Fauzi,XI IPA 1,08123456789&#10;242002,Budi Santoso,XI IPA 1&#10;242003,Citra Dewi,XI IPA 2,0812000000"
+          class="w-full px-3 py-2 border border-green-200 rounded-lg text-sm font-mono focus:outline-none focus:border-green-500 resize-none"></textarea>
+        <button class="w-full mt-2 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm" onclick="importSiswaPaste()">
+          <i class="fas fa-upload mr-1"></i>Import Data
+        </button>
+        <div id="pasteSiswaResult" class="mt-2 text-sm"></div>
+      </div>
+
+      <!-- Tabel Siswa -->
+      <div class="flex gap-2 mb-2">
+        <input type="text" id="filterSiswaSearch" placeholder="Cari nama/NIS..." class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none" oninput="filterSiswaTable()">
+        <select id="filterSiswaKelas" class="px-3 py-2 border rounded-lg text-sm focus:outline-none" onchange="filterSiswaTable()">
+          <option value="">Semua Kelas</option>
+        </select>
+      </div>
+      <div class="max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl">
         <table class="w-full text-sm">
           <thead class="bg-gray-100 sticky top-0"><tr><th class="text-left p-3">NIS</th><th class="text-left p-3">Nama</th><th class="text-left p-3">Kelas</th><th class="p-3 w-16">Aksi</th></tr></thead>
           <tbody id="tableSiswaBody"></tbody>
         </table>
       </div>
+      <p class="text-xs text-gray-500 mt-1 text-right">Total: <span id="totalSiswaCount">0</span> siswa</p>
     </div>
 
     <!-- Tab Guru -->
     <div id="admTabGuru" class="admin-panel hidden">
-      <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-        <h4 class="font-semibold text-gray-800 mb-3">Tambah Guru Baru</h4>
+      <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Tambah Guru Manual</h4>
         <div class="grid grid-cols-2 gap-2 mb-2">
-          <input type="text" id="newGUser" placeholder="Username" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
-          <input type="text" id="newGPass" placeholder="Password" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
+          <input type="text" id="newGUser" placeholder="Username" class="px-3 py-2 border rounded-lg text-sm">
+          <input type="text" id="newGPass" placeholder="Password" class="px-3 py-2 border rounded-lg text-sm">
         </div>
         <div class="grid grid-cols-2 gap-2 mb-2">
-          <input type="text" id="newGNama" placeholder="Nama Lengkap" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
-          <input type="text" id="newGKelas" placeholder="Wali Kelas (opsional)" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
+          <input type="text" id="newGNama" placeholder="Nama Lengkap" class="px-3 py-2 border rounded-lg text-sm">
+          <input type="text" id="newGKelas" placeholder="Wali Kelas (opsional)" class="px-3 py-2 border rounded-lg text-sm">
         </div>
         <div class="grid grid-cols-2 gap-2 mb-3">
-          <input type="text" id="newGRole" placeholder="Role: GURU / WALI / ADMIN" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
-          <input type="text" id="newGHp" placeholder="No. HP Guru (untuk WA)" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
+          <input type="text" id="newGRole" placeholder="Role: GURU/WALI/ADMIN" class="px-3 py-2 border rounded-lg text-sm">
+          <input type="text" id="newGHp" placeholder="No. HP Guru" class="px-3 py-2 border rounded-lg text-sm">
         </div>
         <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm" onclick="adminAddTeacher()">
           <i class="fas fa-plus mr-1"></i>Tambah Guru
         </button>
-        <p class="text-xs text-amber-600 mt-2"><i class="fas fa-info-circle mr-1"></i>No. HP Guru digunakan untuk menerima rekap absensi via WhatsApp.</p>
       </div>
-      <div class="mt-4 max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl">
+
+      <!-- Import Copy-Paste Guru -->
+      <div class="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
+        <h4 class="font-semibold text-green-800 mb-2"><i class="fas fa-paste mr-2"></i>Import Copy-Paste Guru</h4>
+        <p class="text-xs text-green-600 mb-2">Format: <code class="bg-green-100 px-1 rounded">username,password,nama,kelas_wali,role,hp</code></p>
+        <textarea id="pasteGuru" rows="4" placeholder="pkuser,pass123,Pak Karim,XI IPA 1,WALI,081234567&#10;buuser,pass456,Bu Sari,,GURU,082345678"
+          class="w-full px-3 py-2 border border-green-200 rounded-lg text-sm font-mono focus:outline-none resize-none"></textarea>
+        <button class="w-full mt-2 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm" onclick="importGuruPaste()">
+          <i class="fas fa-upload mr-1"></i>Import Data
+        </button>
+        <div id="pasteGuruResult" class="mt-2 text-sm"></div>
+      </div>
+
+      <!-- Import CSV Guru -->
+      <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
+        <h4 class="font-semibold text-blue-800 mb-2"><i class="fas fa-file-csv mr-2"></i>Import CSV Guru</h4>
+        <p class="text-xs text-blue-600 mb-3">Kolom: <code class="bg-blue-100 px-1 rounded">username,password,nama,kelas_wali,role,hp</code></p>
+        <div class="import-drop" onclick="document.getElementById('csvFileGuru').click()">
+          <input type="file" id="csvFileGuru" accept=".csv,.xlsx,.xls" onchange="handleImportGuruFile(this)">
+          <i class="fas fa-cloud-upload-alt text-2xl text-blue-400 mb-2 block"></i>
+          <p class="text-sm text-gray-600">Klik atau drag & drop file CSV/Excel</p>
+        </div>
+        <div id="csvImportGuruResult" class="mt-2 text-sm"></div>
+      </div>
+
+      <div class="max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl">
         <table class="w-full text-sm">
           <thead class="bg-gray-100 sticky top-0"><tr><th class="text-left p-3">Username</th><th class="text-left p-3">Nama</th><th class="text-left p-3">Wali Kelas</th><th class="p-3 w-16">Aksi</th></tr></thead>
           <tbody id="tableGuruBody"></tbody>
@@ -596,65 +499,59 @@
     <!-- Tab Rekap -->
     <div id="admTabRekap" class="admin-panel hidden">
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
-        <h5 class="font-semibold text-gray-700 mb-3"><i class="fas fa-calendar-alt text-purple-500 mr-2"></i>Filter & Lihat Data</h5>
+        <h5 class="font-semibold text-gray-700 mb-3"><i class="fas fa-calendar-alt text-purple-500 mr-2"></i>Rekap Harian</h5>
         <div class="flex gap-2 mb-3">
-          <input type="date" id="admRekapDate" class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors">
-          <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-all" onclick="loadAdminRekap()" id="btnAdminRefreshRekap">
+          <input type="date" id="admRekapDate" class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none">
+          <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl" onclick="loadAdminRekap()" id="btnAdminRefreshRekap">
             <i class="fas fa-search mr-1"></i>Lihat
           </button>
         </div>
-        <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm" onclick="downloadRekapCSV()" id="btnDownloadHarian">
-          <i class="fas fa-file-csv mr-1"></i>Download CSV Harian
-        </button>
+        <div class="flex gap-2 mb-2">
+          <select id="filterKelasAdmin" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none"></select>
+          <select id="filterStatusAdmin" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none">
+            <option value="">Semua Status</option>
+            <option value="H">Hadir</option>
+            <option value="S">Sakit</option>
+            <option value="I">Izin</option>
+            <option value="A">Alpa</option>
+            <option value="">Belum Absen</option>
+          </select>
+        </div>
       </div>
       <div class="grid grid-cols-5 gap-2 mb-4">
-        <div class="bg-blue-50 p-3 rounded-lg text-center border border-blue-200"><p class="text-xs text-blue-600 font-medium">Hadir</p><p class="text-xl font-bold text-blue-700" id="admRekapHadir">0</p></div>
-        <div class="bg-amber-50 p-3 rounded-lg text-center border border-amber-200"><p class="text-xs text-amber-600 font-medium">Sakit</p><p class="text-xl font-bold text-amber-700" id="admRekapSakit">0</p></div>
-        <div class="bg-sky-50 p-3 rounded-lg text-center border border-sky-200"><p class="text-xs text-sky-600 font-medium">Izin</p><p class="text-xl font-bold text-sky-700" id="admRekapIzin">0</p></div>
-        <div class="bg-red-50 p-3 rounded-lg text-center border border-red-200"><p class="text-xs text-red-600 font-medium">Alpa</p><p class="text-xl font-bold text-red-700" id="admRekapAlpa">0</p></div>
-        <div class="bg-gray-50 p-3 rounded-lg text-center border border-gray-200"><p class="text-xs text-gray-600 font-medium">Belum</p><p class="text-xl font-bold text-gray-700" id="admRekapBelum">0</p></div>
+        <div class="bg-blue-50 p-3 rounded-lg text-center border border-blue-200"><p class="text-xs text-blue-600 font-medium">H</p><p class="text-xl font-bold text-blue-700" id="admRekapHadir">0</p></div>
+        <div class="bg-amber-50 p-3 rounded-lg text-center border border-amber-200"><p class="text-xs text-amber-600 font-medium">S</p><p class="text-xl font-bold text-amber-700" id="admRekapSakit">0</p></div>
+        <div class="bg-sky-50 p-3 rounded-lg text-center border border-sky-200"><p class="text-xs text-sky-600 font-medium">I</p><p class="text-xl font-bold text-sky-700" id="admRekapIzin">0</p></div>
+        <div class="bg-red-50 p-3 rounded-lg text-center border border-red-200"><p class="text-xs text-red-600 font-medium">A</p><p class="text-xl font-bold text-red-700" id="admRekapAlpa">0</p></div>
+        <div class="bg-gray-50 p-3 rounded-lg text-center border border-gray-200"><p class="text-xs text-gray-600 font-medium">Blm</p><p class="text-xl font-bold text-gray-700" id="admRekapBelum">0</p></div>
       </div>
-      <div class="flex gap-2 mb-3">
-        <select id="filterKelasAdmin" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none"><option value="">-- Semua Kelas --</option></select>
-        <select id="filterStatusAdmin" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none">
-          <option value="">-- Semua Status --</option>
-          <option value="Hadir">Hadir</option>
-          <option value="Sakit">Sakit</option>
-          <option value="Izin">Izin</option>
-          <option value="Alpa">Alpa</option>
-          <option value="Belum Absen">Belum Absen</option>
-        </select>
-      </div>
-      <p class="text-xs text-gray-500 mb-2"><i class="fas fa-info-circle mr-1"></i>Klik baris siswa untuk mengedit status</p>
-      <div class="max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl">
+      <div class="max-h-64 overflow-y-auto custom-scrollbar border border-gray-200 rounded-xl mb-3">
         <table class="w-full text-sm">
-          <thead class="bg-gray-100 sticky top-0"><tr><th class="text-left p-3 w-10">No</th><th class="text-left p-3">Nama</th><th class="text-left p-3">Kelas</th><th class="text-center p-3 w-24">Status</th><th class="text-center p-3 w-16">Aksi</th></tr></thead>
+          <thead class="bg-gray-100 sticky top-0"><tr><th class="text-left p-3 w-10">No</th><th class="text-left p-3">Nama</th><th class="text-left p-3">Kelas</th><th class="text-center p-3 w-20">Status</th><th class="text-center p-3 w-12">Edit</th></tr></thead>
           <tbody id="tableRekapBody"></tbody>
         </table>
       </div>
-      <p class="text-xs text-gray-500 mt-2 text-center">Total: <span id="totalRekapDisplay">0</span> siswa</p>
+      <p class="text-xs text-gray-500 text-center mb-3">Total: <span id="totalRekapDisplay">0</span> siswa</p>
 
       <!-- Edit Panel -->
-      <div id="editStatusPanel" class="hidden mt-4 bg-amber-50 rounded-xl p-4 border border-amber-200">
+      <div id="editStatusPanel" class="hidden mt-4 bg-amber-50 rounded-xl p-4 border border-amber-200 mb-4">
         <div class="flex items-center justify-between mb-3">
-          <h5 class="font-semibold text-amber-800"><i class="fas fa-edit mr-2"></i>Edit Status Absensi</h5>
-          <button onclick="closeEditPanel()" class="text-amber-600 hover:text-amber-800"><i class="fas fa-times"></i></button>
+          <h5 class="font-semibold text-amber-800"><i class="fas fa-edit mr-2"></i>Edit Status</h5>
+          <button onclick="closeEditPanel()" class="text-amber-600"><i class="fas fa-times"></i></button>
         </div>
-        <div class="bg-white rounded-lg p-3 mb-3">
-          <p class="text-sm"><strong>Siswa:</strong> <span id="editNamaSiswa"></span></p>
-          <p class="text-sm"><strong>NIS:</strong> <span id="editNisSiswa"></span></p>
-          <p class="text-sm"><strong>Kelas:</strong> <span id="editKelasSiswa"></span></p>
-          <p class="text-sm"><strong>Status Saat Ini:</strong> <span id="editStatusLama" class="font-semibold"></span></p>
+        <div class="bg-white rounded-lg p-3 mb-3 text-sm">
+          <p><strong>Siswa:</strong> <span id="editNamaSiswa"></span></p>
+          <p><strong>NIS:</strong> <span id="editNisSiswa"></span></p>
+          <p><strong>Status Saat Ini:</strong> <span id="editStatusLama" class="font-semibold"></span></p>
         </div>
         <input type="hidden" id="editNisInput">
-        <input type="hidden" id="editKelasInput">
         <div class="flex gap-2">
           <select id="editStatusBaru" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none">
-            <option value="Hadir">✅ Hadir</option>
-            <option value="Sakit">🤒 Sakit</option>
-            <option value="Izin">📋 Izin</option>
-            <option value="Alpa">❌ Alpa</option>
-            <option value="Belum Absen">⏳ Belum Absen (Kosongkan)</option>
+            <option value="H">✅ Hadir</option>
+            <option value="S">🤒 Sakit</option>
+            <option value="I">📋 Izin</option>
+            <option value="A">❌ Alpa</option>
+            <option value="">⏳ Kosongkan</option>
           </select>
           <button class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-sm" onclick="saveEditStatus()" id="btnSaveEdit">
             <i class="fas fa-save mr-1"></i>Simpan
@@ -663,13 +560,21 @@
         <p id="editStatusResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
       </div>
 
-      <!-- Hapus Data -->
-      <div class="mt-4 bg-red-50 rounded-xl p-4 border border-red-200">
+      <!-- Download & Hapus -->
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <button class="py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm" onclick="downloadRekapCSV()">
+          <i class="fas fa-file-csv mr-1"></i>CSV Harian
+        </button>
+        <button class="py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm" onclick="downloadAdminExcelBulanan()">
+          <i class="fas fa-file-excel mr-1"></i>Excel Bulanan
+        </button>
+      </div>
+      <div class="bg-red-50 rounded-xl p-4 border border-red-200">
         <h5 class="font-semibold text-red-800 mb-2"><i class="fas fa-trash-alt mr-2"></i>Hapus Data Absensi</h5>
-        <p class="text-xs text-red-600 mb-3">⚠️ Menghapus data tidak dapat dikembalikan!</p>
+        <p class="text-xs text-red-600 mb-3">⚠️ Tidak dapat dikembalikan!</p>
         <div class="flex gap-2">
-          <select id="hapusKelas" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none"><option value="">-- Semua Kelas --</option></select>
-          <input type="date" id="hapusTanggal" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none">
+          <select id="hapusKelas" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none"></select>
+          <input type="month" id="hapusBulan" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none">
           <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm" onclick="hapusDataAbsensi()" id="btnHapusData">
             <i class="fas fa-trash mr-1"></i>Hapus
           </button>
@@ -680,29 +585,24 @@
 
     <!-- Tab Auto Alpa -->
     <div id="admTabAutoalpa" class="admin-panel hidden">
-
-      <!-- SCHEDULER CARD -->
+      <!-- Scheduler Card -->
       <div class="scheduler-card mb-4" id="schedulerCard">
         <div class="p-5">
           <div class="flex items-center justify-between mb-4">
             <div>
               <h4 class="font-bold text-white flex items-center gap-2">
-                <i class="fas fa-satellite-dish text-amber-400"></i>
-                Auto Trigger Scheduler
+                <i class="fas fa-satellite-dish text-amber-400"></i>Auto Trigger Scheduler
               </h4>
               <p class="text-slate-400 text-xs mt-0.5">Jalankan otomatis di jam yang ditentukan</p>
             </div>
             <span class="sched-badge sched-badge-off" id="schedBadge">
-              <span class="sched-badge-dot"></span>
-              NONAKTIF
+              <span class="sched-badge-dot"></span>NONAKTIF
             </span>
           </div>
-
           <div class="text-center mb-4">
             <div class="scheduler-clock" id="schedClock">00:00:00</div>
             <p class="text-slate-500 text-xs mt-1" id="schedDate">—</p>
           </div>
-
           <div class="next-trigger-badge mb-4" id="nextTriggerBadge">
             <i class="fas fa-hourglass-half text-amber-400 text-sm"></i>
             <div>
@@ -710,29 +610,15 @@
               <div class="next-trigger-time" id="nextTriggerCountdown">—</div>
             </div>
           </div>
-
           <div class="trigger-timeline" id="triggerTimeline">
-            <div class="trigger-step">
-              <div class="trigger-step-icon pending" id="step1Icon"><i class="fas fa-clock"></i></div>
-              <div class="trigger-step-label">MENUNGGU</div>
-            </div>
+            <div class="trigger-step"><div class="trigger-step-icon pending" id="step1Icon"><i class="fas fa-clock"></i></div><div class="trigger-step-label">MENUNGGU</div></div>
             <div class="trigger-line" id="line1"></div>
-            <div class="trigger-step">
-              <div class="trigger-step-icon pending" id="step2Icon"><i class="fas fa-bolt"></i></div>
-              <div class="trigger-step-label">AUTO ALPA</div>
-            </div>
+            <div class="trigger-step"><div class="trigger-step-icon pending" id="step2Icon"><i class="fas fa-bolt"></i></div><div class="trigger-step-label">AUTO ALPA</div></div>
             <div class="trigger-line" id="line2"></div>
-            <div class="trigger-step">
-              <div class="trigger-step-icon pending" id="step3Icon"><i class="fas fa-user-friends"></i></div>
-              <div class="trigger-step-label">WA ORTU</div>
-            </div>
+            <div class="trigger-step"><div class="trigger-step-icon pending" id="step3Icon"><i class="fas fa-user-friends"></i></div><div class="trigger-step-label">WA ORTU</div></div>
             <div class="trigger-line" id="line3"></div>
-            <div class="trigger-step">
-              <div class="trigger-step-icon pending" id="step4Icon"><i class="fas fa-chalkboard-teacher"></i></div>
-              <div class="trigger-step-label">WA WALI</div>
-            </div>
+            <div class="trigger-step"><div class="trigger-step-icon pending" id="step4Icon"><i class="fas fa-chalkboard-teacher"></i></div><div class="trigger-step-label">WA WALI</div></div>
           </div>
-
           <div class="bg-black/30 rounded-xl p-4 mb-4 space-y-3">
             <div class="flex items-center gap-3">
               <i class="fas fa-clock text-slate-400 text-sm w-4"></i>
@@ -750,53 +636,36 @@
               <i class="fas fa-calendar-week text-slate-400 text-sm w-4"></i>
               <label class="text-slate-300 text-xs font-semibold flex-1">HARI AKTIF</label>
               <div class="flex gap-1" id="dayButtons">
-                <button onclick="toggleDay(1)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="1">SEN</button>
-                <button onclick="toggleDay(2)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="2">SEL</button>
-                <button onclick="toggleDay(3)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="3">RAB</button>
-                <button onclick="toggleDay(4)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="4">KAM</button>
-                <button onclick="toggleDay(5)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="5">JUM</button>
-                <button onclick="toggleDay(6)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="6">SAB</button>
+                <button onclick="toggleDay(1)" class="day-btn" data-day="1">SEN</button>
+                <button onclick="toggleDay(2)" class="day-btn" data-day="2">SEL</button>
+                <button onclick="toggleDay(3)" class="day-btn" data-day="3">RAB</button>
+                <button onclick="toggleDay(4)" class="day-btn" data-day="4">KAM</button>
+                <button onclick="toggleDay(5)" class="day-btn" data-day="5">JUM</button>
+                <button onclick="toggleDay(6)" class="day-btn" data-day="6">SAB</button>
               </div>
             </div>
           </div>
-
           <button id="btnToggleSched" onclick="toggleScheduler()"
             class="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200">
             <i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER
           </button>
-
           <div class="mt-4">
             <div class="flex items-center justify-between mb-2">
               <p class="text-slate-400 text-xs font-semibold"><i class="fas fa-terminal mr-1"></i>LOG AKTIVITAS</p>
               <button onclick="clearSchedLog()" class="text-slate-600 hover:text-slate-400 text-xs"><i class="fas fa-trash-alt"></i></button>
             </div>
             <div class="sched-log" id="schedLog">
-              <span class="log-info">» Scheduler siap. Aktifkan untuk mulai memantau waktu.</span>
+              <span class="log-info">» Scheduler siap.</span>
             </div>
           </div>
-        </div>
-      </div>
-      <!-- END SCHEDULER CARD -->
-
-      <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200 mb-4">
-        <div class="flex items-center gap-3 mb-3">
-          <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center"><i class="fas fa-clock text-xl text-orange-600"></i></div>
-          <div><h4 class="font-bold text-orange-800">Fitur Auto Alpa</h4><p class="text-sm text-orange-600">Otomatis tandai siswa yang belum absen pagi sebagai Alpa</p></div>
-        </div>
-        <div class="bg-white rounded-lg p-3 border border-orange-100">
-          <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-            <li>Siswa yang <strong>BELUM ABSEN</strong> akan ditandai <span class="text-red-600 font-semibold">Alpa</span></li>
-            <li>Siswa yang sudah diinput status <strong>TIDAK AKAN DIUBAH</strong></li>
-            <li>Hanya berjalan pada hari yang dipilih</li>
-          </ul>
         </div>
       </div>
 
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-hand-pointer text-blue-500 mr-2"></i>Jalankan Manual</h5>
         <div class="flex gap-2">
-          <button class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-sm" onclick="simulasiAutoAlpa()" id="btnSimulasiAlpa"><i class="fas fa-eye mr-1"></i>Preview (Simulasi)</button>
-          <button class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm" onclick="jalankanAutoAlpaSekarang()" id="btnJalankanAlpa"><i class="fas fa-bolt mr-1"></i>Jalankan Sekarang</button>
+          <button class="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-sm" onclick="simulasiAutoAlpa()" id="btnSimulasiAlpa"><i class="fas fa-eye mr-1"></i>Preview</button>
+          <button class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm" onclick="jalankanAutoAlpaSekarang()" id="btnJalankanAlpa"><i class="fas fa-bolt mr-1"></i>Jalankan</button>
         </div>
         <div id="autoAlpaResult" class="mt-3 hidden">
           <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
@@ -809,14 +678,11 @@
       <!-- Kirim WA Manual -->
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-1 flex items-center gap-2">
-          <i class="fas fa-paper-plane text-green-500"></i>
-          Kirim Notifikasi WA
+          <i class="fas fa-paper-plane text-green-500"></i>Kirim Notifikasi WA
           <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
             <span class="wa-status-dot wa-status-online"></span>Fonnte
           </span>
         </h5>
-        <p class="text-xs text-gray-500 mb-3">Token: <code class="bg-gray-100 px-1 rounded font-mono">JpheArK4npgMrgZN8d5v</code></p>
-
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
           <div class="flex items-center justify-between">
             <p class="text-xs font-semibold text-gray-700"><i class="fas fa-plug mr-1"></i>Cek Koneksi Fonnte</p>
@@ -826,7 +692,6 @@
           </div>
           <p id="statusFonnte" class="text-xs mt-2 text-gray-500">Belum dicek</p>
         </div>
-
         <div class="flex gap-2 mb-3">
           <input type="date" id="waKirimTanggal" class="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none">
           <button class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg text-sm" onclick="previewWAKirim()" id="btnPreviewWA">
@@ -843,7 +708,6 @@
           </button>
         </div>
         <p id="waKirimResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
-
         <div id="waProgressContainer" class="hidden mt-3">
           <div class="flex justify-between text-xs text-gray-600 mb-1">
             <span id="waProgressLabel">Mengirim...</span>
@@ -858,7 +722,7 @@
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-undo text-purple-500 mr-2"></i>Reset Status Alpa</h5>
         <div class="grid grid-cols-2 gap-2 mb-3">
-          <select id="resetKelas" class="px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none"><option value="">-- Pilih Kelas --</option></select>
+          <select id="resetKelas" class="px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none"></select>
           <input type="date" id="resetTanggal" class="px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none">
         </div>
         <button class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-sm" onclick="resetAlpaKelas()" id="btnResetAlpa">
@@ -875,20 +739,16 @@
 </section>
 
 </div>
-
 <footer class="bg-gray-50 py-4 text-center border-t border-gray-200">
-  <p class="text-xs text-gray-500">© 2025 SIPAGI · Sistem Presensi Pagi · <span class="font-semibold text-blue-600">SMAN 10 Pinrang</span></p>
+  <p class="text-xs text-gray-500">© 2025 SIPAGI · <span class="font-semibold text-blue-600">SMAN 10 Pinrang</span></p>
 </footer>
 </div>
 </div>
 
 <script>
-// ============================================
-// FONNTE CONFIG
-// ============================================
-// ============================================
+// ============================================================
 // FONNTE CONFIG - via Supabase Edge Function
-// ============================================
+// ============================================================
 const FONNTE_TOKEN = 'V7PRFFCipJkU4s8mzjSQ';
 const FONNTE_PROXY_URL = 'https://pgrcbuwaciukbpfxupjz.supabase.co/functions/v1/fonnte-proxy';
 
@@ -901,12 +761,8 @@ async function kirimWA(target, pesan) {
     });
     if (!res.ok) { console.error('❌ Proxy HTTP error:', res.status); return false; }
     const result = await res.json();
-    console.log('✅ WA terkirim ke', target, result.data);
     return result.ok === true;
-  } catch (err) {
-    console.error('❌ kirimWA error:', err);
-    return false;
-  }
+  } catch (err) { console.error('❌ kirimWA error:', err); return false; }
 }
 
 async function cekKoneksiFonnte() {
@@ -922,10 +778,8 @@ async function cekKoneksiFonnte() {
       body: JSON.stringify({ action: 'validate' })
     });
     if (!res.ok) {
-      statusEl.innerHTML = `<span class="text-red-600">❌ Edge Function error HTTP ${res.status}. Pastikan sudah di-deploy dengan nama <b>fonnte-proxy</b>.</span>`;
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
-      return;
+      statusEl.innerHTML = `<span class="text-red-600">❌ Edge Function error HTTP ${res.status}.</span>`;
+      btn.disabled = false; btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi'; return;
     }
     const result = await res.json();
     const data = result.data || {};
@@ -934,14 +788,17 @@ async function cekKoneksiFonnte() {
     } else if (data.status === false && data.reason === 'target required') {
       statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Token valid dan device aktif.`;
     } else if (data.status === false) {
-      statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device Fonnte offline.</span>`;
+      statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
+    } else {
+      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Respons tidak terduga — coba kirim WA langsung.</span>`;
     }
   } catch (err) {
-    statusEl.innerHTML = `<span class="text-red-600">❌ Gagal menghubungi Edge Function: ${sanitizeHTML(err.message)}</span>`;
+    statusEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
 }
+
 function formatHP(hp) {
   if (!hp) return null;
   let h = hp.toString().replace(/\D/g, '');
@@ -953,9 +810,9 @@ function formatHP(hp) {
   return h;
 }
 
-// ============================================
+// ============================================================
 // SUPABASE
-// ============================================
+// ============================================================
 const SUPABASE_URL = 'https://pgrcbuwaciukbpfxupjz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncmNidXdhY2l1a2JwZnh1cGp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyOTQ4MzQsImV4cCI6MjA5Mjg3MDgzNH0.unozqM7zfsLCyNA6e57TnGdCyoRdR6DDKVQBmXmHR1c';
 const HEADERS = {
@@ -966,62 +823,130 @@ const HEADERS = {
 };
 const T = { siswa: 'siswa', guru: 'guru', absensi: 'absensi' };
 
-async function sbSelect(table, params = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { headers: { ...HEADERS, 'Prefer': 'return=representation' } });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal mengambil data'); }
+async function sbSelect(table, params='') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { headers: HEADERS });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal ambil data'); }
   return res.json();
 }
 async function sbInsert(table, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal menyimpan data'); }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, { method:'POST', headers: HEADERS, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal simpan'); }
   return res.json();
 }
 async function sbUpdate(table, params, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { method: 'PATCH', headers: HEADERS, body: JSON.stringify(body) });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal update data'); }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { method:'PATCH', headers: HEADERS, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal update'); }
+  return res.json();
+}
+async function sbUpsert(table, body, onConflict) {
+  const headers = { ...HEADERS, 'Prefer': `return=representation,resolution=merge-duplicates` };
+  const url = `${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`;
+  const res = await fetch(url, { method:'POST', headers, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal upsert'); }
   return res.json();
 }
 async function sbDelete(table, params) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { method: 'DELETE', headers: HEADERS });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal hapus data'); }
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { method:'DELETE', headers: HEADERS });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal hapus'); }
   return true;
 }
 
-// ============================================
+// ============================================================
+// PIVOT HELPERS
+// ============================================================
+// Ambil nama kolom dari tanggal, misal '2026-04-28' -> 'tgl_28'
+function tglCol(dateStr) {
+  const d = new Date(dateStr);
+  return 'tgl_' + String(d.getDate()).padStart(2, '0');
+}
+// Ambil bulan dari tanggal, misal '2026-04-28' -> '2026-04'
+function toBulan(dateStr) { return dateStr.slice(0, 7); }
+// Semua kolom tanggal
+const TGL_COLS = Array.from({length:31}, (_,i) => 'tgl_' + String(i+1).padStart(2,'0'));
+
+// Ambil status siswa untuk tanggal tertentu
+async function getStatusHarian(nis, tanggal) {
+  const bulan = toBulan(tanggal);
+  const col = tglCol(tanggal);
+  const data = await sbSelect(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&bulan=eq.${bulan}&select=${col}&limit=1`);
+  if (!data || !data.length) return null;
+  return data[0][col] || null;
+}
+
+// Set status siswa untuk tanggal tertentu (upsert pivot row)
+async function setStatusHarian(nis, nama, kelas, tanggal, status) {
+  const bulan = toBulan(tanggal);
+  const col = tglCol(tanggal);
+  const body = { nis, nama, kelas, bulan, [col]: status || null };
+  await sbUpsert(T.absensi, body, 'nis,bulan');
+}
+
+// Ambil semua status untuk satu kelas pada tanggal tertentu
+async function getRekapHarian(kelas, tanggal) {
+  const bulan = toBulan(tanggal);
+  const col = tglCol(tanggal);
+  const semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
+  const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&bulan=eq.${bulan}&select=nis,${col}`);
+  const absenMap = {};
+  (absensi || []).forEach(a => { absenMap[a.nis] = a[col] || null; });
+  return (semua || []).map(s => ({ ...s, status: absenMap[s.nis] || null }));
+}
+
+// Ambil data bulan lengkap untuk satu kelas (pivot)
+async function getDataBulanan(kelas, bulan) {
+  const semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
+  const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&bulan=eq.${bulan}`);
+  const absenMap = {};
+  (absensi || []).forEach(a => { absenMap[a.nis] = a; });
+  return { siswa: semua || [], absenMap };
+}
+
+// ============================================================
+// STATUS LABELS
+// ============================================================
+const STATUS_LABEL = { H:'Hadir', S:'Sakit', I:'Izin', A:'Alpa', null:'Belum Absen', '':'Belum Absen' };
+const STATUS_FULL = { H:'✅ Hadir', S:'🤒 Sakit', I:'📋 Izin', A:'❌ Alpa', null:'⏳ Belum Absen', '':'⏳ Belum Absen' };
+
+function statusBadge(s) {
+  const cls = { H:'status-H', S:'status-S', I:'status-I', A:'status-A' };
+  const lbl = { H:'H', S:'S', I:'I', A:'A' };
+  if (!s) return '<span class="text-gray-400 text-xs">—</span>';
+  return `<span class="${cls[s] || ''}">${lbl[s] || s}</span>`;
+}
+
+// ============================================================
 // STATE
-// ============================================
+// ============================================================
 const AppState = {
   scanner: null, qrInterval: null, countdown: 20,
   activeTeacher: '', activeClass: '',
-  waliData: null, adminRekapData: null,
+  waliData: null, adminRekapData: null, allSiswaCache: null,
   searchTimeout: null, logoClickCount: 0, logoClickTimer: null,
-  schedulerActive: false,
-  schedulerInterval: null,
-  clockInterval: null,
-  schedWASend: true,
-  activeDays: new Set([1,2,3,4,5,6]),
+  schedulerActive: false, schedulerInterval: null, clockInterval: null,
+  schedWASend: true, activeDays: new Set([1,2,3,4,5,6]),
   lastTriggeredDate: null
 };
 
-// ============================================
+// ============================================================
 // UTILITY
-// ============================================
+// ============================================================
 function sanitizeHTML(str) {
   if (str === null || str === undefined) return '';
   const d = document.createElement('div'); d.textContent = String(str); return d.innerHTML;
 }
-function showMessage(id, msg, type = 'error') {
+function showMessage(id, msg, type='error') {
   const el = document.getElementById(id); if (!el) return;
-  const c = { error: 'text-red-600', success: 'text-blue-600', info: 'text-blue-600', warning: 'text-amber-600' };
+  const c = { error:'text-red-600', success:'text-blue-600', info:'text-blue-600', warning:'text-amber-600' };
   el.className = 'text-sm text-center mt-4 ' + (c[type] || c.error); el.textContent = msg;
 }
 function togglePassword(id) {
-  const inp = document.getElementById(id); const ic = inp.nextElementSibling.querySelector('i');
+  const inp = document.getElementById(id);
+  const ic = inp.nextElementSibling.querySelector('i');
   inp.type = inp.type === 'password' ? 'text' : 'password';
   ic.classList.toggle('fa-eye'); ic.classList.toggle('fa-eye-slash');
 }
 function formatDateID(d) {
-  return new Date(d).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 }
 function setButtonLoading(id, loading) {
   const b = document.getElementById(id); if (!b) return;
@@ -1030,19 +955,15 @@ function setButtonLoading(id, loading) {
   else if (b.dataset.orig) { b.innerHTML = b.dataset.orig; }
 }
 function todayStr() { return new Date().toISOString().split('T')[0]; }
-function nowStr() {
-  const n = new Date();
-  return n.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-function updateWAProgress(current, total, label = '') {
-  const container = document.getElementById('waProgressContainer');
+function nowStr() { return new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
+function updateWAProgress(current, total, label='') {
+  const c = document.getElementById('waProgressContainer');
   const bar = document.getElementById('waProgressBar');
   const countEl = document.getElementById('waProgressCount');
   const labelEl = document.getElementById('waProgressLabel');
-  if (!container) return;
-  container.classList.remove('hidden');
-  const pct = total > 0 ? Math.round((current / total) * 100) : 0;
-  bar.style.width = pct + '%';
+  if (!c) return;
+  c.classList.remove('hidden');
+  bar.style.width = (total > 0 ? Math.round(current/total*100) : 0) + '%';
   countEl.textContent = `${current}/${total}`;
   if (label) labelEl.textContent = label;
 }
@@ -1051,240 +972,9 @@ function hideWAProgress() {
   if (c) c.classList.add('hidden');
 }
 
-// ============================================
-// SCHEDULER ENGINE
-// ============================================
-function schedLog(msg, type = 'info') {
-  const box = document.getElementById('schedLog');
-  if (!box) return;
-  const now = new Date().toLocaleTimeString('id-ID');
-  const cls = { info: 'log-info', success: 'log-success', error: 'log-error', warn: 'log-warn' };
-  const line = document.createElement('div');
-  line.innerHTML = `<span class="${cls[type] || 'log-info'}">[${now}] ${msg}</span>`;
-  box.appendChild(line);
-  box.scrollTop = box.scrollHeight;
-}
-function clearSchedLog() {
-  const box = document.getElementById('schedLog');
-  if (box) box.innerHTML = '<span class="log-info">» Log dibersihkan.</span>';
-}
-function toggleDay(day) {
-  if (AppState.activeDays.has(day)) AppState.activeDays.delete(day);
-  else AppState.activeDays.add(day);
-  renderDayButtons();
-}
-function renderDayButtons() {
-  document.querySelectorAll('.day-btn').forEach(btn => {
-    const d = parseInt(btn.dataset.day);
-    if (AppState.activeDays.has(d)) {
-      btn.className = 'day-btn px-2 py-1 rounded text-xs font-bold bg-green-500 text-white';
-    } else {
-      btn.className = 'day-btn px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-400';
-    }
-  });
-}
-function toggleSchedWA() {
-  AppState.schedWASend = !AppState.schedWASend;
-  const track = document.getElementById('schedWAToggle');
-  if (AppState.schedWASend) track.classList.add('on');
-  else track.classList.remove('on');
-}
-function startLiveClock() {
-  if (AppState.clockInterval) clearInterval(AppState.clockInterval);
-  AppState.clockInterval = setInterval(() => {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const clockEl = document.getElementById('schedClock');
-    if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss}`;
-    const dateEl = document.getElementById('schedDate');
-    if (dateEl) {
-      const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-      dateEl.textContent = `${days[now.getDay()]}, ${now.toLocaleDateString('id-ID')}`;
-    }
-    if (AppState.schedulerActive) updateNextTriggerCountdown(now);
-  }, 1000);
-}
-function updateNextTriggerCountdown(now) {
-  const schedTimeVal = document.getElementById('schedTime').value || '08:00';
-  const [targetH, targetM] = schedTimeVal.split(':').map(Number);
-  const target = new Date(now);
-  target.setHours(targetH, targetM, 0, 0);
-  if (now >= target) target.setDate(target.getDate() + 1);
-  let maxTry = 7;
-  while (maxTry-- > 0) {
-    const dow = target.getDay();
-    if (AppState.activeDays.has(dow)) break;
-    target.setDate(target.getDate() + 1);
-  }
-  const diffMs = target - now;
-  const diffH = Math.floor(diffMs / 3600000);
-  const diffM = Math.floor((diffMs % 3600000) / 60000);
-  const diffS = Math.floor((diffMs % 60000) / 1000);
-  const el = document.getElementById('nextTriggerCountdown');
-  if (el) {
-    if (diffH > 0) el.textContent = `${diffH}j ${diffM}m ${diffS}d`;
-    else el.textContent = `${diffM}m ${diffS}d`;
-  }
-}
-function checkTriggerTime() {
-  const now = new Date();
-  const dow = now.getDay();
-  if (!AppState.activeDays.has(dow)) return;
-  const schedTimeVal = document.getElementById('schedTime').value || '08:00';
-  const [targetH, targetM] = schedTimeVal.split(':').map(Number);
-  const isTargetHour = now.getHours() === targetH;
-  const isTargetMin  = now.getMinutes() === targetM;
-  const todayKey = todayStr();
-  if (isTargetHour && isTargetMin && AppState.lastTriggeredDate !== todayKey) {
-    AppState.lastTriggeredDate = todayKey;
-    schedLog('🔔 Waktu trigger tercapai! Menjalankan Auto Alpa...', 'warn');
-    runScheduledAutoAlpa(todayKey);
-  }
-}
-async function runScheduledAutoAlpa(tanggal) {
-  setStepState(1, 'running');
-  schedLog('⚡ Memulai Auto Alpa untuk: ' + tanggal, 'info');
-  try {
-    const waktu = nowStr();
-    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
-    const absenNis = new Set((absen || []).map(a => a.nis));
-    const belumAbsen = (semua || []).filter(s => !absenNis.has(s.nis));
-    setStepState(1, 'done'); setLineState(1, 'done');
-    setStepState(2, 'running');
-    let count = 0;
-    for (const s of belumAbsen) {
-      await sbInsert(T.absensi, { nis: s.nis, nama: s.nama, kelas: s.kelas, tanggal, status: 'Alpa', waktu, petugas: 'Auto Trigger' });
-      count++;
-    }
-    schedLog(`✅ Auto Alpa selesai: ${count} siswa ditandai Alpa`, 'success');
-    setStepState(2, 'done'); setLineState(2, 'done');
-    const rekapDate = document.getElementById('admRekapDate');
-    if (rekapDate && rekapDate.value === tanggal) loadAdminRekap();
-    if (AppState.schedWASend) {
-      setStepState(3, 'running');
-      schedLog('📲 Mengirim WA ke orang tua siswa Alpa...', 'info');
-      const alpaList = belumAbsen;
-      let waSent = 0;
-      for (const s of alpaList) {
-        const hp = formatHP(s.hp_ortu);
-        if (!hp) continue;
-        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nKami informasikan bahwa putra/putri Bapak/Ibu tercatat *TIDAK HADIR (ALPA)* pada kegiatan pagi hari:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi kepada wali kelas jika ada keterangan.\n\nTerima kasih.\n_SIPAGI - Sistem Presensi Pagi_`;
-        await kirimWA(hp, pesan);
-        waSent++;
-        await new Promise(r => setTimeout(r, 1200));
-      }
-      schedLog(`📨 WA ortu: ${waSent} terkirim`, 'success');
-      setStepState(3, 'done'); setLineState(3, 'done');
-      setStepState(4, 'running');
-      schedLog('📋 Mengirim rekap ke wali kelas...', 'info');
-      const semuaSiswa = semua;
-      const absenBaru = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
-      const absenMapBaru = {};
-      (absenBaru || []).forEach(a => { absenMapBaru[a.nis] = a; });
-      const byKelas = {};
-      semuaSiswa.forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas] = []; byKelas[s.kelas].push(s); });
-      const semuaGuru = await sbSelect(T.guru, `?role=eq.WALI`);
-      const waliList = (semuaGuru || []).filter(g => g.kelas_wali && formatHP(g.hp));
-      let waliSent = 0;
-      for (const guru of waliList) {
-        const hp = formatHP(guru.hp);
-        const siswakelas = byKelas[guru.kelas_wali] || [];
-        let hadir = 0, sakit = 0, izin = 0, alpa = 0, belum = 0;
-        const namaAlpa = [];
-        siswakelas.forEach(s => {
-          const a = absenMapBaru[s.nis];
-          const st = a ? a.status : 'Belum Absen';
-          if (st === 'Hadir') hadir++;
-          else if (st === 'Sakit') sakit++;
-          else if (st === 'Izin') izin++;
-          else if (st === 'Alpa') { alpa++; namaAlpa.push(s.nama); }
-          else belum++;
-        });
-        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi Harian*\n\n📅 Tanggal: ${tanggal}\n🏫 Kelas: ${guru.kelas_wali}\n👤 Wali Kelas: ${guru.nama}\n\n📊 *Rekap:*\n✅ Hadir: ${hadir}\n🤒 Sakit: ${sakit}\n📋 Izin: ${izin}\n❌ Alpa: ${alpa}\n⏳ Belum Absen: ${belum}\n📌 Total: ${siswakelas.length}${namaAlpa.length > 0 ? '\n\n❌ *Siswa Alpa:*\n' + namaAlpa.map(n => '• ' + n).join('\n') : ''}\n\n_Dikirim otomatis oleh SIPAGI Scheduler_`;
-        await kirimWA(hp, pesan);
-        waliSent++;
-        await new Promise(r => setTimeout(r, 1200));
-      }
-      schedLog(`📨 WA wali kelas: ${waliSent} terkirim`, 'success');
-      setStepState(4, 'done'); setLineState(3, 'done');
-      schedLog('🎉 Semua tugas scheduler selesai!', 'success');
-    } else {
-      setStepState(3, 'done'); setLineState(3, 'done');
-      setStepState(4, 'done');
-      schedLog('ℹ️ Kirim WA dinonaktifkan, selesai tanpa WA.', 'info');
-    }
-  } catch (err) {
-    schedLog('❌ Error: ' + err.message, 'error');
-    [1,2,3,4].forEach(i => setStepState(i, 'pending'));
-  }
-}
-function setStepState(step, state) {
-  const el = document.getElementById(`step${step}Icon`);
-  if (!el) return;
-  el.className = `trigger-step-icon ${state}`;
-}
-function setLineState(line, state) {
-  const el = document.getElementById(`line${line}`);
-  if (!el) return;
-  if (state === 'done') el.classList.add('done');
-  else el.classList.remove('done');
-}
-function resetTimeline() {
-  [1,2,3,4].forEach(i => setStepState(i, 'pending'));
-  [1,2,3].forEach(i => setLineState(i, ''));
-}
-function toggleScheduler() {
-  if (AppState.schedulerActive) {
-    AppState.schedulerActive = false;
-    if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
-    const card = document.getElementById('schedulerCard');
-    const badge = document.getElementById('schedBadge');
-    const btn = document.getElementById('btnToggleSched');
-    const clock = document.getElementById('schedClock');
-    const nextBadge = document.getElementById('nextTriggerBadge');
-    card.classList.remove('scheduler-active');
-    badge.className = 'sched-badge sched-badge-off';
-    badge.innerHTML = '<span class="sched-badge-dot"></span>NONAKTIF';
-    btn.className = 'w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200';
-    btn.innerHTML = '<i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER';
-    clock.classList.remove('active-glow');
-    nextBadge.style.opacity = '0.5';
-    resetTimeline();
-    schedLog('⏹ Scheduler dinonaktifkan.', 'warn');
-    document.getElementById('nextTriggerCountdown').textContent = '—';
-  } else {
-    const schedTime = document.getElementById('schedTime').value;
-    if (!schedTime) { alert('Pilih jam trigger terlebih dahulu!'); return; }
-    if (AppState.activeDays.size === 0) { alert('Pilih minimal 1 hari aktif!'); return; }
-    AppState.schedulerActive = true;
-    AppState.lastTriggeredDate = null;
-    AppState.schedulerInterval = setInterval(checkTriggerTime, 5000);
-    const card = document.getElementById('schedulerCard');
-    const badge = document.getElementById('schedBadge');
-    const btn = document.getElementById('btnToggleSched');
-    const clock = document.getElementById('schedClock');
-    const nextBadge = document.getElementById('nextTriggerBadge');
-    card.classList.add('scheduler-active');
-    badge.className = 'sched-badge sched-badge-on';
-    badge.innerHTML = '<span class="sched-badge-dot"></span>AKTIF';
-    btn.className = 'w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-red-900 hover:bg-red-800 text-red-200';
-    btn.innerHTML = '<i class="fas fa-stop-circle"></i> NONAKTIFKAN SCHEDULER';
-    clock.classList.add('active-glow');
-    nextBadge.style.opacity = '1';
-    resetTimeline();
-    schedLog(`✅ Scheduler aktif! Trigger jam ${schedTime}`, 'success');
-    schedLog(`📅 Hari aktif: ${[...AppState.activeDays].map(d => ['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(', ')}`, 'info');
-    schedLog(`📲 Kirim WA otomatis: ${AppState.schedWASend ? 'YA' : 'TIDAK'}`, 'info');
-    schedLog('⏳ Memantau waktu...', 'info');
-  }
-}
-
-// ============================================
+// ============================================================
 // NAVIGASI
-// ============================================
+// ============================================================
 function switchRole(role) {
   if (role !== 'siswa' && AppState.scanner) stopStudentScan();
   document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
@@ -1300,9 +990,9 @@ function handleLogoClick() {
   AppState.logoClickTimer = setTimeout(() => { AppState.logoClickCount = 0; }, 1000);
 }
 
-// ============================================
+// ============================================================
 // SISWA - SCAN QR
-// ============================================
+// ============================================================
 function validateNis() {
   const nis = document.getElementById('nisSiswa').value.trim();
   const msg = document.getElementById('msgSiswa');
@@ -1326,10 +1016,7 @@ function startStudentScan() {
     { facingMode: 'environment' },
     { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
     onStudentScanSuccess, () => {}
-  ).catch(err => {
-    alert('Tidak dapat mengakses kamera.\n\nError: ' + err);
-    stopStudentScan();
-  });
+  ).catch(err => { alert('Tidak dapat mengakses kamera.\n' + err); stopStudentScan(); });
 }
 function stopStudentScan() {
   if (AppState.scanner) {
@@ -1344,27 +1031,24 @@ async function onStudentScanSuccess(decodedText) {
   const resDiv = document.getElementById('resultSiswa');
   resDiv.classList.remove('hidden');
   resDiv.className = 'mt-4 p-5 rounded-xl text-center bg-blue-50 border border-blue-200';
-  resDiv.innerHTML = '<i class="fas fa-spinner animate-spin text-3xl text-blue-500 mb-3"></i><p class="text-blue-700 mt-3">Memverifikasi QR Code...</p>';
+  resDiv.innerHTML = '<i class="fas fa-spinner animate-spin text-3xl text-blue-500 mb-3"></i><p class="text-blue-700 mt-3">Memverifikasi...</p>';
   const nis = document.getElementById('nisSiswa').value.trim();
   try {
     if (!decodedText.startsWith('SIPAGI_PAGI|')) throw new Error('QR Code tidak valid!');
     const parts = decodedText.split('|');
     if (parts.length < 3) throw new Error('QR Code tidak lengkap.');
-    const qrTimestamp = parseInt(parts[1]);
+    if (Date.now() - parseInt(parts[1]) > 25000) throw new Error('QR Code sudah kedaluwarsa!');
     const namaGuru = parts[2];
-    const now = Date.now();
-    if (now - qrTimestamp > 25000) throw new Error('QR Code sudah kedaluwarsa!');
     const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
-    if (!siswaList || siswaList.length === 0) throw new Error('NIS tidak ditemukan dalam database.');
+    if (!siswaList || !siswaList.length) throw new Error('NIS tidak ditemukan dalam database.');
     const siswa = siswaList[0];
     const today = todayStr();
-    const existing = await sbSelect(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${today}&limit=1`);
-    if (existing && existing.length > 0) throw new Error(`Anda sudah tercatat ${existing[0].status} hari ini pukul ${existing[0].waktu}.`);
-    const waktu = nowStr();
-    await sbInsert(T.absensi, { nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, tanggal: today, status: 'Hadir', waktu, petugas: namaGuru });
+    const existing = await getStatusHarian(nis, today);
+    if (existing) throw new Error(`Anda sudah tercatat ${STATUS_LABEL[existing]} hari ini.`);
+    await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, today, 'H');
     localStorage.setItem('sipagi_scan_date', today);
     resDiv.className = 'mt-4 p-5 rounded-xl text-center bg-blue-50 border border-blue-200 animate-fade-in';
-    resDiv.innerHTML = `<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-check-circle text-4xl text-blue-500"></i></div><h3 class="text-xl font-bold text-blue-700 mb-2">Berhasil!</h3><p class="text-blue-800 font-semibold">${sanitizeHTML(siswa.nama)}</p><p class="text-blue-600">Kelas: ${sanitizeHTML(siswa.kelas)}</p><p class="text-blue-600">Waktu: ${sanitizeHTML(waktu)}</p><button class="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg" onclick="backToHomeAfterSuccess()"><i class="fas fa-check mr-2"></i>Selesai</button>`;
+    resDiv.innerHTML = `<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-check-circle text-4xl text-blue-500"></i></div><h3 class="text-xl font-bold text-blue-700 mb-2">Berhasil!</h3><p class="text-blue-800 font-semibold">${sanitizeHTML(siswa.nama)}</p><p class="text-blue-600">Kelas: ${sanitizeHTML(siswa.kelas)}</p><p class="text-blue-600">Waktu: ${nowStr()}</p><p class="text-xs text-blue-400 mt-1">Dicatat oleh: ${sanitizeHTML(namaGuru)}</p><button class="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg" onclick="backToHomeAfterSuccess()"><i class="fas fa-check mr-2"></i>Selesai</button>`;
   } catch (err) {
     resDiv.className = 'mt-4 p-5 rounded-xl text-center bg-red-50 border border-red-200 animate-fade-in';
     resDiv.innerHTML = `<div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-times-circle text-4xl text-red-500"></i></div><h3 class="text-xl font-bold text-red-700 mb-2">Gagal</h3><p class="text-red-600">${sanitizeHTML(err.message)}</p><button class="mt-4 px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg" onclick="backToHomeAfterSuccess()"><i class="fas fa-redo mr-2"></i>Coba Lagi</button>`;
@@ -1381,9 +1065,9 @@ function backToHomeAfterSuccess() {
   document.getElementById('msgSiswa').className = 'text-sm text-gray-500 text-center mt-3';
 }
 
-// ============================================
+// ============================================================
 // GURU PIKET
-// ============================================
+// ============================================================
 async function loginPiket(mode) {
   const user = document.getElementById('userGuru').value.trim();
   const pass = document.getElementById('passGuru').value;
@@ -1392,9 +1076,9 @@ async function loginPiket(mode) {
   showMessage('msgGuru', 'Memverifikasi...', 'info');
   try {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
-    if (!data || data.length === 0) throw new Error('Username atau password salah!');
+    if (!data || !data.length) throw new Error('Username atau password salah!');
     const guru = data[0];
-    if (guru.role !== 'GURU' && guru.role !== 'WALI' && guru.role !== 'ADMIN') throw new Error('Akun ini tidak memiliki akses piket!');
+    if (!['GURU','WALI','ADMIN'].includes(guru.role)) throw new Error('Akun ini tidak memiliki akses piket!');
     AppState.activeTeacher = guru.nama;
     document.getElementById('loginGuruArea').classList.add('hidden');
     if (mode === 'manual') {
@@ -1426,8 +1110,8 @@ function generateQR() {
 }
 function logoutPiket() {
   if (AppState.qrInterval) { clearInterval(AppState.qrInterval); AppState.qrInterval = null; }
-  AppState.activeTeacher = ''; AppState.countdown = 20;
-  ['userGuru', 'passGuru'].forEach(id => document.getElementById(id).value = '');
+  AppState.activeTeacher = '';
+  ['userGuru','passGuru'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginGuruArea').classList.remove('hidden');
   document.getElementById('qrGeneratorArea').classList.add('hidden');
   document.getElementById('manualInputArea').classList.add('hidden');
@@ -1452,7 +1136,7 @@ function searchStudent(keyword) {
       let data;
       if (isNum) data = await sbSelect(T.siswa, `?nis=ilike.*${encodeURIComponent(keyword)}*&limit=10`);
       else data = await sbSelect(T.siswa, `?nama=ilike.*${encodeURIComponent(keyword)}*&limit=10`);
-      if (!data || data.length === 0) { res.innerHTML = '<div class="p-3 text-red-500 text-center">Siswa tidak ditemukan</div>'; return; }
+      if (!data || !data.length) { res.innerHTML = '<div class="p-3 text-red-500 text-center">Siswa tidak ditemukan</div>'; return; }
       res.innerHTML = data.map(item => `<div class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50" onclick="selectStudent('${sanitizeHTML(item.nis)}','${sanitizeHTML(item.nama)}','${sanitizeHTML(item.kelas)}')"><p class="font-semibold text-blue-700">${sanitizeHTML(item.nama)}</p><p class="text-sm text-gray-500">NIS: ${sanitizeHTML(item.nis)} | Kelas: ${sanitizeHTML(item.kelas)}</p></div>`).join('');
     } catch (err) { res.innerHTML = `<div class="p-3 text-red-500 text-center">Error: ${sanitizeHTML(err.message)}</div>`; }
   }, 500);
@@ -1474,29 +1158,20 @@ async function saveManualAttendance() {
   resultDiv.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
   try {
     const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
-    if (!siswaList || siswaList.length === 0) throw new Error('Siswa tidak ditemukan!');
+    if (!siswaList || !siswaList.length) throw new Error('Siswa tidak ditemukan!');
     const siswa = siswaList[0];
-    const today = todayStr(); const waktu = nowStr();
-    const existing = await sbSelect(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${today}&limit=1`);
-    let isUpdate = false, statusSebelumnya = '';
-    if (existing && existing.length > 0) {
-      isUpdate = true; statusSebelumnya = existing[0].status;
-      await sbUpdate(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${today}`, { status, waktu, petugas: AppState.activeTeacher });
-    } else {
-      await sbInsert(T.absensi, { nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, tanggal: today, status, waktu, petugas: AppState.activeTeacher });
-    }
+    await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, todayStr(), status);
     document.getElementById('manualNis').value = '';
     document.getElementById('manualSearchInput').value = '';
     document.getElementById('selectedSiswaInfo').classList.add('hidden');
-    if (isUpdate) resultDiv.innerHTML = `<span class="text-blue-600">✓ Berhasil diubah! ${sanitizeHTML(siswa.nama)} (${sanitizeHTML(statusSebelumnya)} → <b>${sanitizeHTML(status)}</b>)</span>`;
-    else resultDiv.innerHTML = `<span class="text-blue-600">✓ Berhasil! ${sanitizeHTML(siswa.nama)} tercatat <b>${sanitizeHTML(status)}</b></span>`;
+    resultDiv.innerHTML = `<span class="text-blue-600">✓ Berhasil! ${sanitizeHTML(siswa.nama)} tercatat <b>${STATUS_LABEL[status]}</b></span>`;
   } catch (err) { resultDiv.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnSimpanManual', false);
 }
 
-// ============================================
+// ============================================================
 // WALI KELAS
-// ============================================
+// ============================================================
 async function loginWali() {
   const user = document.getElementById('userWali').value.trim();
   const pass = document.getElementById('passWali').value;
@@ -1504,9 +1179,9 @@ async function loginWali() {
   setButtonLoading('btnLoginWali', true); showMessage('msgWali', 'Memverifikasi...', 'info');
   try {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
-    if (!data || data.length === 0) throw new Error('Username atau password salah!');
+    if (!data || !data.length) throw new Error('Username atau password salah!');
     const guru = data[0];
-    if (guru.role !== 'WALI' && guru.role !== 'ADMIN') throw new Error('Akun ini bukan wali kelas!');
+    if (!['WALI','ADMIN'].includes(guru.role)) throw new Error('Akun ini bukan wali kelas!');
     AppState.activeClass = guru.kelas_wali;
     document.getElementById('waliNama').textContent = guru.nama;
     document.getElementById('waliKelas').textContent = guru.kelas_wali;
@@ -1525,77 +1200,135 @@ function loadWaliDataByDate() {
 }
 async function loadWaliData(kelas, tanggal) {
   const tbody = document.getElementById('tableWaliRekapBody');
-  tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat data...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat...</td></tr>';
   try {
-    const semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
-    const absen = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&tanggal=eq.${tanggal}`);
-    const absenMap = {};
-    (absen || []).forEach(a => { absenMap[a.nis] = a; });
-    let hadir = 0, sakit = 0, izin = 0, alpa = 0, belum = 0;
-    const listHadir = [], listSakit = [], listIzin = [], listAlpa = [], listBelum = [];
-    const detailSiswa = (semua || []).map(s => {
-      const a = absenMap[s.nis];
-      const status = a ? a.status : 'Belum Absen';
-      if (status === 'Hadir') { hadir++; listHadir.push(s.nama); }
-      else if (status === 'Sakit') { sakit++; listSakit.push(s.nama); }
-      else if (status === 'Izin') { izin++; listIzin.push(s.nama); }
-      else if (status === 'Alpa') { alpa++; listAlpa.push(s.nama); }
+    const list = await getRekapHarian(kelas, tanggal);
+    let hadir=0, sakit=0, izin=0, alpa=0, belum=0;
+    const listH=[], listSI=[], listA=[], listBelum=[];
+    list.forEach(s => {
+      if (s.status === 'H') { hadir++; listH.push(s.nama); }
+      else if (s.status === 'S') { sakit++; listSI.push(s.nama); }
+      else if (s.status === 'I') { izin++; listSI.push(s.nama); }
+      else if (s.status === 'A') { alpa++; listA.push(s.nama); }
       else { belum++; listBelum.push(s.nama); }
-      return { nama: s.nama, status };
     });
-    AppState.waliData = { hadir, sakit, izin, alpa, belum, tanggal, totalSiswa: semua.length, listHadir, listSakit, listIzin, listAlpa, listBelum, detailSiswa };
+    AppState.waliData = { hadir, sakit, izin, alpa, belum, tanggal, totalSiswa: list.length, listH, listSI, listA, listBelum, detail: list };
     document.getElementById('valHadir').textContent = hadir;
     document.getElementById('valSakit').textContent = sakit + izin;
     document.getElementById('valAlpa').textContent = alpa;
     document.getElementById('valBelum').textContent = belum;
-    document.getElementById('totalSiswaKelas').textContent = semua.length;
+    document.getElementById('totalSiswaKelas').textContent = list.length;
     document.getElementById('displayTanggalWali').textContent = formatDateID(tanggal);
-    if (!detailSiswa.length) { tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Belum ada data siswa</td></tr>'; return; }
-    tbody.innerHTML = detailSiswa.map((siswa, i) => {
-      let sc = 'bg-gray-100 text-gray-600', si = '⏳';
-      if (siswa.status === 'Hadir') { sc = 'bg-blue-100 text-blue-700'; si = '✅'; }
-      else if (siswa.status === 'Sakit') { sc = 'bg-amber-100 text-amber-700'; si = '🤒'; }
-      else if (siswa.status === 'Izin') { sc = 'bg-sky-100 text-sky-700'; si = '📋'; }
-      else if (siswa.status === 'Alpa') { sc = 'bg-red-100 text-red-700'; si = '❌'; }
-      return `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3 text-gray-500">${i + 1}</td><td class="p-3">${sanitizeHTML(siswa.nama)}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${sc}">${si} ${sanitizeHTML(siswa.status)}</span></td></tr>`;
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Belum ada data siswa</td></tr>'; return; }
+    tbody.innerHTML = list.map((s, i) => {
+      let sc='bg-gray-100 text-gray-600', si='⏳';
+      if (s.status==='H') {sc='bg-blue-100 text-blue-700'; si='✅';}
+      else if (s.status==='S') {sc='bg-amber-100 text-amber-700'; si='🤒';}
+      else if (s.status==='I') {sc='bg-sky-100 text-sky-700'; si='📋';}
+      else if (s.status==='A') {sc='bg-red-100 text-red-700'; si='❌';}
+      return `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3 text-gray-500">${i+1}</td><td class="p-3">${sanitizeHTML(s.nama)}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${sc}">${si} ${sanitizeHTML(STATUS_LABEL[s.status] || 'Belum Absen')}</span></td></tr>`;
     }).join('');
   } catch (err) { tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
 function showWaliList(type) {
   if (!AppState.waliData) return;
   const map = {
-    hadir: { list: AppState.waliData.listHadir || [], title: '✅ Siswa Hadir' },
-    sakit: { list: [...(AppState.waliData.listSakit || []), ...(AppState.waliData.listIzin || [])], title: '🤒 Siswa Sakit/Izin' },
-    alpa: { list: AppState.waliData.listAlpa || [], title: '❌ Siswa Alpa' },
-    belum: { list: AppState.waliData.listBelum || [], title: '⏳ Belum Absen' }
+    H: { list: AppState.waliData.listH, title: '✅ Siswa Hadir' },
+    SI: { list: AppState.waliData.listSI, title: '🤒 Sakit/Izin' },
+    A: { list: AppState.waliData.listA, title: '❌ Siswa Alpa' },
+    belum: { list: AppState.waliData.listBelum, title: '⏳ Belum Absen' }
   };
-  const { list, title } = map[type] || { list: [], title: '' };
+  const { list, title } = map[type] || { list:[], title:'' };
   document.getElementById('listWaliTitle').textContent = title;
-  document.getElementById('listWaliContent').innerHTML = list.length === 0
+  document.getElementById('listWaliContent').innerHTML = !list.length
     ? '<p class="text-gray-500 text-center py-4">Tidak ada data</p>'
-    : list.map((n, i) => `<div class="py-2 px-3 ${i % 2 === 0 ? 'bg-gray-50' : ''} rounded">${i + 1}. ${sanitizeHTML(n)}</div>`).join('');
+    : list.map((n,i) => `<div class="py-2 px-3 ${i%2===0?'bg-gray-50':''} rounded">${i+1}. ${sanitizeHTML(n)}</div>`).join('');
   document.getElementById('listWaliContainer').classList.remove('hidden');
 }
 function closeWaliList() { document.getElementById('listWaliContainer').classList.add('hidden'); }
 function logoutWali() {
   AppState.activeClass = ''; AppState.waliData = null;
-  ['userWali', 'passWali'].forEach(id => document.getElementById(id).value = '');
+  ['userWali','passWali'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginWaliArea').classList.remove('hidden');
   document.getElementById('dashboardWali').classList.add('hidden');
   document.getElementById('msgWali').textContent = '';
-  document.getElementById('listWaliContainer').classList.add('hidden');
   switchRole('siswa');
 }
-function downloadReport() {
-  if (!AppState.waliData) { alert('Muat data terlebih dahulu!'); return; }
+
+// ============================================================
+// DOWNLOAD LAPORAN BULANAN (Excel pivot)
+// ============================================================
+async function downloadLaporanBulanan(role) {
   const bulan = document.getElementById('bulanLaporan').value;
   if (!bulan) { alert('Pilih bulan terlebih dahulu!'); return; }
-  alert('Implementasi download CSV untuk bulan ' + bulan);
+  const kelas = AppState.activeClass;
+  if (!kelas) { alert('Kelas tidak ditemukan!'); return; }
+  try {
+    const { siswa, absenMap } = await getDataBulanan(kelas, bulan);
+    exportExcelPivot(siswa, absenMap, bulan, kelas);
+  } catch (err) { alert('Gagal: ' + err.message); }
 }
 
-// ============================================
+async function downloadAdminExcelBulanan() {
+  const bulan = document.getElementById('admRekapDate').value.slice(0,7);
+  if (!bulan) { alert('Pilih bulan di filter rekap terlebih dahulu!'); return; }
+  const kelasFilter = document.getElementById('filterKelasAdmin').value;
+  try {
+    let semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    if (kelasFilter) semua = semua.filter(s => s.kelas === kelasFilter);
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}${kelasFilter ? '&kelas=eq.' + encodeURIComponent(kelasFilter) : ''}`);
+    const absenMap = {};
+    (absensi || []).forEach(a => { absenMap[a.nis] = a; });
+    exportExcelPivot(semua, absenMap, bulan, kelasFilter || 'Semua Kelas');
+  } catch (err) { alert('Gagal: ' + err.message); }
+}
+
+function exportExcelPivot(siswa, absenMap, bulan, namaSheet) {
+  if (!siswa || !siswa.length) { alert('Tidak ada data siswa!'); return; }
+  const [tahun, bln] = bulan.split('-').map(Number);
+  const jumlahHari = new Date(tahun, bln, 0).getDate();
+
+  // Header baris 1
+  const headerTgl = [];
+  for (let d = 1; d <= jumlahHari; d++) {
+    const tgl = new Date(tahun, bln-1, d);
+    const hari = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][tgl.getDay()];
+    headerTgl.push(`${d}-${['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][bln-1]} (${hari})`);
+  }
+  const header = ['NIS', 'Nama', 'Kelas', ...headerTgl, 'H', 'S', 'I', 'A'];
+
+  const rows = siswa.map(s => {
+    const rec = absenMap[s.nis] || {};
+    let h=0, sk=0, iz=0, al=0;
+    const cols = [];
+    for (let d = 1; d <= jumlahHari; d++) {
+      const col = 'tgl_' + String(d).padStart(2,'0');
+      const val = rec[col] || '';
+      cols.push(val);
+      if (val==='H') h++;
+      else if (val==='S') sk++;
+      else if (val==='I') iz++;
+      else if (val==='A') al++;
+    }
+    return [s.nis, s.nama, s.kelas, ...cols, h, sk, iz, al];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  // Style kolom lebar
+  ws['!cols'] = [
+    {wch:12},{wch:28},{wch:10},
+    ...Array(jumlahHari).fill({wch:14}),
+    {wch:5},{wch:5},{wch:5},{wch:5}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, namaSheet.replace(/[\\\/\*\?\[\]:]/g,'').slice(0,31));
+  XLSX.writeFile(wb, `Absensi_${namaSheet}_${bulan}.xlsx`);
+}
+
+// ============================================================
 // ADMIN
-// ============================================
+// ============================================================
 async function loginAdmin() {
   const user = document.getElementById('userAdmin').value.trim();
   const pass = document.getElementById('passAdmin').value;
@@ -1603,9 +1336,8 @@ async function loginAdmin() {
   setButtonLoading('btnLoginAdmin', true); showMessage('msgAdmin', 'Memverifikasi...', 'info');
   try {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
-    if (!data || data.length === 0) throw new Error('Username atau password salah!');
-    const guru = data[0];
-    if (guru.role !== 'ADMIN') throw new Error('Akun ini bukan admin!');
+    if (!data || !data.length) throw new Error('Username atau password salah!');
+    if (data[0].role !== 'ADMIN') throw new Error('Akun ini bukan admin!');
     document.getElementById('loginAdminArea').classList.add('hidden');
     document.getElementById('dashboardAdmin').classList.remove('hidden');
     loadAdminDashboard();
@@ -1615,20 +1347,25 @@ async function loginAdmin() {
 async function loadAdminDashboard() {
   const today = todayStr();
   document.getElementById('admRekapDate').value = today;
+  document.getElementById('waKirimTanggal').value = today;
   try {
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${today}`);
-    document.getElementById('admHadir').textContent = (absen || []).filter(a => a.status === 'Hadir').length;
-    document.getElementById('admAlfa').textContent = (absen || []).filter(a => a.status === 'Alpa').length;
-  } catch (err) { console.error('Dashboard error:', err); }
+    const bulan = toBulan(today);
+    const col = tglCol(today);
+    const absen = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    document.getElementById('admHadir').textContent = (absen||[]).filter(a => a[col]==='H').length;
+    document.getElementById('admAlfa').textContent = (absen||[]).filter(a => a[col]==='A').length;
+  } catch (err) { console.error(err); }
   showAdminTab('siswa');
 }
 function showAdminTab(tab) {
   document.querySelectorAll('.admin-panel').forEach(el => el.classList.add('hidden'));
-  document.querySelectorAll('.admin-tab').forEach(el => { el.classList.remove('bg-blue-100', 'text-blue-700'); el.classList.add('bg-gray-100', 'text-gray-600'); });
+  document.querySelectorAll('.admin-tab').forEach(el => {
+    el.classList.remove('bg-blue-100','text-blue-700'); el.classList.add('bg-gray-100','text-gray-600');
+  });
   const cap = tab.charAt(0).toUpperCase() + tab.slice(1);
   const panel = document.getElementById('admTab' + cap); if (panel) panel.classList.remove('hidden');
   const btn = document.getElementById('tabBtn' + cap);
-  if (btn) { btn.classList.remove('bg-gray-100', 'text-gray-600'); btn.classList.add('bg-blue-100', 'text-blue-700'); }
+  if (btn) { btn.classList.remove('bg-gray-100','text-gray-600'); btn.classList.add('bg-blue-100','text-blue-700'); }
   if (tab === 'siswa') loadAdminSiswa();
   else if (tab === 'guru') loadAdminGuru();
   else if (tab === 'rekap') loadAdminRekap();
@@ -1639,9 +1376,28 @@ async function loadAdminSiswa() {
   tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Memuat...</td></tr>';
   try {
     const data = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Belum ada data</td></tr>'; return; }
-    tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3">${sanitizeHTML(r.nis)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3">${sanitizeHTML(r.kelas)}</td><td class="p-3 text-center"><button onclick="deleteSiswa('${sanitizeHTML(r.nis)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+    AppState.allSiswaCache = data || [];
+    const kelasSet = [...new Set((data||[]).map(s=>s.kelas))].sort();
+    const selK = document.getElementById('filterSiswaKelas');
+    selK.innerHTML = '<option value="">Semua Kelas</option>';
+    kelasSet.forEach(k => { const o = document.createElement('option'); o.value=k; o.textContent=k; selK.appendChild(o); });
+    renderSiswaTable(data || []);
   } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
+}
+function filterSiswaTable() {
+  if (!AppState.allSiswaCache) return;
+  const q = document.getElementById('filterSiswaSearch').value.toLowerCase();
+  const kelas = document.getElementById('filterSiswaKelas').value;
+  let list = AppState.allSiswaCache;
+  if (kelas) list = list.filter(s => s.kelas === kelas);
+  if (q) list = list.filter(s => s.nama.toLowerCase().includes(q) || s.nis.includes(q));
+  renderSiswaTable(list);
+}
+function renderSiswaTable(data) {
+  const tbody = document.getElementById('tableSiswaBody');
+  document.getElementById('totalSiswaCount').textContent = data.length;
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Tidak ada data</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3 text-xs">${sanitizeHTML(r.nis)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3 text-xs">${sanitizeHTML(r.kelas)}</td><td class="p-3 text-center"><button onclick="deleteSiswa('${sanitizeHTML(r.nis)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
 }
 async function loadAdminGuru() {
   const tbody = document.getElementById('tableGuruBody');
@@ -1649,135 +1405,121 @@ async function loadAdminGuru() {
   try {
     const data = await sbSelect(T.guru, '?order=nama.asc');
     if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Belum ada data</td></tr>'; return; }
-    tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3">${sanitizeHTML(r.username)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3">${r.kelas_wali ? sanitizeHTML(r.kelas_wali) : '-'}</td><td class="p-3 text-center"><button onclick="deleteGuru('${sanitizeHTML(r.username)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+    tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3 text-xs">${sanitizeHTML(r.username)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3 text-xs">${r.kelas_wali ? sanitizeHTML(r.kelas_wali) : '-'}</td><td class="p-3 text-center"><button onclick="deleteGuru('${sanitizeHTML(r.username)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
   } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
 async function loadAdminRekap() {
   const tbody = document.getElementById('tableRekapBody');
   const tgl = document.getElementById('admRekapDate').value;
   tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat...</td></tr>';
-  ['admRekapHadir','admRekapSakit','admRekapIzin','admRekapAlpa','admRekapBelum','totalRekapDisplay'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+  ['admRekapHadir','admRekapSakit','admRekapIzin','admRekapAlpa','admRekapBelum','totalRekapDisplay'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent='0'; });
   try {
+    const bulan = toBulan(tgl);
+    const col = tglCol(tgl);
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${tgl}`);
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absen || []).forEach(a => { absenMap[a.nis] = a; });
-    let hadir = 0, sakit = 0, izin = 0, alpa = 0, belum = 0;
-    const siswaList = (semua || []).map(s => {
-      const a = absenMap[s.nis];
-      const status = a ? a.status : 'Belum Absen';
-      if (status === 'Hadir') hadir++;
-      else if (status === 'Sakit') sakit++;
-      else if (status === 'Izin') izin++;
-      else if (status === 'Alpa') alpa++;
-      else belum++;
-      return { nis: s.nis, nama: s.nama, kelas: s.kelas, status };
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
+    let h=0, s=0, iz=0, al=0, bl=0;
+    const list = (semua||[]).map(siswa => {
+      const status = absenMap[siswa.nis] || null;
+      if (status==='H') h++;
+      else if (status==='S') s++;
+      else if (status==='I') iz++;
+      else if (status==='A') al++;
+      else bl++;
+      return { ...siswa, status };
     });
-    AppState.adminRekapData = { siswaList, totalHadir: hadir, totalSakit: sakit, totalIzin: izin, totalAlpa: alpa, totalBelum: belum, totalSiswa: semua.length };
-    document.getElementById('admRekapHadir').textContent = hadir;
-    document.getElementById('admRekapSakit').textContent = sakit;
-    document.getElementById('admRekapIzin').textContent = izin;
-    document.getElementById('admRekapAlpa').textContent = alpa;
-    document.getElementById('admRekapBelum').textContent = belum;
-    document.getElementById('totalRekapDisplay').textContent = semua.length;
-    const kelasSet = [...new Set((semua || []).map(s => s.kelas))].sort();
-    const selK = document.getElementById('filterKelasAdmin');
-    const hapusK = document.getElementById('hapusKelas');
-    [selK, hapusK].forEach(s => { s.innerHTML = '<option value="">-- Semua Kelas --</option>'; kelasSet.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; s.appendChild(o); }); });
-    selK.onchange = applyAdminFilters;
+    AppState.adminRekapData = { list, tgl };
+    document.getElementById('admRekapHadir').textContent = h;
+    document.getElementById('admRekapSakit').textContent = s;
+    document.getElementById('admRekapIzin').textContent = iz;
+    document.getElementById('admRekapAlpa').textContent = al;
+    document.getElementById('admRekapBelum').textContent = bl;
+    document.getElementById('totalRekapDisplay').textContent = list.length;
+    const kelasSet = [...new Set((semua||[]).map(s=>s.kelas))].sort();
+    ['filterKelasAdmin','hapusKelas'].forEach(id => {
+      const sel = document.getElementById(id); if(!sel) return;
+      sel.innerHTML = '<option value="">-- Semua Kelas --</option>';
+      kelasSet.forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); });
+    });
+    document.getElementById('filterKelasAdmin').onchange = applyAdminFilters;
     document.getElementById('filterStatusAdmin').onchange = applyAdminFilters;
-    renderAdminRekapTable(siswaList);
+    renderAdminRekapTable(list);
   } catch (err) { tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
 function applyAdminFilters() {
   if (!AppState.adminRekapData) return;
   const fk = document.getElementById('filterKelasAdmin').value;
   const fs = document.getElementById('filterStatusAdmin').value;
-  let list = AppState.adminRekapData.siswaList || [];
+  let list = AppState.adminRekapData.list || [];
   if (fk) list = list.filter(s => s.kelas === fk);
-  if (fs) list = list.filter(s => s.status === fs);
+  if (fs === '') { /* semua */ }
+  else if (fs) list = list.filter(s => s.status === fs);
   renderAdminRekapTable(list);
   document.getElementById('totalRekapDisplay').textContent = list.length;
 }
 function renderAdminRekapTable(list) {
   const tbody = document.getElementById('tableRekapBody');
   if (!list || !list.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Tidak ada data</td></tr>'; return; }
-  tbody.innerHTML = list.map((row, i) => {
-    let sc = 'bg-gray-100 text-gray-600', si = '⏳';
-    if (row.status === 'Hadir') { sc = 'bg-blue-100 text-blue-700'; si = '✅'; }
-    else if (row.status === 'Sakit') { sc = 'bg-amber-100 text-amber-700'; si = '🤒'; }
-    else if (row.status === 'Izin') { sc = 'bg-sky-100 text-sky-700'; si = '📋'; }
-    else if (row.status === 'Alpa') { sc = 'bg-red-100 text-red-700'; si = '❌'; }
-    const n = sanitizeHTML(row.nis), na = sanitizeHTML(row.nama), k = sanitizeHTML(row.kelas), s = sanitizeHTML(row.status);
-    return `<tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openEditPanel('${n}','${na}','${k}','${s}')"><td class="p-3 text-gray-500">${i + 1}</td><td class="p-3">${na}</td><td class="p-3">${k}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${sc}">${si} ${s}</span></td><td class="p-3 text-center"><button class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs rounded" onclick="event.stopPropagation();openEditPanel('${n}','${na}','${k}','${s}')"><i class="fas fa-edit"></i></button></td></tr>`;
+  tbody.innerHTML = list.map((row,i) => {
+    const n=sanitizeHTML(row.nis), na=sanitizeHTML(row.nama), k=sanitizeHTML(row.kelas), s=row.status||'';
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openEditPanel('${n}','${na}','${k}','${s}')"><td class="p-3 text-gray-500">${i+1}</td><td class="p-3">${na}</td><td class="p-3 text-xs">${k}</td><td class="p-3 text-center">${statusBadge(row.status)}</td><td class="p-3 text-center"><button class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs rounded" onclick="event.stopPropagation();openEditPanel('${n}','${na}','${k}','${s}')"><i class="fas fa-edit"></i></button></td></tr>`;
   }).join('');
 }
 function downloadRekapCSV() {
   if (!AppState.adminRekapData) { alert('Muat data rekap terlebih dahulu!'); return; }
-  const tgl = document.getElementById('admRekapDate').value;
+  const tgl = AppState.adminRekapData.tgl;
   const rows = [['No','NIS','Nama','Kelas','Status']];
-  (AppState.adminRekapData.siswaList || []).forEach((s, i) => rows.push([i + 1, s.nis, s.nama, s.kelas, s.status]));
+  (AppState.adminRekapData.list||[]).forEach((s,i) => rows.push([i+1, s.nis, s.nama, s.kelas, STATUS_LABEL[s.status]||'Belum Absen']));
   const csv = rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const blob = new Blob([csv], { type:'text/csv' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `rekap_pagi_${tgl}.csv`; a.click();
+  a.download = `rekap_harian_${tgl}.csv`; a.click();
 }
 function openEditPanel(nis, nama, kelas, status) {
   document.getElementById('editStatusPanel').classList.remove('hidden');
   document.getElementById('editNamaSiswa').textContent = nama;
   document.getElementById('editNisSiswa').textContent = nis;
-  document.getElementById('editKelasSiswa').textContent = kelas;
-  document.getElementById('editStatusLama').textContent = status;
+  document.getElementById('editStatusLama').textContent = STATUS_LABEL[status] || 'Belum Absen';
   document.getElementById('editNisInput').value = nis;
-  document.getElementById('editKelasInput').value = kelas;
   const dd = document.getElementById('editStatusBaru');
-  const norm = status === 'Belum Absen' ? 'Belum Absen' : status;
-  for (let i = 0; i < dd.options.length; i++) if (dd.options[i].value === norm) { dd.selectedIndex = i; break; }
+  for (let i=0; i<dd.options.length; i++) if (dd.options[i].value === status) { dd.selectedIndex=i; break; }
   document.getElementById('editStatusResult').textContent = '';
-  document.getElementById('editStatusPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('editStatusPanel').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 function closeEditPanel() { document.getElementById('editStatusPanel').classList.add('hidden'); }
 async function saveEditStatus() {
   const nis = document.getElementById('editNisInput').value;
-  const tanggal = document.getElementById('admRekapDate').value;
+  const tgl = document.getElementById('admRekapDate').value;
   const statusBaru = document.getElementById('editStatusBaru').value;
   const resultEl = document.getElementById('editStatusResult');
-  const statusLama = document.getElementById('editStatusLama').textContent;
-  if (!nis || !tanggal) { resultEl.innerHTML = '<span class="text-red-600">Data tidak lengkap!</span>'; return; }
+  if (!nis || !tgl) { resultEl.innerHTML = '<span class="text-red-600">Data tidak lengkap!</span>'; return; }
   setButtonLoading('btnSaveEdit', true);
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
   try {
-    const existing = await sbSelect(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${tanggal}&limit=1`);
-    if (statusBaru === 'Belum Absen') {
-      if (existing && existing.length > 0) await sbDelete(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${tanggal}`);
-    } else {
-      const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
-      const siswa = siswaList && siswaList.length > 0 ? siswaList[0] : { nis, nama: '', kelas: '' };
-      if (existing && existing.length > 0) {
-        await sbUpdate(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${tanggal}`, { status: statusBaru, waktu: nowStr() });
-      } else {
-        await sbInsert(T.absensi, { nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, tanggal, status: statusBaru, waktu: nowStr(), petugas: 'Admin' });
-      }
-    }
-    resultEl.innerHTML = `<span class="text-blue-600">✅ Berhasil! ${sanitizeHTML(statusLama)} → <b>${sanitizeHTML(statusBaru)}</b></span>`;
-    setTimeout(() => { loadAdminRekap(); closeEditPanel(); }, 1500);
+    const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
+    const siswa = siswaList && siswaList.length > 0 ? siswaList[0] : { nis, nama:'', kelas:'' };
+    await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, tgl, statusBaru || null);
+    resultEl.innerHTML = `<span class="text-blue-600">✅ Berhasil diperbarui!</span>`;
+    setTimeout(() => { loadAdminRekap(); closeEditPanel(); }, 1200);
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnSaveEdit', false);
 }
 async function hapusDataAbsensi() {
   const kelas = document.getElementById('hapusKelas').value;
-  const tanggal = document.getElementById('hapusTanggal').value;
+  const bulan = document.getElementById('hapusBulan').value;
   const resultEl = document.getElementById('hapusDataResult');
-  if (!tanggal) { resultEl.innerHTML = '<span class="text-red-600">Pilih tanggal!</span>'; return; }
-  if (!confirm(`Hapus data kelas ${kelas || 'SEMUA'} tanggal ${tanggal}?\n\n⚠️ TIDAK DAPAT DIKEMBALIKAN!`)) return;
+  if (!bulan) { resultEl.innerHTML = '<span class="text-red-600">Pilih bulan!</span>'; return; }
+  if (!confirm(`Hapus data absensi kelas ${kelas||'SEMUA'} bulan ${bulan}?\n\n⚠️ TIDAK DAPAT DIKEMBALIKAN!`)) return;
   if (!confirm('Konfirmasi sekali lagi. Lanjutkan?')) return;
   setButtonLoading('btnHapusData', true);
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menghapus...</span>';
   try {
-    let params = `?tanggal=eq.${tanggal}`;
+    let params = `?bulan=eq.${bulan}`;
     if (kelas) params += `&kelas=eq.${encodeURIComponent(kelas)}`;
     await sbDelete(T.absensi, params);
-    resultEl.innerHTML = `<span class="text-blue-600">✅ Berhasil menghapus data absensi!</span>`;
+    resultEl.innerHTML = `<span class="text-blue-600">✅ Berhasil menghapus data!</span>`;
     loadAdminRekap();
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnHapusData', false);
@@ -1788,7 +1530,6 @@ async function adminAddStudent() {
   const kelas = document.getElementById('newKelas').value.trim();
   const hp_ortu = document.getElementById('newHp').value.trim();
   if (!nis || !nama || !kelas) { alert('NIS, Nama, dan Kelas harus diisi!'); return; }
-  if (!confirm(`Tambah siswa ${nama} ke kelas ${kelas}?`)) return;
   setButtonLoading('btnAddSiswa', true);
   try {
     await sbInsert(T.siswa, { nis, nama, kelas, hp_ortu });
@@ -1807,7 +1548,6 @@ async function adminAddTeacher() {
   const hp = document.getElementById('newGHp').value.trim();
   if (!username || !password || !nama) { alert('Username, Password, dan Nama harus diisi!'); return; }
   if (!['GURU','WALI','ADMIN'].includes(role)) { alert('Role harus: GURU, WALI, atau ADMIN'); return; }
-  if (!confirm(`Tambah guru ${nama} dengan role ${role}?`)) return;
   try {
     await sbInsert(T.guru, { username, password, nama, kelas_wali, role, hp });
     alert('Guru berhasil ditambahkan!');
@@ -1826,10 +1566,7 @@ async function deleteGuru(username) {
   catch (err) { alert('Gagal: ' + err.message); }
 }
 function logoutAdmin() {
-  if (AppState.schedulerActive) {
-    AppState.schedulerActive = false;
-    if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
-  }
+  if (AppState.schedulerActive) { AppState.schedulerActive = false; if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; } }
   AppState.adminRekapData = null;
   ['userAdmin','passAdmin'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginAdminArea').classList.remove('hidden');
@@ -1839,207 +1576,483 @@ function logoutAdmin() {
   switchRole('siswa');
 }
 
-// ============================================
+// ============================================================
+// IMPORT SISWA
+// ============================================================
+function parseCSVorExcel(file, callback) {
+  if (file.name.endsWith('.csv')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split('\n').filter(l => l.trim());
+      const rows = lines.map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g,'')));
+      callback(rows);
+    };
+    reader.readAsText(file);
+  } else {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, { type:'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      callback(rows.map(r => r.map(c => String(c).trim())));
+    };
+    reader.readAsBinaryString(file);
+  }
+}
+
+async function handleImportSiswaFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const resultEl = document.getElementById('csvImportSiswaResult');
+  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Membaca file...</span>';
+  parseCSVorExcel(file, async rows => {
+    // Skip header jika ada
+    const data = rows.filter(r => r[0] && !/^nis$/i.test(r[0]));
+    await batchImportSiswa(data, resultEl);
+    input.value = '';
+  });
+}
+
+async function importSiswaPaste() {
+  const text = document.getElementById('pasteSiswa').value.trim();
+  const resultEl = document.getElementById('pasteSiswaResult');
+  if (!text) { resultEl.innerHTML = '<span class="text-red-600">Isi teks terlebih dahulu!</span>'; return; }
+  const rows = text.split('\n').map(l => l.split(',').map(c => c.trim())).filter(r => r[0]);
+  await batchImportSiswa(rows, resultEl);
+  document.getElementById('pasteSiswa').value = '';
+}
+
+async function batchImportSiswa(rows, resultEl) {
+  resultEl.innerHTML = `<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengimport ${rows.length} baris...</span>`;
+  let ok=0, skip=0, err=0;
+  for (const r of rows) {
+    const [nis, nama, kelas, hp_ortu=''] = r;
+    if (!nis || !nama || !kelas) { skip++; continue; }
+    try {
+      await sbUpsert(T.siswa, { nis, nama, kelas, hp_ortu: hp_ortu||'' }, 'nis');
+      ok++;
+    } catch (e) { err++; console.error('Import siswa error:', e.message); }
+  }
+  resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Import selesai!</span> Berhasil: ${ok} | Dilewati: ${skip} | Error: ${err}`;
+  loadAdminSiswa();
+}
+
+async function handleImportGuruFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const resultEl = document.getElementById('csvImportGuruResult');
+  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Membaca file...</span>';
+  parseCSVorExcel(file, async rows => {
+    const data = rows.filter(r => r[0] && !/^username$/i.test(r[0]));
+    await batchImportGuru(data, resultEl);
+    input.value = '';
+  });
+}
+
+async function importGuruPaste() {
+  const text = document.getElementById('pasteGuru').value.trim();
+  const resultEl = document.getElementById('pasteGuruResult');
+  if (!text) { resultEl.innerHTML = '<span class="text-red-600">Isi teks terlebih dahulu!</span>'; return; }
+  const rows = text.split('\n').map(l => l.split(',').map(c => c.trim())).filter(r => r[0]);
+  await batchImportGuru(rows, resultEl);
+  document.getElementById('pasteGuru').value = '';
+}
+
+async function batchImportGuru(rows, resultEl) {
+  resultEl.innerHTML = `<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengimport ${rows.length} baris...</span>`;
+  let ok=0, skip=0, err=0;
+  for (const r of rows) {
+    const [username, password, nama, kelas_wali='', role='GURU', hp=''] = r;
+    if (!username || !password || !nama) { skip++; continue; }
+    const roleUp = role.toUpperCase();
+    if (!['GURU','WALI','ADMIN'].includes(roleUp)) { skip++; continue; }
+    try {
+      await sbUpsert(T.guru, { username, password, nama, kelas_wali: kelas_wali||'', role: roleUp, hp: hp||'' }, 'username');
+      ok++;
+    } catch (e) { err++; console.error('Import guru error:', e.message); }
+  }
+  resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Import selesai!</span> Berhasil: ${ok} | Dilewati: ${skip} | Error: ${err}`;
+  loadAdminGuru();
+}
+
+// ============================================================
+// AUTO ALPA - SCHEDULER
+// ============================================================
+function schedLog(msg, type='info') {
+  const box = document.getElementById('schedLog'); if (!box) return;
+  const now = new Date().toLocaleTimeString('id-ID');
+  const cls = { info:'log-info', success:'log-success', error:'log-error', warn:'log-warn' };
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="${cls[type]||'log-info'}">[${now}] ${msg}</span>`;
+  box.appendChild(line); box.scrollTop = box.scrollHeight;
+}
+function clearSchedLog() { const b=document.getElementById('schedLog'); if(b) b.innerHTML='<span class="log-info">» Log dibersihkan.</span>'; }
+function toggleDay(day) {
+  if (AppState.activeDays.has(day)) AppState.activeDays.delete(day);
+  else AppState.activeDays.add(day);
+  renderDayButtons();
+}
+function renderDayButtons() {
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    btn.classList.toggle('active-day', AppState.activeDays.has(d));
+  });
+}
+function toggleSchedWA() {
+  AppState.schedWASend = !AppState.schedWASend;
+  document.getElementById('schedWAToggle').classList.toggle('on', AppState.schedWASend);
+}
+function startLiveClock() {
+  if (AppState.clockInterval) clearInterval(AppState.clockInterval);
+  AppState.clockInterval = setInterval(() => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const clockEl = document.getElementById('schedClock');
+    if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss}`;
+    const dateEl = document.getElementById('schedDate');
+    if (dateEl) {
+      const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      dateEl.textContent = `${days[now.getDay()]}, ${now.toLocaleDateString('id-ID')}`;
+    }
+    if (AppState.schedulerActive) updateNextTriggerCountdown(now);
+  }, 1000);
+}
+function updateNextTriggerCountdown(now) {
+  const schedTimeVal = document.getElementById('schedTime').value || '08:00';
+  const [targetH, targetM] = schedTimeVal.split(':').map(Number);
+  const target = new Date(now);
+  target.setHours(targetH, targetM, 0, 0);
+  if (now >= target) target.setDate(target.getDate()+1);
+  let maxTry=7;
+  while (maxTry-->0) { if (AppState.activeDays.has(target.getDay())) break; target.setDate(target.getDate()+1); }
+  const diffMs = target-now;
+  const diffH = Math.floor(diffMs/3600000);
+  const diffM = Math.floor((diffMs%3600000)/60000);
+  const diffS = Math.floor((diffMs%60000)/1000);
+  const el = document.getElementById('nextTriggerCountdown');
+  if (el) el.textContent = diffH>0 ? `${diffH}j ${diffM}m ${diffS}d` : `${diffM}m ${diffS}d`;
+}
+function checkTriggerTime() {
+  const now = new Date();
+  if (!AppState.activeDays.has(now.getDay())) return;
+  const schedTimeVal = document.getElementById('schedTime').value || '08:00';
+  const [targetH, targetM] = schedTimeVal.split(':').map(Number);
+  const todayKey = todayStr();
+  if (now.getHours()===targetH && now.getMinutes()===targetM && AppState.lastTriggeredDate!==todayKey) {
+    AppState.lastTriggeredDate = todayKey;
+    schedLog('🔔 Waktu trigger! Menjalankan Auto Alpa...', 'warn');
+    runScheduledAutoAlpa(todayKey);
+  }
+}
+async function runScheduledAutoAlpa(tanggal) {
+  setStepState(1,'running');
+  schedLog('⚡ Auto Alpa: ' + tanggal, 'info');
+  try {
+    const bulan = toBulan(tanggal);
+    const col = tglCol(tanggal);
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    const absenMap = {};
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
+    const belum = (semua||[]).filter(s => !absenMap[s.nis]);
+    setStepState(1,'done'); setLineState(1,'done');
+    setStepState(2,'running');
+    for (const s of belum) { await setStatusHarian(s.nis, s.nama, s.kelas, tanggal, 'A'); }
+    schedLog(`✅ Auto Alpa: ${belum.length} siswa ditandai Alpa`, 'success');
+    setStepState(2,'done'); setLineState(2,'done');
+    if (AppState.schedWASend) {
+      setStepState(3,'running');
+      schedLog('📲 Mengirim WA ortu...', 'info');
+      let waSent=0;
+      for (const s of belum) {
+        const hp = formatHP(s.hp_ortu); if (!hp) continue;
+        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nPutra/putri Bapak/Ibu tercatat *TIDAK HADIR (ALPA)* pada:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi kepada wali kelas.\n\n_SIPAGI - Sistem Presensi Pagi_`;
+        await kirimWA(hp, pesan); waSent++;
+        await new Promise(r => setTimeout(r, 1200));
+      }
+      schedLog(`📨 WA ortu: ${waSent} terkirim`, 'success');
+      setStepState(3,'done'); setLineState(3,'done');
+      setStepState(4,'running');
+      schedLog('📋 Mengirim rekap wali kelas...', 'info');
+      const absenBaru = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+      const absenMapBaru = {};
+      (absenBaru||[]).forEach(a => { absenMapBaru[a.nis] = a[col]||null; });
+      const byKelas = {};
+      (semua||[]).forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+      const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+      const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
+      let waliSent=0;
+      for (const guru of waliList) {
+        const hp = formatHP(guru.hp);
+        const siswakelas = byKelas[guru.kelas_wali] || [];
+        let h=0, s=0, iz=0, al=0, bl=0;
+        const namaAlpa=[];
+        siswakelas.forEach(sw => {
+          const st = absenMapBaru[sw.nis]||null;
+          if (st==='H') h++;
+          else if (st==='S') s++;
+          else if (st==='I') iz++;
+          else if (st==='A') { al++; namaAlpa.push(sw.nama); }
+          else bl++;
+        });
+        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi*\n\n📅 ${tanggal}\n🏫 ${guru.kelas_wali}\n\n✅ Hadir: ${h}\n🤒 Sakit: ${s}\n📋 Izin: ${iz}\n❌ Alpa: ${al}\n⏳ Belum: ${bl}\n📌 Total: ${siswakelas.length}${namaAlpa.length>0?'\n\n❌ Alpa:\n'+namaAlpa.map(n=>'• '+n).join('\n'):''}\n\n_SIPAGI Scheduler_`;
+        await kirimWA(hp, pesan); waliSent++;
+        await new Promise(r => setTimeout(r, 1200));
+      }
+      schedLog(`📨 WA wali: ${waliSent} terkirim`, 'success');
+      setStepState(4,'done');
+      schedLog('🎉 Semua tugas selesai!', 'success');
+    } else {
+      setStepState(3,'done'); setLineState(3,'done');
+      setStepState(4,'done');
+      schedLog('ℹ️ WA dinonaktifkan.', 'info');
+    }
+  } catch (err) {
+    schedLog('❌ Error: ' + err.message, 'error');
+    [1,2,3,4].forEach(i => setStepState(i,'pending'));
+  }
+}
+function setStepState(step, state) { const el=document.getElementById(`step${step}Icon`); if(el) el.className=`trigger-step-icon ${state}`; }
+function setLineState(line, state) { const el=document.getElementById(`line${line}`); if(el) { if(state==='done') el.classList.add('done'); else el.classList.remove('done'); } }
+function resetTimeline() { [1,2,3,4].forEach(i=>setStepState(i,'pending')); [1,2,3].forEach(i=>setLineState(i,'')); }
+function toggleScheduler() {
+  if (AppState.schedulerActive) {
+    AppState.schedulerActive = false;
+    if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
+    document.getElementById('schedulerCard').classList.remove('scheduler-active');
+    document.getElementById('schedBadge').className='sched-badge sched-badge-off';
+    document.getElementById('schedBadge').innerHTML='<span class="sched-badge-dot"></span>NONAKTIF';
+    document.getElementById('btnToggleSched').className='w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200';
+    document.getElementById('btnToggleSched').innerHTML='<i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER';
+    document.getElementById('schedClock').classList.remove('active-glow');
+    document.getElementById('nextTriggerBadge').style.opacity='0.5';
+    document.getElementById('nextTriggerCountdown').textContent='—';
+    resetTimeline();
+    schedLog('⏹ Scheduler dinonaktifkan.', 'warn');
+  } else {
+    const schedTime = document.getElementById('schedTime').value;
+    if (!schedTime) { alert('Pilih jam trigger!'); return; }
+    if (AppState.activeDays.size===0) { alert('Pilih minimal 1 hari!'); return; }
+    AppState.schedulerActive = true;
+    AppState.lastTriggeredDate = null;
+    AppState.schedulerInterval = setInterval(checkTriggerTime, 5000);
+    document.getElementById('schedulerCard').classList.add('scheduler-active');
+    document.getElementById('schedBadge').className='sched-badge sched-badge-on';
+    document.getElementById('schedBadge').innerHTML='<span class="sched-badge-dot"></span>AKTIF';
+    document.getElementById('btnToggleSched').className='w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-red-900 hover:bg-red-800 text-red-200';
+    document.getElementById('btnToggleSched').innerHTML='<i class="fas fa-stop-circle"></i> NONAKTIFKAN';
+    document.getElementById('schedClock').classList.add('active-glow');
+    document.getElementById('nextTriggerBadge').style.opacity='1';
+    resetTimeline();
+    schedLog(`✅ Aktif! Trigger jam ${schedTime}`, 'success');
+    schedLog(`📅 Hari: ${[...AppState.activeDays].map(d=>['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(', ')}`, 'info');
+  }
+}
+
+// ============================================================
 // AUTO ALPA MANUAL
-// ============================================
+// ============================================================
 async function loadKelasList() {
   try {
     const data = await sbSelect(T.siswa, '?select=kelas&order=kelas.asc');
-    const kelasSet = [...new Set((data || []).map(s => s.kelas))].sort();
+    const kelasSet = [...new Set((data||[]).map(s=>s.kelas))].sort();
     ['resetKelas'].forEach(id => {
-      const sel = document.getElementById(id); if (!sel) return;
-      sel.innerHTML = '<option value="">-- Pilih Kelas --</option>';
-      kelasSet.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; sel.appendChild(o); });
+      const sel=document.getElementById(id); if(!sel) return;
+      sel.innerHTML='<option value="">-- Pilih Kelas --</option>';
+      kelasSet.forEach(k => { const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); });
     });
-  } catch (err) { console.error('Load kelas error:', err); }
+  } catch(err) { console.error(err); }
 }
 async function simulasiAutoAlpa() {
-  const rd = document.getElementById('autoAlpaResult');
-  const rt = document.getElementById('autoAlpaResultTitle');
-  const rc = document.getElementById('autoAlpaResultContent');
-  rd.classList.remove('hidden'); rt.textContent = 'Memuat preview...';
-  rc.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Menganalisis...';
+  const rd=document.getElementById('autoAlpaResult');
+  const rt=document.getElementById('autoAlpaResultTitle');
+  const rc=document.getElementById('autoAlpaResultContent');
+  rd.classList.remove('hidden'); rt.textContent='Memuat preview...';
+  rc.innerHTML='<i class="fas fa-spinner animate-spin mr-2"></i>Menganalisis...';
   setButtonLoading('btnSimulasiAlpa', true);
   try {
     const today = todayStr();
+    const bulan = toBulan(today);
+    const col = tglCol(today);
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${today}`);
-    const absenNis = new Set((absen || []).map(a => a.nis));
-    const belumAbsen = (semua || []).filter(s => !absenNis.has(s.nis));
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    const absenMap = {};
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+    const belum = (semua||[]).filter(s => !absenMap[s.nis]);
     rt.textContent = '📋 Preview Auto Alpa - ' + today;
-    let html = `<div class="grid grid-cols-2 gap-2 mb-3"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Akan di-Alpa</p><p class="text-lg font-bold text-red-700">${belumAbsen.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Sudah Absen</p><p class="text-lg font-bold text-blue-700">${(absen || []).length}</p></div></div>`;
-    if (belumAbsen.length === 0) html += '<p class="text-blue-600 text-center py-2">✅ Semua siswa sudah absen!</p>';
+    let html = `<div class="grid grid-cols-2 gap-2 mb-3"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Akan Alpa</p><p class="text-lg font-bold text-red-700">${belum.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Sudah Absen</p><p class="text-lg font-bold text-blue-700">${semua.length-belum.length}</p></div></div>`;
+    if (!belum.length) html += '<p class="text-blue-600 text-center py-2">✅ Semua siswa sudah absen!</p>';
     else {
-      html += '<p class="text-xs font-semibold text-red-600 mb-1">❌ Akan ditandai ALPA:</p><div class="max-h-24 overflow-y-auto mb-3 border border-red-200 rounded">';
-      belumAbsen.slice(0, 20).forEach((item, i) => { html += `<div class="py-1 px-2 ${i % 2 === 0 ? 'bg-red-50' : 'bg-white'} text-xs"><span class="text-gray-500">${sanitizeHTML(item.kelas)}</span> - ${sanitizeHTML(item.nama)}</div>`; });
-      if (belumAbsen.length > 20) html += `<p class="text-gray-500 text-xs p-2">... dan ${belumAbsen.length - 20} siswa lainnya</p>`;
+      html += '<p class="text-xs font-semibold text-red-600 mb-1">Akan ditandai ALPA:</p><div class="max-h-24 overflow-y-auto border border-red-200 rounded">';
+      belum.slice(0,20).forEach((s,i) => { html += `<div class="py-1 px-2 ${i%2===0?'bg-red-50':''} text-xs"><span class="text-gray-500">${sanitizeHTML(s.kelas)}</span> - ${sanitizeHTML(s.nama)}</div>`; });
+      if (belum.length>20) html += `<p class="text-xs p-2 text-gray-500">... dan ${belum.length-20} lainnya</p>`;
       html += '</div>';
     }
     rc.innerHTML = html;
-  } catch (err) { rc.innerHTML = '<span class="text-red-600">Error: ' + sanitizeHTML(err.message) + '</span>'; }
+  } catch(err) { rc.innerHTML = '<span class="text-red-600">Error: '+sanitizeHTML(err.message)+'</span>'; }
   setButtonLoading('btnSimulasiAlpa', false);
 }
 async function jalankanAutoAlpaSekarang() {
-  if (!confirm('Jalankan Auto Alpa SEKARANG?\n\nSiswa yang belum absen hari ini akan ditandai ALPA.')) return;
-  const rd = document.getElementById('autoAlpaResult');
-  const rt = document.getElementById('autoAlpaResultTitle');
-  const rc = document.getElementById('autoAlpaResultContent');
-  rd.classList.remove('hidden'); rt.textContent = 'Memproses...';
-  rc.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Sedang memproses Auto Alpa...';
+  if (!confirm('Jalankan Auto Alpa SEKARANG?\n\nSiswa yang belum absen akan ditandai ALPA.')) return;
+  const rd=document.getElementById('autoAlpaResult');
+  const rt=document.getElementById('autoAlpaResultTitle');
+  const rc=document.getElementById('autoAlpaResultContent');
+  rd.classList.remove('hidden'); rt.textContent='Memproses...';
+  rc.innerHTML='<i class="fas fa-spinner animate-spin mr-2"></i>Memproses Auto Alpa...';
   setButtonLoading('btnJalankanAlpa', true);
   try {
-    const today = todayStr(); const waktu = nowStr();
+    const today = todayStr();
+    const bulan = toBulan(today);
+    const col = tglCol(today);
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${today}`);
-    const absenNis = new Set((absen || []).map(a => a.nis));
-    const belumAbsen = (semua || []).filter(s => !absenNis.has(s.nis));
-    for (const s of belumAbsen) {
-      await sbInsert(T.absensi, { nis: s.nis, nama: s.nama, kelas: s.kelas, tanggal: today, status: 'Alpa', waktu, petugas: 'Auto Alpa' });
-    }
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    const absenMap = {};
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+    const belum = (semua||[]).filter(s => !absenMap[s.nis]);
+    for (const s of belum) { await setStatusHarian(s.nis, s.nama, s.kelas, today, 'A'); }
     rt.textContent = '✅ Auto Alpa Selesai - ' + today;
-    rc.innerHTML = `<div class="grid grid-cols-2 gap-2 mb-3"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Ditandai Alpa</p><p class="text-lg font-bold text-red-700">${belumAbsen.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Total Diproses</p><p class="text-lg font-bold text-blue-700">${semua.length}</p></div></div>`;
+    rc.innerHTML = `<div class="grid grid-cols-2 gap-2"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Ditandai Alpa</p><p class="text-lg font-bold text-red-700">${belum.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Total Siswa</p><p class="text-lg font-bold text-blue-700">${semua.length}</p></div></div>`;
     loadAdminRekap();
-  } catch (err) { rc.innerHTML = '<span class="text-red-600">Error: ' + sanitizeHTML(err.message) + '</span>'; }
+  } catch(err) { rc.innerHTML = '<span class="text-red-600">Error: '+sanitizeHTML(err.message)+'</span>'; }
   setButtonLoading('btnJalankanAlpa', false);
 }
 async function resetAlpaKelas() {
   const kelas = document.getElementById('resetKelas').value;
   const tanggal = document.getElementById('resetTanggal').value;
   const resultEl = document.getElementById('resetAlpaResult');
-  if (!kelas || !tanggal) { resultEl.innerHTML = '<span class="text-red-600">Pilih kelas dan tanggal!</span>'; return; }
-  if (!confirm(`Reset semua status Alpa kelas ${kelas} pada ${tanggal}?`)) return;
+  if (!kelas || !tanggal) { resultEl.innerHTML='<span class="text-red-600">Pilih kelas dan tanggal!</span>'; return; }
+  if (!confirm(`Reset Alpa kelas ${kelas} pada ${tanggal}?`)) return;
   setButtonLoading('btnResetAlpa', true);
-  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mereset...</span>';
+  resultEl.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mereset...</span>';
   try {
-    await sbDelete(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&tanggal=eq.${tanggal}&status=eq.Alpa`);
-    resultEl.innerHTML = `<span class="text-blue-600">✅ Berhasil reset status Alpa kelas ${kelas}!</span>`;
-  } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
+    const bulan = toBulan(tanggal);
+    const col = tglCol(tanggal);
+    const rows = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&bulan=eq.${bulan}&${col}=eq.A`);
+    for (const row of (rows||[])) {
+      await sbUpdate(T.absensi, `?nis=eq.${encodeURIComponent(row.nis)}&bulan=eq.${bulan}`, { [col]: null });
+    }
+    resultEl.innerHTML=`<span class="text-blue-600">✅ Reset Alpa kelas ${kelas} selesai! (${(rows||[]).length} siswa)</span>`;
+  } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnResetAlpa', false);
 }
 
-// ============================================
-// WA MANUAL (FONNTE)
-// ============================================
+// ============================================================
+// WA MANUAL
+// ============================================================
 async function previewWAKirim() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const previewDiv = document.getElementById('previewWAResult');
-  if (!tanggal) { alert('Pilih tanggal terlebih dahulu!'); return; }
+  if (!tanggal) { alert('Pilih tanggal!'); return; }
   setButtonLoading('btnPreviewWA', true);
   previewDiv.classList.remove('hidden');
-  previewDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat preview...';
+  previewDiv.innerHTML='<i class="fas fa-spinner animate-spin mr-2"></i>Memuat...';
   try {
+    const bulan = toBulan(tanggal);
+    const col = tglCol(tanggal);
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}&status=eq.Alpa`);
-    const absenNis = new Set((absen || []).map(a => a.nis));
-    const siswaAlpa = (semua || []).filter(s => absenNis.has(s.nis));
-    if (siswaAlpa.length === 0) {
-      previewDiv.innerHTML = '<p class="text-blue-600 text-center py-2">✅ Tidak ada siswa Alpa!</p>';
-      setButtonLoading('btnPreviewWA', false); return;
-    }
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    const absenMap = {};
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+    const alpa = (semua||[]).filter(s => absenMap[s.nis]==='A');
+    if (!alpa.length) { previewDiv.innerHTML='<p class="text-blue-600 text-center py-2">✅ Tidak ada siswa Alpa!</p>'; setButtonLoading('btnPreviewWA',false); return; }
     const byKelas = {};
-    siswaAlpa.forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas] = []; byKelas[s.kelas].push(s); });
-    let html = `<p class="font-semibold mb-2">📋 ${siswaAlpa.length} siswa Alpa pada ${tanggal}:</p>`;
-    Object.entries(byKelas).forEach(([kelas, list]) => {
-      html += `<div class="mb-2 p-2 bg-red-50 border border-red-200 rounded"><p class="font-semibold text-red-700">${sanitizeHTML(kelas)} (${list.length} siswa)</p>`;
+    alpa.forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+    let html = `<p class="font-semibold mb-2">📋 ${alpa.length} siswa Alpa (${tanggal}):</p>`;
+    Object.entries(byKelas).forEach(([kelas,list]) => {
+      html += `<div class="mb-2 p-2 bg-red-50 border border-red-200 rounded"><p class="font-semibold text-red-700">${sanitizeHTML(kelas)} (${list.length})</p>`;
       list.forEach(s => {
         const hp = formatHP(s.hp_ortu);
-        html += `<p class="text-gray-600">• ${sanitizeHTML(s.nama)} ${hp ? '<span class="text-green-600">✓ HP: ' + sanitizeHTML(hp) + '</span>' : '<span class="text-red-500">✗ No HP</span>'}</p>`;
+        html += `<p class="text-gray-600">• ${sanitizeHTML(s.nama)} ${hp?'<span class="text-green-600">✓ '+sanitizeHTML(hp)+'</span>':'<span class="text-red-500">✗ No HP</span>'}</p>`;
       });
       html += '</div>';
     });
     previewDiv.innerHTML = html;
-  } catch (err) { previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
+  } catch(err) { previewDiv.innerHTML=`<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnPreviewWA', false);
 }
 async function kirimWAOrangTua() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const resultEl = document.getElementById('waKirimResult');
-  if (!tanggal) { alert('Pilih tanggal terlebih dahulu!'); return; }
-  if (!confirm(`Kirim notifikasi WA ke orang tua siswa Alpa tanggal ${tanggal}?`)) return;
-  setButtonLoading('btnKirimWAOrtu', true);
-  hideWAProgress();
-  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyiapkan data...</span>';
+  if (!tanggal) { alert('Pilih tanggal!'); return; }
+  if (!confirm(`Kirim WA ke ortu siswa Alpa tanggal ${tanggal}?`)) return;
+  setButtonLoading('btnKirimWAOrtu', true); hideWAProgress();
+  resultEl.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyiapkan...</span>';
   try {
+    const bulan = toBulan(tanggal);
+    const col = tglCol(tanggal);
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}&status=eq.Alpa`);
-    const absenNis = new Set((absen || []).map(a => a.nis));
-    const siswaAlpa = (semua || []).filter(s => absenNis.has(s.nis));
-    if (siswaAlpa.length === 0) {
-      resultEl.innerHTML = '<span class="text-blue-600">✅ Tidak ada siswa Alpa.</span>';
-      setButtonLoading('btnKirimWAOrtu', false); return;
-    }
-    const targetList = siswaAlpa.map(s => ({ ...s, hpFormatted: formatHP(s.hp_ortu) })).filter(s => s.hpFormatted);
-    const tanpaHP = siswaAlpa.length - targetList.length;
-    let terkirim = 0;
-    updateWAProgress(0, targetList.length, 'Mengirim WA ke orang tua...');
-    for (const s of targetList) {
-      const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nKami informasikan bahwa putra/putri Bapak/Ibu tercatat *TIDAK HADIR (ALPA)* pada kegiatan pagi hari:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi kepada wali kelas jika ada keterangan.\n\nTerima kasih.\n_SIPAGI - Sistem Presensi Pagi_`;
-      const sukses = await kirimWA(s.hpFormatted, pesan);
-      if (sukses) terkirim++;
-      updateWAProgress(terkirim, targetList.length, `Mengirim ke ${s.nama}...`);
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    const absenMap = {};
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+    const alpa = (semua||[]).filter(s => absenMap[s.nis]==='A');
+    const withHP = alpa.map(s => ({...s, hpF: formatHP(s.hp_ortu)})).filter(s => s.hpF);
+    if (!alpa.length) { resultEl.innerHTML='<span class="text-blue-600">✅ Tidak ada siswa Alpa.</span>'; setButtonLoading('btnKirimWAOrtu',false); return; }
+    let sent=0;
+    updateWAProgress(0, withHP.length, 'Mengirim WA ke ortu...');
+    for (const s of withHP) {
+      const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nPutra/putri tercatat *TIDAK HADIR (ALPA)*:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi ke wali kelas.\n\n_SIPAGI - Sistem Presensi Pagi_`;
+      const ok = await kirimWA(s.hpF, pesan);
+      if (ok) sent++;
+      updateWAProgress(sent, withHP.length, `Mengirim ke ${s.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
     hideWAProgress();
-    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ WA terkirim ke ${terkirim} orang tua${tanpaHP > 0 ? ', <b>' + tanpaHP + '</b> tidak ada HP' : ''}.</span><br><span class="text-xs text-gray-500">Cek status di <a href="https://fonnte.com/dashboard" target="_blank" class="text-blue-600 underline">Fonnte Dashboard</a></span>`;
-  } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
+    resultEl.innerHTML=`<span class="text-green-600 font-semibold">✅ WA terkirim ke ${sent} ortu</span>${alpa.length-withHP.length>0?` (${alpa.length-withHP.length} tanpa HP)`:''}.`;
+  } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAOrtu', false);
 }
 async function kirimRekapWaliKelas() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const resultEl = document.getElementById('waKirimResult');
-  if (!tanggal) { alert('Pilih tanggal terlebih dahulu!'); return; }
-  if (!confirm(`Kirim rekap absensi pagi ke semua wali kelas untuk tanggal ${tanggal}?`)) return;
-  setButtonLoading('btnKirimWAWali', true);
-  hideWAProgress();
-  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyiapkan rekap...</span>';
+  if (!tanggal) { alert('Pilih tanggal!'); return; }
+  if (!confirm(`Kirim rekap ke semua wali kelas (${tanggal})?`)) return;
+  setButtonLoading('btnKirimWAWali', true); hideWAProgress();
+  resultEl.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyiapkan rekap...</span>';
   try {
-    const semuaSiswa = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
-    const semuaGuru = await sbSelect(T.guru, `?role=eq.WALI`);
+    const bulan = toBulan(tanggal);
+    const col = tglCol(tanggal);
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,kelas,${col}`);
+    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
     const absenMap = {};
-    (absen || []).forEach(a => { absenMap[a.nis] = a; });
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
     const byKelas = {};
-    (semuaSiswa || []).forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas] = []; byKelas[s.kelas].push(s); });
-    const waliDenganHP = (semuaGuru || []).filter(g => g.kelas_wali && formatHP(g.hp));
-    const waliTanpaHP = (semuaGuru || []).length - waliDenganHP.length;
-    if (waliDenganHP.length === 0) {
-      resultEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak ada wali kelas dengan nomor HP.</span>`;
-      setButtonLoading('btnKirimWAWali', false); return;
-    }
-    let terkirim = 0;
-    updateWAProgress(0, waliDenganHP.length, 'Mengirim rekap ke wali kelas...');
-    for (const guru of waliDenganHP) {
+    (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
+    let sent=0;
+    updateWAProgress(0, waliList.length, 'Mengirim rekap ke wali...');
+    for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
-      let hadir = 0, sakit = 0, izin = 0, alpa = 0, belum = 0;
-      const namaAlpa = [];
-      siswakelas.forEach(s => {
-        const a = absenMap[s.nis]; const st = a ? a.status : 'Belum Absen';
-        if (st === 'Hadir') hadir++;
-        else if (st === 'Sakit') sakit++;
-        else if (st === 'Izin') izin++;
-        else if (st === 'Alpa') { alpa++; namaAlpa.push(s.nama); }
-        else belum++;
+      let h=0, s=0, iz=0, al=0, bl=0;
+      const namaAlpa=[];
+      siswakelas.forEach(sw => {
+        const st = absenMap[sw.nis]||null;
+        if (st==='H') h++;
+        else if (st==='S') s++;
+        else if (st==='I') iz++;
+        else if (st==='A') { al++; namaAlpa.push(sw.nama); }
+        else bl++;
       });
-      const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi Harian*\n\n📅 Tanggal: ${tanggal}\n🏫 Kelas: ${guru.kelas_wali}\n👤 Wali Kelas: ${guru.nama}\n\n📊 *Rekap:*\n✅ Hadir: ${hadir}\n🤒 Sakit: ${sakit}\n📋 Izin: ${izin}\n❌ Alpa: ${alpa}\n⏳ Belum Absen: ${belum}\n📌 Total: ${siswakelas.length}${namaAlpa.length > 0 ? '\n\n❌ *Siswa Alpa:*\n' + namaAlpa.map(n => '• ' + n).join('\n') : ''}\n\n_SIPAGI - Sistem Presensi Pagi_`;
-      const sukses = await kirimWA(hp, pesan);
-      if (sukses) terkirim++;
-      updateWAProgress(terkirim, waliDenganHP.length, `Kirim ke ${guru.nama}...`);
+      const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi*\n\n📅 ${tanggal}\n🏫 ${guru.kelas_wali}\n👤 ${guru.nama}\n\n✅ Hadir: ${h}\n🤒 Sakit: ${s}\n📋 Izin: ${iz}\n❌ Alpa: ${al}\n⏳ Belum: ${bl}\n📌 Total: ${siswakelas.length}${namaAlpa.length>0?'\n\n❌ Alpa:\n'+namaAlpa.map(n=>'• '+n).join('\n'):''}\n\n_SIPAGI_`;
+      const ok = await kirimWA(hp, pesan);
+      if (ok) sent++;
+      updateWAProgress(sent, waliList.length, `Kirim ke ${guru.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
     hideWAProgress();
-    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${terkirim} wali kelas${waliTanpaHP > 0 ? ', <b>' + waliTanpaHP + '</b> tidak ada HP' : ''}.</span>`;
-  } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
+    resultEl.innerHTML=`<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${sent} wali kelas.</span>`;
+  } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAWali', false);
 }
 
-// ============================================
+// ============================================================
 // INIT
-// ============================================
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   switchRole('siswa');
   document.getElementById('waliRekapDate').value = todayStr();
-  document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0, 7);
+  document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0,7);
   document.getElementById('waKirimTanggal').value = todayStr();
   renderDayButtons();
   startLiveClock();
