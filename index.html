@@ -61,7 +61,6 @@
       animation: shimmer 1s linear infinite;
     }
 
-    /* Clock display */
     .scheduler-clock {
       font-family: 'Courier New', monospace;
       font-size: 2rem;
@@ -76,7 +75,6 @@
       animation: blink 1s ease-in-out infinite;
     }
 
-    /* Status badge */
     .sched-badge {
       display: inline-flex;
       align-items: center;
@@ -108,7 +106,6 @@
       animation: pulse-green 1s infinite;
     }
 
-    /* Timeline trigger */
     .trigger-timeline {
       display: flex;
       gap: 0;
@@ -164,7 +161,6 @@
     }
     .trigger-line.done { background: #22c55e; }
 
-    /* Log box */
     .sched-log {
       background: rgba(0,0,0,0.4);
       border: 1px solid #1e293b;
@@ -185,7 +181,6 @@
     .log-info { color: #60a5fa; }
     .log-warn { color: #fbbf24; }
 
-    /* Toggle switch */
     .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
     .toggle-track {
       width: 48px; height: 26px;
@@ -207,7 +202,6 @@
     }
     .toggle-track.on .toggle-thumb { transform: translateX(22px); }
 
-    /* Time input dark */
     .dark-time-input {
       background: rgba(15,23,42,0.8);
       border: 1px solid #334155;
@@ -223,7 +217,6 @@
     }
     .dark-time-input:focus { border-color: #3b82f6; }
 
-    /* Countdown next trigger */
     .next-trigger-badge {
       background: rgba(251,191,36,0.1);
       border: 1px solid rgba(251,191,36,0.3);
@@ -688,10 +681,9 @@
     <!-- Tab Auto Alpa -->
     <div id="admTabAutoalpa" class="admin-panel hidden">
 
-      <!-- ===== SCHEDULER CARD ===== -->
+      <!-- SCHEDULER CARD -->
       <div class="scheduler-card mb-4" id="schedulerCard">
         <div class="p-5">
-          <!-- Header -->
           <div class="flex items-center justify-between mb-4">
             <div>
               <h4 class="font-bold text-white flex items-center gap-2">
@@ -706,13 +698,11 @@
             </span>
           </div>
 
-          <!-- Live Clock -->
           <div class="text-center mb-4">
             <div class="scheduler-clock" id="schedClock">00:00:00</div>
             <p class="text-slate-500 text-xs mt-1" id="schedDate">—</p>
           </div>
 
-          <!-- Countdown to Next Trigger -->
           <div class="next-trigger-badge mb-4" id="nextTriggerBadge">
             <i class="fas fa-hourglass-half text-amber-400 text-sm"></i>
             <div>
@@ -721,7 +711,6 @@
             </div>
           </div>
 
-          <!-- Timeline Steps -->
           <div class="trigger-timeline" id="triggerTimeline">
             <div class="trigger-step">
               <div class="trigger-step-icon pending" id="step1Icon"><i class="fas fa-clock"></i></div>
@@ -744,7 +733,6 @@
             </div>
           </div>
 
-          <!-- Settings -->
           <div class="bg-black/30 rounded-xl p-4 mb-4 space-y-3">
             <div class="flex items-center gap-3">
               <i class="fas fa-clock text-slate-400 text-sm w-4"></i>
@@ -772,13 +760,11 @@
             </div>
           </div>
 
-          <!-- Toggle Aktifkan -->
           <button id="btnToggleSched" onclick="toggleScheduler()"
             class="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200">
             <i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER
           </button>
 
-          <!-- Log -->
           <div class="mt-4">
             <div class="flex items-center justify-between mb-2">
               <p class="text-slate-400 text-xs font-semibold"><i class="fas fa-terminal mr-1"></i>LOG AKTIVITAS</p>
@@ -902,49 +888,66 @@
 // ============================================
 const FONNTE_TOKEN = 'JpheArK4npgMrgZN8d5v';
 
+// ✅ PERBAIKAN UTAMA: Fungsi kirimWA menggunakan CORS proxy
+// Tanpa proxy, browser memblokir Authorization header ke api.fonnte.com
 async function kirimWA(target, pesan) {
+  const CORS_PROXY = 'https://corsproxy.io/?url=';
+  const FONNTE_URL = 'https://api.fonnte.com/send';
+
   try {
     const formData = new FormData();
     formData.append('target', target);
     formData.append('message', pesan);
     formData.append('countryCode', '62');
-    await fetch('https://api.fonnte.com/send', {
+
+    const res = await fetch(CORS_PROXY + encodeURIComponent(FONNTE_URL), {
       method: 'POST',
       headers: { 'Authorization': FONNTE_TOKEN },
-      body: formData,
-      mode: 'no-cors'
+      body: formData
+      // TIDAK pakai mode: 'no-cors' — mode itu yg bikin header Authorization dibuang browser
     });
-    return true;
-  } catch (err) { console.error('Fonnte WA error:', err); return false; }
+
+    if (res.ok) {
+      const data = await res.json();
+      console.log('✅ WA terkirim ke', target, data);
+      return true;
+    } else {
+      console.error('❌ WA gagal, status:', res.status);
+      return false;
+    }
+  } catch (err) {
+    console.error('❌ Fonnte WA error:', err);
+    return false;
+  }
 }
 
+// ✅ PERBAIKAN: cekKoneksiFonnte juga pakai CORS proxy
 async function cekKoneksiFonnte() {
   const statusEl = document.getElementById('statusFonnte');
   const btn = document.getElementById('btnCekFonnte');
+  const CORS_PROXY = 'https://corsproxy.io/?url=';
+  const VALIDATE_URL = 'https://api.fonnte.com/validate';
+
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Mengecek...';
   statusEl.textContent = 'Menghubungi server Fonnte...';
   try {
-    const res = await fetch('https://api.fonnte.com/validate', {
-      method: 'POST', headers: { 'Authorization': FONNTE_TOKEN }
+    const res = await fetch(CORS_PROXY + encodeURIComponent(VALIDATE_URL), {
+      method: 'POST',
+      headers: { 'Authorization': FONNTE_TOKEN }
     });
-if (res.ok) {
-  const data = await res.json();
-  if (data.status === true || data.status === 'true') {
-    statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b>`;
-  } else {
-    statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
-  }
-} else {
-  // Bisa jadi CORS / metode tidak didukung, bukan berarti token salah
-  statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak dapat memverifikasi dari browser (CORS/network). Token mungkin tetap valid — coba kirim WA langsung untuk memastikan.</span>`;
-}
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === true || data.status === 'true') {
+        statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b> | No: ${sanitizeHTML(data.device || '-')}`;
+      } else {
+        statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
       }
     } else {
-      statusEl.innerHTML = `<span class="text-red-600">❌ Server error (${res.status})</span>`;
+      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Server merespons dengan status ${res.status}. Token mungkin tetap valid — coba kirim WA langsung.</span>`;
     }
   } catch (err) {
-    statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak bisa verifikasi dari browser (CORS). Token: <code>${FONNTE_TOKEN.substring(0,8)}...</code></span>`;
+    statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak bisa terhubung ke Fonnte. Periksa koneksi internet Anda.</span>`;
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
@@ -1003,14 +1006,12 @@ const AppState = {
   activeTeacher: '', activeClass: '',
   waliData: null, adminRekapData: null,
   searchTimeout: null, logoClickCount: 0, logoClickTimer: null,
-
-  // Scheduler state
   schedulerActive: false,
   schedulerInterval: null,
   clockInterval: null,
   schedWASend: true,
-  activeDays: new Set([1,2,3,4,5,6]), // Senin-Sabtu
-  lastTriggeredDate: null // Tanggal terakhir trigger dijalankan (cegah double run)
+  activeDays: new Set([1,2,3,4,5,6]),
+  lastTriggeredDate: null
 };
 
 // ============================================
@@ -1062,12 +1063,8 @@ function hideWAProgress() {
 }
 
 // ============================================
-// ===== SCHEDULER ENGINE =====
+// SCHEDULER ENGINE
 // ============================================
-
-/**
- * Tambah log ke panel scheduler
- */
 function schedLog(msg, type = 'info') {
   const box = document.getElementById('schedLog');
   if (!box) return;
@@ -1078,15 +1075,10 @@ function schedLog(msg, type = 'info') {
   box.appendChild(line);
   box.scrollTop = box.scrollHeight;
 }
-
 function clearSchedLog() {
   const box = document.getElementById('schedLog');
   if (box) box.innerHTML = '<span class="log-info">» Log dibersihkan.</span>';
 }
-
-/**
- * Toggle hari aktif
- */
 function toggleDay(day) {
   if (AppState.activeDays.has(day)) AppState.activeDays.delete(day);
   else AppState.activeDays.add(day);
@@ -1102,20 +1094,12 @@ function renderDayButtons() {
     }
   });
 }
-
-/**
- * Toggle opsi kirim WA otomatis
- */
 function toggleSchedWA() {
   AppState.schedWASend = !AppState.schedWASend;
   const track = document.getElementById('schedWAToggle');
   if (AppState.schedWASend) track.classList.add('on');
   else track.classList.remove('on');
 }
-
-/**
- * Live clock ticker (update setiap detik)
- */
 function startLiveClock() {
   if (AppState.clockInterval) clearInterval(AppState.clockInterval);
   AppState.clockInterval = setInterval(() => {
@@ -1125,114 +1109,75 @@ function startLiveClock() {
     const ss = String(now.getSeconds()).padStart(2, '0');
     const clockEl = document.getElementById('schedClock');
     if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss}`;
-
     const dateEl = document.getElementById('schedDate');
     if (dateEl) {
       const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
       dateEl.textContent = `${days[now.getDay()]}, ${now.toLocaleDateString('id-ID')}`;
     }
-
-    // Update countdown ke trigger berikutnya
     if (AppState.schedulerActive) updateNextTriggerCountdown(now);
   }, 1000);
 }
-
-/**
- * Hitung sisa waktu ke trigger berikutnya
- */
 function updateNextTriggerCountdown(now) {
   const schedTimeVal = document.getElementById('schedTime').value || '08:00';
   const [targetH, targetM] = schedTimeVal.split(':').map(Number);
   const target = new Date(now);
   target.setHours(targetH, targetM, 0, 0);
-
-  // Kalau sudah lewat hari ini → besok
   if (now >= target) target.setDate(target.getDate() + 1);
-
-  // Lewati hari yang tidak aktif
   let maxTry = 7;
   while (maxTry-- > 0) {
-    const dow = target.getDay(); // 0=Minggu ... 6=Sabtu
+    const dow = target.getDay();
     if (AppState.activeDays.has(dow)) break;
     target.setDate(target.getDate() + 1);
   }
-
   const diffMs = target - now;
   const diffH = Math.floor(diffMs / 3600000);
   const diffM = Math.floor((diffMs % 3600000) / 60000);
   const diffS = Math.floor((diffMs % 60000) / 1000);
-
   const el = document.getElementById('nextTriggerCountdown');
   if (el) {
     if (diffH > 0) el.textContent = `${diffH}j ${diffM}m ${diffS}d`;
     else el.textContent = `${diffM}m ${diffS}d`;
   }
 }
-
-/**
- * Cek apakah sekarang sudah waktunya trigger
- */
 function checkTriggerTime() {
   const now = new Date();
-  const dow = now.getDay(); // 0=Minggu ... 6=Sabtu
-
-  // Cek hari aktif
+  const dow = now.getDay();
   if (!AppState.activeDays.has(dow)) return;
-
   const schedTimeVal = document.getElementById('schedTime').value || '08:00';
   const [targetH, targetM] = schedTimeVal.split(':').map(Number);
-
   const isTargetHour = now.getHours() === targetH;
   const isTargetMin  = now.getMinutes() === targetM;
   const todayKey = todayStr();
-
-  // Trigger hanya 1x per hari (di menit yang tepat, cek setiap 5 detik)
   if (isTargetHour && isTargetMin && AppState.lastTriggeredDate !== todayKey) {
     AppState.lastTriggeredDate = todayKey;
     schedLog('🔔 Waktu trigger tercapai! Menjalankan Auto Alpa...', 'warn');
     runScheduledAutoAlpa(todayKey);
   }
 }
-
-/**
- * Jalankan Auto Alpa terjadwal + WA
- */
 async function runScheduledAutoAlpa(tanggal) {
-  // --- Animasi step 1: menunggu → running ---
   setStepState(1, 'running');
   schedLog('⚡ Memulai Auto Alpa untuk: ' + tanggal, 'info');
-
   try {
     const waktu = nowStr();
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
     const absenNis = new Set((absen || []).map(a => a.nis));
     const belumAbsen = (semua || []).filter(s => !absenNis.has(s.nis));
-
     setStepState(1, 'done'); setLineState(1, 'done');
     setStepState(2, 'running');
-
     let count = 0;
     for (const s of belumAbsen) {
-      await sbInsert(T.absensi, {
-        nis: s.nis, nama: s.nama, kelas: s.kelas,
-        tanggal, status: 'Alpa', waktu, petugas: 'Auto Trigger'
-      });
+      await sbInsert(T.absensi, { nis: s.nis, nama: s.nama, kelas: s.kelas, tanggal, status: 'Alpa', waktu, petugas: 'Auto Trigger' });
       count++;
     }
-
     schedLog(`✅ Auto Alpa selesai: ${count} siswa ditandai Alpa`, 'success');
     setStepState(2, 'done'); setLineState(2, 'done');
-
-    // Refresh rekap jika tab rekap sedang aktif
     const rekapDate = document.getElementById('admRekapDate');
     if (rekapDate && rekapDate.value === tanggal) loadAdminRekap();
-
     if (AppState.schedWASend) {
-      // WA ke ortu
       setStepState(3, 'running');
       schedLog('📲 Mengirim WA ke orang tua siswa Alpa...', 'info');
-      const alpaList = belumAbsen; // semua yg tadi ditandai alpa
+      const alpaList = belumAbsen;
       let waSent = 0;
       for (const s of alpaList) {
         const hp = formatHP(s.hp_ortu);
@@ -1244,8 +1189,6 @@ async function runScheduledAutoAlpa(tanggal) {
       }
       schedLog(`📨 WA ortu: ${waSent} terkirim`, 'success');
       setStepState(3, 'done'); setLineState(3, 'done');
-
-      // WA rekap ke wali kelas
       setStepState(4, 'running');
       schedLog('📋 Mengirim rekap ke wali kelas...', 'info');
       const semuaSiswa = semua;
@@ -1284,17 +1227,11 @@ async function runScheduledAutoAlpa(tanggal) {
       setStepState(4, 'done');
       schedLog('ℹ️ Kirim WA dinonaktifkan, selesai tanpa WA.', 'info');
     }
-
   } catch (err) {
     schedLog('❌ Error: ' + err.message, 'error');
-    // Reset steps ke pending jika error
     [1,2,3,4].forEach(i => setStepState(i, 'pending'));
   }
 }
-
-/**
- * Set visual state timeline step (pending | running | done)
- */
 function setStepState(step, state) {
   const el = document.getElementById(`step${step}Icon`);
   if (!el) return;
@@ -1310,23 +1247,15 @@ function resetTimeline() {
   [1,2,3,4].forEach(i => setStepState(i, 'pending'));
   [1,2,3].forEach(i => setLineState(i, ''));
 }
-
-/**
- * Aktifkan / Nonaktifkan Scheduler
- */
 function toggleScheduler() {
   if (AppState.schedulerActive) {
-    // Matikan
     AppState.schedulerActive = false;
     if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
-
-    // Update UI
     const card = document.getElementById('schedulerCard');
     const badge = document.getElementById('schedBadge');
     const btn = document.getElementById('btnToggleSched');
     const clock = document.getElementById('schedClock');
     const nextBadge = document.getElementById('nextTriggerBadge');
-
     card.classList.remove('scheduler-active');
     badge.className = 'sched-badge sched-badge-off';
     badge.innerHTML = '<span class="sched-badge-dot"></span>NONAKTIF';
@@ -1334,29 +1263,21 @@ function toggleScheduler() {
     btn.innerHTML = '<i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER';
     clock.classList.remove('active-glow');
     nextBadge.style.opacity = '0.5';
-
     resetTimeline();
     schedLog('⏹ Scheduler dinonaktifkan.', 'warn');
     document.getElementById('nextTriggerCountdown').textContent = '—';
   } else {
-    // Aktifkan
     const schedTime = document.getElementById('schedTime').value;
     if (!schedTime) { alert('Pilih jam trigger terlebih dahulu!'); return; }
     if (AppState.activeDays.size === 0) { alert('Pilih minimal 1 hari aktif!'); return; }
-
     AppState.schedulerActive = true;
-    AppState.lastTriggeredDate = null; // Reset guard
-
-    // Cek setiap 5 detik
+    AppState.lastTriggeredDate = null;
     AppState.schedulerInterval = setInterval(checkTriggerTime, 5000);
-
-    // Update UI
     const card = document.getElementById('schedulerCard');
     const badge = document.getElementById('schedBadge');
     const btn = document.getElementById('btnToggleSched');
     const clock = document.getElementById('schedClock');
     const nextBadge = document.getElementById('nextTriggerBadge');
-
     card.classList.add('scheduler-active');
     badge.className = 'sched-badge sched-badge-on';
     badge.innerHTML = '<span class="sched-badge-dot"></span>AKTIF';
@@ -1364,7 +1285,6 @@ function toggleScheduler() {
     btn.innerHTML = '<i class="fas fa-stop-circle"></i> NONAKTIFKAN SCHEDULER';
     clock.classList.add('active-glow');
     nextBadge.style.opacity = '1';
-
     resetTimeline();
     schedLog(`✅ Scheduler aktif! Trigger jam ${schedTime}`, 'success');
     schedLog(`📅 Hari aktif: ${[...AppState.activeDays].map(d => ['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(', ')}`, 'info');
@@ -1409,7 +1329,6 @@ function validateNis() {
   else if (nis.length > 0) { msg.textContent = 'NIS harus angka minimal 3 digit'; msg.className = 'text-sm text-amber-600 text-center mt-3'; }
   else { msg.textContent = 'Masukkan NIS untuk melanjutkan'; msg.className = 'text-sm text-gray-500 text-center mt-3'; }
 }
-
 function startStudentScan() {
   document.getElementById('inputNisArea').classList.add('hidden');
   document.getElementById('scanArea').classList.remove('hidden');
@@ -1423,7 +1342,6 @@ function startStudentScan() {
     stopStudentScan();
   });
 }
-
 function stopStudentScan() {
   if (AppState.scanner) {
     AppState.scanner.stop().then(() => { AppState.scanner.clear(); AppState.scanner = null; }).catch(console.error);
@@ -1431,7 +1349,6 @@ function stopStudentScan() {
   document.getElementById('scanArea').classList.add('hidden');
   document.getElementById('inputNisArea').classList.remove('hidden');
 }
-
 async function onStudentScanSuccess(decodedText) {
   if (AppState.scanner) { AppState.scanner.stop().then(() => { AppState.scanner.clear(); AppState.scanner = null; }); }
   document.getElementById('scanArea').classList.add('hidden');
@@ -1464,7 +1381,6 @@ async function onStudentScanSuccess(decodedText) {
     resDiv.innerHTML = `<div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-times-circle text-4xl text-red-500"></i></div><h3 class="text-xl font-bold text-red-700 mb-2">Gagal</h3><p class="text-red-600">${sanitizeHTML(err.message)}</p><button class="mt-4 px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg" onclick="backToHomeAfterSuccess()"><i class="fas fa-redo mr-2"></i>Coba Lagi</button>`;
   }
 }
-
 function backToHomeAfterSuccess() {
   document.getElementById('nisSiswa').value = '';
   document.getElementById('inputNisArea').classList.remove('hidden');
@@ -1503,7 +1419,6 @@ async function loginPiket(mode) {
   } catch (err) { showMessage('msgGuru', err.message, 'error'); }
   setButtonLoading('btnLoginGuruQR', false); setButtonLoading('btnLoginGuruManual', false);
 }
-
 function startDynamicQR() {
   generateQR(); AppState.countdown = 20;
   AppState.qrInterval = setInterval(() => {
@@ -1513,7 +1428,6 @@ function startDynamicQR() {
     if (AppState.countdown <= 0) { generateQR(); AppState.countdown = 20; }
   }, 1000);
 }
-
 function generateQR() {
   const div = document.getElementById('qrcode'); div.innerHTML = '';
   new QRCode(div, {
@@ -1521,7 +1435,6 @@ function generateQR() {
     width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M
   });
 }
-
 function logoutPiket() {
   if (AppState.qrInterval) { clearInterval(AppState.qrInterval); AppState.qrInterval = null; }
   AppState.activeTeacher = ''; AppState.countdown = 20;
@@ -1538,7 +1451,6 @@ function logoutPiket() {
   document.getElementById('manualResult').innerHTML = '';
   switchRole('siswa');
 }
-
 function searchStudent(keyword) {
   const res = document.getElementById('searchResults');
   if (AppState.searchTimeout) clearTimeout(AppState.searchTimeout);
@@ -1556,7 +1468,6 @@ function searchStudent(keyword) {
     } catch (err) { res.innerHTML = `<div class="p-3 text-red-500 text-center">Error: ${sanitizeHTML(err.message)}</div>`; }
   }, 500);
 }
-
 function selectStudent(nis, nama, kelas) {
   document.getElementById('manualNis').value = nis;
   document.getElementById('manualSearchInput').value = nama;
@@ -1565,7 +1476,6 @@ function selectStudent(nis, nama, kelas) {
   document.getElementById('displayNama').textContent = nama;
   document.getElementById('displayKelas').textContent = 'Kelas: ' + kelas + ' | NIS: ' + nis;
 }
-
 async function saveManualAttendance() {
   const nis = document.getElementById('manualNis').value;
   const status = document.getElementById('manualStatus').value;
@@ -1619,13 +1529,11 @@ async function loginWali() {
   } catch (err) { showMessage('msgWali', err.message, 'error'); }
   setButtonLoading('btnLoginWali', false);
 }
-
 function loadWaliDataByDate() {
   const tgl = document.getElementById('waliRekapDate').value;
   if (!tgl) { alert('Pilih tanggal terlebih dahulu!'); return; }
   loadWaliData(AppState.activeClass, tgl);
 }
-
 async function loadWaliData(kelas, tanggal) {
   const tbody = document.getElementById('tableWaliRekapBody');
   tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat data...</td></tr>';
@@ -1664,7 +1572,6 @@ async function loadWaliData(kelas, tanggal) {
     }).join('');
   } catch (err) { tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
-
 function showWaliList(type) {
   if (!AppState.waliData) return;
   const map = {
@@ -1681,7 +1588,6 @@ function showWaliList(type) {
   document.getElementById('listWaliContainer').classList.remove('hidden');
 }
 function closeWaliList() { document.getElementById('listWaliContainer').classList.add('hidden'); }
-
 function logoutWali() {
   AppState.activeClass = ''; AppState.waliData = null;
   ['userWali', 'passWali'].forEach(id => document.getElementById(id).value = '');
@@ -1691,7 +1597,6 @@ function logoutWali() {
   document.getElementById('listWaliContainer').classList.add('hidden');
   switchRole('siswa');
 }
-
 function downloadReport() {
   if (!AppState.waliData) { alert('Muat data terlebih dahulu!'); return; }
   const bulan = document.getElementById('bulanLaporan').value;
@@ -1718,7 +1623,6 @@ async function loginAdmin() {
   } catch (err) { showMessage('msgAdmin', err.message, 'error'); }
   setButtonLoading('btnLoginAdmin', false);
 }
-
 async function loadAdminDashboard() {
   const today = todayStr();
   document.getElementById('admRekapDate').value = today;
@@ -1729,7 +1633,6 @@ async function loadAdminDashboard() {
   } catch (err) { console.error('Dashboard error:', err); }
   showAdminTab('siswa');
 }
-
 function showAdminTab(tab) {
   document.querySelectorAll('.admin-panel').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.admin-tab').forEach(el => { el.classList.remove('bg-blue-100', 'text-blue-700'); el.classList.add('bg-gray-100', 'text-gray-600'); });
@@ -1742,7 +1645,6 @@ function showAdminTab(tab) {
   else if (tab === 'rekap') loadAdminRekap();
   else if (tab === 'autoalpa') { loadKelasList(); renderDayButtons(); }
 }
-
 async function loadAdminSiswa() {
   const tbody = document.getElementById('tableSiswaBody');
   tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Memuat...</td></tr>';
@@ -1752,7 +1654,6 @@ async function loadAdminSiswa() {
     tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3">${sanitizeHTML(r.nis)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3">${sanitizeHTML(r.kelas)}</td><td class="p-3 text-center"><button onclick="deleteSiswa('${sanitizeHTML(r.nis)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
   } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
-
 async function loadAdminGuru() {
   const tbody = document.getElementById('tableGuruBody');
   tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Memuat...</td></tr>';
@@ -1762,7 +1663,6 @@ async function loadAdminGuru() {
     tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3">${sanitizeHTML(r.username)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3">${r.kelas_wali ? sanitizeHTML(r.kelas_wali) : '-'}</td><td class="p-3 text-center"><button onclick="deleteGuru('${sanitizeHTML(r.username)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
   } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
-
 async function loadAdminRekap() {
   const tbody = document.getElementById('tableRekapBody');
   const tgl = document.getElementById('admRekapDate').value;
@@ -1800,7 +1700,6 @@ async function loadAdminRekap() {
     renderAdminRekapTable(siswaList);
   } catch (err) { tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
-
 function applyAdminFilters() {
   if (!AppState.adminRekapData) return;
   const fk = document.getElementById('filterKelasAdmin').value;
@@ -1811,7 +1710,6 @@ function applyAdminFilters() {
   renderAdminRekapTable(list);
   document.getElementById('totalRekapDisplay').textContent = list.length;
 }
-
 function renderAdminRekapTable(list) {
   const tbody = document.getElementById('tableRekapBody');
   if (!list || !list.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Tidak ada data</td></tr>'; return; }
@@ -1825,7 +1723,6 @@ function renderAdminRekapTable(list) {
     return `<tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openEditPanel('${n}','${na}','${k}','${s}')"><td class="p-3 text-gray-500">${i + 1}</td><td class="p-3">${na}</td><td class="p-3">${k}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${sc}">${si} ${s}</span></td><td class="p-3 text-center"><button class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs rounded" onclick="event.stopPropagation();openEditPanel('${n}','${na}','${k}','${s}')"><i class="fas fa-edit"></i></button></td></tr>`;
   }).join('');
 }
-
 function downloadRekapCSV() {
   if (!AppState.adminRekapData) { alert('Muat data rekap terlebih dahulu!'); return; }
   const tgl = document.getElementById('admRekapDate').value;
@@ -1836,7 +1733,6 @@ function downloadRekapCSV() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `rekap_pagi_${tgl}.csv`; a.click();
 }
-
 function openEditPanel(nis, nama, kelas, status) {
   document.getElementById('editStatusPanel').classList.remove('hidden');
   document.getElementById('editNamaSiswa').textContent = nama;
@@ -1852,7 +1748,6 @@ function openEditPanel(nis, nama, kelas, status) {
   document.getElementById('editStatusPanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function closeEditPanel() { document.getElementById('editStatusPanel').classList.add('hidden'); }
-
 async function saveEditStatus() {
   const nis = document.getElementById('editNisInput').value;
   const tanggal = document.getElementById('admRekapDate').value;
@@ -1880,7 +1775,6 @@ async function saveEditStatus() {
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnSaveEdit', false);
 }
-
 async function hapusDataAbsensi() {
   const kelas = document.getElementById('hapusKelas').value;
   const tanggal = document.getElementById('hapusTanggal').value;
@@ -1899,7 +1793,6 @@ async function hapusDataAbsensi() {
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnHapusData', false);
 }
-
 async function adminAddStudent() {
   const nis = document.getElementById('newNis').value.trim();
   const nama = document.getElementById('newNama').value.trim();
@@ -1916,7 +1809,6 @@ async function adminAddStudent() {
   } catch (err) { alert('Gagal: ' + err.message); }
   setButtonLoading('btnAddSiswa', false);
 }
-
 async function adminAddTeacher() {
   const username = document.getElementById('newGUser').value.trim();
   const password = document.getElementById('newGPass').value.trim();
@@ -1934,7 +1826,6 @@ async function adminAddTeacher() {
     loadAdminGuru();
   } catch (err) { alert('Gagal: ' + err.message); }
 }
-
 async function deleteSiswa(nis) {
   if (!confirm(`Hapus siswa NIS ${nis}?`)) return;
   try { await sbDelete(T.siswa, `?nis=eq.${encodeURIComponent(nis)}`); loadAdminSiswa(); }
@@ -1945,9 +1836,7 @@ async function deleteGuru(username) {
   try { await sbDelete(T.guru, `?username=eq.${encodeURIComponent(username)}`); loadAdminGuru(); }
   catch (err) { alert('Gagal: ' + err.message); }
 }
-
 function logoutAdmin() {
-  // Matikan scheduler saat logout
   if (AppState.schedulerActive) {
     AppState.schedulerActive = false;
     if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
@@ -1975,7 +1864,6 @@ async function loadKelasList() {
     });
   } catch (err) { console.error('Load kelas error:', err); }
 }
-
 async function simulasiAutoAlpa() {
   const rd = document.getElementById('autoAlpaResult');
   const rt = document.getElementById('autoAlpaResultTitle');
@@ -2002,7 +1890,6 @@ async function simulasiAutoAlpa() {
   } catch (err) { rc.innerHTML = '<span class="text-red-600">Error: ' + sanitizeHTML(err.message) + '</span>'; }
   setButtonLoading('btnSimulasiAlpa', false);
 }
-
 async function jalankanAutoAlpaSekarang() {
   if (!confirm('Jalankan Auto Alpa SEKARANG?\n\nSiswa yang belum absen hari ini akan ditandai ALPA.')) return;
   const rd = document.getElementById('autoAlpaResult');
@@ -2026,7 +1913,6 @@ async function jalankanAutoAlpaSekarang() {
   } catch (err) { rc.innerHTML = '<span class="text-red-600">Error: ' + sanitizeHTML(err.message) + '</span>'; }
   setButtonLoading('btnJalankanAlpa', false);
 }
-
 async function resetAlpaKelas() {
   const kelas = document.getElementById('resetKelas').value;
   const tanggal = document.getElementById('resetTanggal').value;
@@ -2076,7 +1962,6 @@ async function previewWAKirim() {
   } catch (err) { previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnPreviewWA', false);
 }
-
 async function kirimWAOrangTua() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const resultEl = document.getElementById('waKirimResult');
@@ -2100,8 +1985,8 @@ async function kirimWAOrangTua() {
     updateWAProgress(0, targetList.length, 'Mengirim WA ke orang tua...');
     for (const s of targetList) {
       const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nKami informasikan bahwa putra/putri Bapak/Ibu tercatat *TIDAK HADIR (ALPA)* pada kegiatan pagi hari:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi kepada wali kelas jika ada keterangan.\n\nTerima kasih.\n_SIPAGI - Sistem Presensi Pagi_`;
-      await kirimWA(s.hpFormatted, pesan);
-      terkirim++;
+      const sukses = await kirimWA(s.hpFormatted, pesan);
+      if (sukses) terkirim++;
       updateWAProgress(terkirim, targetList.length, `Mengirim ke ${s.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
@@ -2110,7 +1995,6 @@ async function kirimWAOrangTua() {
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAOrtu', false);
 }
-
 async function kirimRekapWaliKelas() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const resultEl = document.getElementById('waKirimResult');
@@ -2149,8 +2033,8 @@ async function kirimRekapWaliKelas() {
         else belum++;
       });
       const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi Harian*\n\n📅 Tanggal: ${tanggal}\n🏫 Kelas: ${guru.kelas_wali}\n👤 Wali Kelas: ${guru.nama}\n\n📊 *Rekap:*\n✅ Hadir: ${hadir}\n🤒 Sakit: ${sakit}\n📋 Izin: ${izin}\n❌ Alpa: ${alpa}\n⏳ Belum Absen: ${belum}\n📌 Total: ${siswakelas.length}${namaAlpa.length > 0 ? '\n\n❌ *Siswa Alpa:*\n' + namaAlpa.map(n => '• ' + n).join('\n') : ''}\n\n_SIPAGI - Sistem Presensi Pagi_`;
-      await kirimWA(hp, pesan);
-      terkirim++;
+      const sukses = await kirimWA(hp, pesan);
+      if (sukses) terkirim++;
       updateWAProgress(terkirim, waliDenganHP.length, `Kirim ke ${guru.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
@@ -2168,11 +2052,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('waliRekapDate').value = todayStr();
   document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0, 7);
   document.getElementById('waKirimTanggal').value = todayStr();
-
-  // Inisialisasi tampilan hari aktif
   renderDayButtons();
-
-  // Mulai live clock (selalu jalan)
   startLiveClock();
 });
 </script>
