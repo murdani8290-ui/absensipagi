@@ -12,6 +12,11 @@
   <style>
     @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
     @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
     .animate-fade-in{animation:fadeIn 0.3s ease-out}
     .animate-spin{animation:spin 1s linear infinite}
     #reader{width:100%;border-radius:12px;overflow:hidden}
@@ -28,6 +33,212 @@
     .wa-status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
     .wa-status-online { background:#22c55e; animation: pulse-green 2s infinite; }
     @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ===== SCHEDULER STYLES ===== */
+    .scheduler-card {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .scheduler-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #f59e0b, #ef4444, #f59e0b);
+      background-size: 200% 100%;
+      animation: shimmer 2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .scheduler-active .scheduler-card::before {
+      background: linear-gradient(90deg, #22c55e, #16a34a, #22c55e);
+      background-size: 200% 100%;
+      animation: shimmer 1s linear infinite;
+    }
+
+    /* Clock display */
+    .scheduler-clock {
+      font-family: 'Courier New', monospace;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #f8fafc;
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 20px rgba(59,130,246,0.5);
+    }
+    .scheduler-clock.active-glow {
+      color: #4ade80;
+      text-shadow: 0 0 20px rgba(74,222,128,0.7);
+      animation: blink 1s ease-in-out infinite;
+    }
+
+    /* Status badge */
+    .sched-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .sched-badge-off {
+      background: rgba(100,116,139,0.3);
+      color: #94a3b8;
+      border: 1px solid rgba(100,116,139,0.4);
+    }
+    .sched-badge-on {
+      background: rgba(34,197,94,0.2);
+      color: #4ade80;
+      border: 1px solid rgba(34,197,94,0.4);
+    }
+    .sched-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .sched-badge-off .sched-badge-dot { background: #64748b; }
+    .sched-badge-on .sched-badge-dot {
+      background: #22c55e;
+      box-shadow: 0 0 6px #22c55e;
+      animation: pulse-green 1s infinite;
+    }
+
+    /* Timeline trigger */
+    .trigger-timeline {
+      display: flex;
+      gap: 0;
+      align-items: center;
+      margin: 12px 0;
+    }
+    .trigger-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+    .trigger-step-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .trigger-step-icon.done {
+      background: rgba(34,197,94,0.2);
+      border: 2px solid #22c55e;
+      color: #4ade80;
+    }
+    .trigger-step-icon.pending {
+      background: rgba(100,116,139,0.2);
+      border: 2px solid #475569;
+      color: #64748b;
+    }
+    .trigger-step-icon.running {
+      background: rgba(251,191,36,0.2);
+      border: 2px solid #f59e0b;
+      color: #fbbf24;
+      animation: blink 0.8s ease-in-out infinite;
+    }
+    .trigger-step-label {
+      font-size: 9px;
+      margin-top: 4px;
+      color: #94a3b8;
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .trigger-line {
+      flex: 1;
+      height: 2px;
+      background: #334155;
+      margin: 0 -2px;
+      margin-bottom: 22px;
+    }
+    .trigger-line.done { background: #22c55e; }
+
+    /* Log box */
+    .sched-log {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #94a3b8;
+      max-height: 120px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    .sched-log::-webkit-scrollbar { width: 4px; }
+    .sched-log::-webkit-scrollbar-track { background: transparent; }
+    .sched-log::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+    .log-success { color: #4ade80; }
+    .log-error { color: #f87171; }
+    .log-info { color: #60a5fa; }
+    .log-warn { color: #fbbf24; }
+
+    /* Toggle switch */
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .toggle-track {
+      width: 48px; height: 26px;
+      background: #334155;
+      border-radius: 999px;
+      position: relative;
+      transition: background 0.3s;
+      flex-shrink: 0;
+    }
+    .toggle-track.on { background: #22c55e; }
+    .toggle-thumb {
+      width: 20px; height: 20px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 3px; left: 3px;
+      transition: transform 0.3s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .toggle-track.on .toggle-thumb { transform: translateX(22px); }
+
+    /* Time input dark */
+    .dark-time-input {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid #334155;
+      color: #f8fafc;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 1.1rem;
+      font-weight: bold;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .dark-time-input:focus { border-color: #3b82f6; }
+
+    /* Countdown next trigger */
+    .next-trigger-badge {
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .next-trigger-time {
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #fbbf24;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen p-4 md:p-6">
@@ -374,7 +585,6 @@
         </div>
         <div class="grid grid-cols-2 gap-2 mb-3">
           <input type="text" id="newGRole" placeholder="Role: GURU / WALI / ADMIN" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
-          <!-- ✅ FIX: Tambah kolom hp untuk guru/wali agar bisa terima rekap WA -->
           <input type="text" id="newGHp" placeholder="No. HP Guru (untuk WA)" class="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-blue-500">
         </div>
         <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm" onclick="adminAddTeacher()">
@@ -477,6 +687,111 @@
 
     <!-- Tab Auto Alpa -->
     <div id="admTabAutoalpa" class="admin-panel hidden">
+
+      <!-- ===== SCHEDULER CARD ===== -->
+      <div class="scheduler-card mb-4" id="schedulerCard">
+        <div class="p-5">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h4 class="font-bold text-white flex items-center gap-2">
+                <i class="fas fa-satellite-dish text-amber-400"></i>
+                Auto Trigger Scheduler
+              </h4>
+              <p class="text-slate-400 text-xs mt-0.5">Jalankan otomatis di jam yang ditentukan</p>
+            </div>
+            <span class="sched-badge sched-badge-off" id="schedBadge">
+              <span class="sched-badge-dot"></span>
+              NONAKTIF
+            </span>
+          </div>
+
+          <!-- Live Clock -->
+          <div class="text-center mb-4">
+            <div class="scheduler-clock" id="schedClock">00:00:00</div>
+            <p class="text-slate-500 text-xs mt-1" id="schedDate">—</p>
+          </div>
+
+          <!-- Countdown to Next Trigger -->
+          <div class="next-trigger-badge mb-4" id="nextTriggerBadge">
+            <i class="fas fa-hourglass-half text-amber-400 text-sm"></i>
+            <div>
+              <p class="text-amber-300 text-xs font-semibold">TRIGGER BERIKUTNYA</p>
+              <div class="next-trigger-time" id="nextTriggerCountdown">—</div>
+            </div>
+          </div>
+
+          <!-- Timeline Steps -->
+          <div class="trigger-timeline" id="triggerTimeline">
+            <div class="trigger-step">
+              <div class="trigger-step-icon pending" id="step1Icon"><i class="fas fa-clock"></i></div>
+              <div class="trigger-step-label">MENUNGGU</div>
+            </div>
+            <div class="trigger-line" id="line1"></div>
+            <div class="trigger-step">
+              <div class="trigger-step-icon pending" id="step2Icon"><i class="fas fa-bolt"></i></div>
+              <div class="trigger-step-label">AUTO ALPA</div>
+            </div>
+            <div class="trigger-line" id="line2"></div>
+            <div class="trigger-step">
+              <div class="trigger-step-icon pending" id="step3Icon"><i class="fas fa-user-friends"></i></div>
+              <div class="trigger-step-label">WA ORTU</div>
+            </div>
+            <div class="trigger-line" id="line3"></div>
+            <div class="trigger-step">
+              <div class="trigger-step-icon pending" id="step4Icon"><i class="fas fa-chalkboard-teacher"></i></div>
+              <div class="trigger-step-label">WA WALI</div>
+            </div>
+          </div>
+
+          <!-- Settings -->
+          <div class="bg-black/30 rounded-xl p-4 mb-4 space-y-3">
+            <div class="flex items-center gap-3">
+              <i class="fas fa-clock text-slate-400 text-sm w-4"></i>
+              <label class="text-slate-300 text-xs font-semibold flex-1">JAM TRIGGER</label>
+              <input type="time" id="schedTime" value="08:00" class="dark-time-input" style="width:110px">
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="fas fa-paper-plane text-slate-400 text-sm w-4"></i>
+              <label class="text-slate-300 text-xs font-semibold flex-1">KIRIM WA OTOMATIS</label>
+              <div class="toggle-wrap" onclick="toggleSchedWA()">
+                <div class="toggle-track on" id="schedWAToggle"><div class="toggle-thumb"></div></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="fas fa-calendar-week text-slate-400 text-sm w-4"></i>
+              <label class="text-slate-300 text-xs font-semibold flex-1">HARI AKTIF</label>
+              <div class="flex gap-1" id="dayButtons">
+                <button onclick="toggleDay(1)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="1">SEN</button>
+                <button onclick="toggleDay(2)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="2">SEL</button>
+                <button onclick="toggleDay(3)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="3">RAB</button>
+                <button onclick="toggleDay(4)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="4">KAM</button>
+                <button onclick="toggleDay(5)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="5">JUM</button>
+                <button onclick="toggleDay(6)" class="day-btn px-2 py-1 rounded text-xs font-bold" data-day="6">SAB</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toggle Aktifkan -->
+          <button id="btnToggleSched" onclick="toggleScheduler()"
+            class="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200">
+            <i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER
+          </button>
+
+          <!-- Log -->
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-slate-400 text-xs font-semibold"><i class="fas fa-terminal mr-1"></i>LOG AKTIVITAS</p>
+              <button onclick="clearSchedLog()" class="text-slate-600 hover:text-slate-400 text-xs"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <div class="sched-log" id="schedLog">
+              <span class="log-info">» Scheduler siap. Aktifkan untuk mulai memantau waktu.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END SCHEDULER CARD -->
+
       <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200 mb-4">
         <div class="flex items-center gap-3 mb-3">
           <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center"><i class="fas fa-clock text-xl text-orange-600"></i></div>
@@ -486,7 +801,7 @@
           <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
             <li>Siswa yang <strong>BELUM ABSEN</strong> akan ditandai <span class="text-red-600 font-semibold">Alpa</span></li>
             <li>Siswa yang sudah diinput status <strong>TIDAK AKAN DIUBAH</strong></li>
-            <li>Hanya berjalan Senin–Sabtu</li>
+            <li>Hanya berjalan pada hari yang dipilih</li>
           </ul>
         </div>
       </div>
@@ -505,7 +820,7 @@
         </div>
       </div>
 
-      <!-- ✅ IMPROVED: Kirim WA via Fonnte dengan status indikator -->
+      <!-- Kirim WA Manual -->
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-1 flex items-center gap-2">
           <i class="fas fa-paper-plane text-green-500"></i>
@@ -515,11 +830,7 @@
           </span>
         </h5>
         <p class="text-xs text-gray-500 mb-3">Token: <code class="bg-gray-100 px-1 rounded font-mono">JpheArK4npgMrgZN8d5v</code></p>
-        <div class="bg-green-50 border border-green-200 rounded-lg p-2 mb-3">
-          <p class="text-xs text-green-700"><i class="fas fa-info-circle mr-1"></i>Kirim WA ke orang tua siswa Alpa & rekap ke wali kelas via Fonnte API</p>
-        </div>
 
-        <!-- Tes Koneksi Fonnte -->
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
           <div class="flex items-center justify-between">
             <p class="text-xs font-semibold text-gray-700"><i class="fas fa-plug mr-1"></i>Cek Koneksi Fonnte</p>
@@ -547,7 +858,6 @@
         </div>
         <p id="waKirimResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
 
-        <!-- Progress Bar Pengiriman -->
         <div id="waProgressContainer" class="hidden mt-3">
           <div class="flex justify-between text-xs text-gray-600 mb-1">
             <span id="waProgressLabel">Mengirim...</span>
@@ -578,107 +888,76 @@
   </div>
 </section>
 
-</div><!-- end .p-5 -->
+</div>
 
 <footer class="bg-gray-50 py-4 text-center border-t border-gray-200">
   <p class="text-xs text-gray-500">© 2025 SIPAGI · Sistem Presensi Pagi · <span class="font-semibold text-blue-600">SMAN 10 Pinrang</span></p>
 </footer>
-</div><!-- end card -->
-</div><!-- end max-w-lg -->
+</div>
+</div>
 
 <script>
 // ============================================
-// ✅ FONNTE CONFIGURATION (SUDAH TERINTEGRASI)
+// FONNTE CONFIG
 // ============================================
 const FONNTE_TOKEN = 'JpheArK4npgMrgZN8d5v';
 
-/**
- * Kirim pesan WhatsApp via Fonnte API
- * Karena browser CORS limitation, menggunakan mode no-cors (fire & forget).
- * Untuk mengetahui status pengiriman, gunakan Fonnte Dashboard.
- * 
- * @param {string} target - Nomor HP format internasional (628xxxxxxxx)
- * @param {string} pesan  - Teks pesan yang akan dikirim
- * @returns {Promise<boolean>} - true jika request terkirim, false jika error jaringan
- */
 async function kirimWA(target, pesan) {
   try {
     const formData = new FormData();
     formData.append('target', target);
     formData.append('message', pesan);
     formData.append('countryCode', '62');
-
     await fetch('https://api.fonnte.com/send', {
       method: 'POST',
       headers: { 'Authorization': FONNTE_TOKEN },
       body: formData,
-      mode: 'no-cors' // ⚠️ Browser tidak bisa baca response karena CORS policy Fonnte
-                      //    Pesan tetap terkirim jika token & nomor valid.
-                      //    Cek status di: https://fonnte.com/dashboard
+      mode: 'no-cors'
     });
     return true;
-  } catch (err) {
-    console.error('Fonnte WA error:', err);
-    return false;
-  }
+  } catch (err) { console.error('Fonnte WA error:', err); return false; }
 }
 
-/**
- * Cek koneksi ke Fonnte via endpoint /validate
- * Endpoint ini mendukung CORS sehingga bisa dibaca responnya.
- */
 async function cekKoneksiFonnte() {
   const statusEl = document.getElementById('statusFonnte');
   const btn = document.getElementById('btnCekFonnte');
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Mengecek...';
   statusEl.textContent = 'Menghubungi server Fonnte...';
-  statusEl.className = 'text-xs mt-2 text-blue-500';
   try {
     const res = await fetch('https://api.fonnte.com/validate', {
-      method: 'POST',
-      headers: { 'Authorization': FONNTE_TOKEN }
+      method: 'POST', headers: { 'Authorization': FONNTE_TOKEN }
     });
     if (res.ok) {
       const data = await res.json();
       if (data.status === true || data.status === 'true') {
         statusEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Terhubung!</span> Device: <b>${sanitizeHTML(data.name || 'WhatsApp')}</b> | No: ${sanitizeHTML(data.device || '-')}`;
-        statusEl.className = 'text-xs mt-2';
       } else {
-        statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span> Periksa di fonnte.com/dashboard`;
-        statusEl.className = 'text-xs mt-2';
+        statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
       }
     } else {
-      statusEl.innerHTML = `<span class="text-red-600">❌ Server Fonnte error (${res.status})</span>`;
-      statusEl.className = 'text-xs mt-2';
+      statusEl.innerHTML = `<span class="text-red-600">❌ Server error (${res.status})</span>`;
     }
   } catch (err) {
-    // Jika gagal karena CORS, coba cara lain
-    statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak bisa verifikasi dari browser (CORS). Token sudah terdaftar: <code class="bg-gray-100 px-1 rounded">${FONNTE_TOKEN.substring(0,8)}...</code></span>`;
-    statusEl.className = 'text-xs mt-2';
+    statusEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak bisa verifikasi dari browser (CORS). Token: <code>${FONNTE_TOKEN.substring(0,8)}...</code></span>`;
   }
   btn.disabled = false;
   btn.innerHTML = '<i class="fas fa-wifi mr-1"></i>Tes Koneksi';
 }
 
-/**
- * Format nomor HP ke format internasional 628xxxxxxxx
- * ✅ FIX: Sekarang handle +62, 62, 08, 8
- */
 function formatHP(hp) {
   if (!hp) return null;
-  let h = hp.toString().replace(/\D/g, ''); // Hapus semua non-digit
+  let h = hp.toString().replace(/\D/g, '');
   if (!h) return null;
-  if (h.startsWith('0')) h = '62' + h.slice(1);      // 08xxx → 628xxx
-  else if (h.startsWith('8')) h = '62' + h;           // 8xxx  → 628xxx
-  // Jika sudah 62xxx atau 628xxx → biarkan
-  if (!h.startsWith('62')) return null; // Nomor tidak valid
-  if (h.length < 10 || h.length > 15) return null;    // Panjang tidak wajar
+  if (h.startsWith('0')) h = '62' + h.slice(1);
+  else if (h.startsWith('8')) h = '62' + h;
+  if (!h.startsWith('62')) return null;
+  if (h.length < 10 || h.length > 15) return null;
   return h;
 }
 
 // ============================================
-// SUPABASE CONFIGURATION
+// SUPABASE
 // ============================================
 const SUPABASE_URL = 'https://pgrcbuwaciukbpfxupjz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncmNidXdhY2l1a2JwZnh1cGp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyOTQ4MzQsImV4cCI6MjA5Mjg3MDgzNH0.unozqM7zfsLCyNA6e57TnGdCyoRdR6DDKVQBmXmHR1c';
@@ -688,56 +967,28 @@ const HEADERS = {
   'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
   'Prefer': 'return=representation'
 };
+const T = { siswa: 'siswa', guru: 'guru', absensi: 'absensi' };
 
-// ============================================
-// SUPABASE REST API HELPER
-// ============================================
 async function sbSelect(table, params = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
-    headers: { ...HEADERS, 'Prefer': 'return=representation' }
-  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { headers: { ...HEADERS, 'Prefer': 'return=representation' } });
   if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal mengambil data'); }
   return res.json();
 }
 async function sbInsert(table, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST', headers: HEADERS, body: JSON.stringify(body)
-  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, { method: 'POST', headers: HEADERS, body: JSON.stringify(body) });
   if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal menyimpan data'); }
   return res.json();
 }
 async function sbUpdate(table, params, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
-    method: 'PATCH', headers: HEADERS, body: JSON.stringify(body)
-  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { method: 'PATCH', headers: HEADERS, body: JSON.stringify(body) });
   if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal update data'); }
   return res.json();
 }
 async function sbDelete(table, params) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
-    method: 'DELETE', headers: HEADERS
-  });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, { method: 'DELETE', headers: HEADERS });
   if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal hapus data'); }
   return true;
 }
-async function sbUpsert(table, body, onConflict) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
-    method: 'POST',
-    headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Gagal upsert data'); }
-  return res.json();
-}
-
-// ============================================
-// TABLE NAMES
-// ============================================
-const T = {
-  siswa: 'siswa',     // nis, nama, kelas, hp_ortu
-  guru: 'guru',       // username, password, nama, kelas_wali, role (GURU/WALI/ADMIN), hp
-  absensi: 'absensi'  // id, nis, nama, kelas, tanggal, status, waktu, petugas
-};
 
 // ============================================
 // STATE
@@ -746,7 +997,15 @@ const AppState = {
   scanner: null, qrInterval: null, countdown: 20,
   activeTeacher: '', activeClass: '',
   waliData: null, adminRekapData: null,
-  searchTimeout: null, logoClickCount: 0, logoClickTimer: null
+  searchTimeout: null, logoClickCount: 0, logoClickTimer: null,
+
+  // Scheduler state
+  schedulerActive: false,
+  schedulerInterval: null,
+  clockInterval: null,
+  schedWASend: true,
+  activeDays: new Set([1,2,3,4,5,6]), // Senin-Sabtu
+  lastTriggeredDate: null // Tanggal terakhir trigger dijalankan (cegah double run)
 };
 
 // ============================================
@@ -780,8 +1039,6 @@ function nowStr() {
   const n = new Date();
   return n.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
-
-/** Update progress bar pengiriman WA */
 function updateWAProgress(current, total, label = '') {
   const container = document.getElementById('waProgressContainer');
   const bar = document.getElementById('waProgressBar');
@@ -797,6 +1054,318 @@ function updateWAProgress(current, total, label = '') {
 function hideWAProgress() {
   const c = document.getElementById('waProgressContainer');
   if (c) c.classList.add('hidden');
+}
+
+// ============================================
+// ===== SCHEDULER ENGINE =====
+// ============================================
+
+/**
+ * Tambah log ke panel scheduler
+ */
+function schedLog(msg, type = 'info') {
+  const box = document.getElementById('schedLog');
+  if (!box) return;
+  const now = new Date().toLocaleTimeString('id-ID');
+  const cls = { info: 'log-info', success: 'log-success', error: 'log-error', warn: 'log-warn' };
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="${cls[type] || 'log-info'}">[${now}] ${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearSchedLog() {
+  const box = document.getElementById('schedLog');
+  if (box) box.innerHTML = '<span class="log-info">» Log dibersihkan.</span>';
+}
+
+/**
+ * Toggle hari aktif
+ */
+function toggleDay(day) {
+  if (AppState.activeDays.has(day)) AppState.activeDays.delete(day);
+  else AppState.activeDays.add(day);
+  renderDayButtons();
+}
+function renderDayButtons() {
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    if (AppState.activeDays.has(d)) {
+      btn.className = 'day-btn px-2 py-1 rounded text-xs font-bold bg-green-500 text-white';
+    } else {
+      btn.className = 'day-btn px-2 py-1 rounded text-xs font-bold bg-slate-700 text-slate-400';
+    }
+  });
+}
+
+/**
+ * Toggle opsi kirim WA otomatis
+ */
+function toggleSchedWA() {
+  AppState.schedWASend = !AppState.schedWASend;
+  const track = document.getElementById('schedWAToggle');
+  if (AppState.schedWASend) track.classList.add('on');
+  else track.classList.remove('on');
+}
+
+/**
+ * Live clock ticker (update setiap detik)
+ */
+function startLiveClock() {
+  if (AppState.clockInterval) clearInterval(AppState.clockInterval);
+  AppState.clockInterval = setInterval(() => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const clockEl = document.getElementById('schedClock');
+    if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss}`;
+
+    const dateEl = document.getElementById('schedDate');
+    if (dateEl) {
+      const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      dateEl.textContent = `${days[now.getDay()]}, ${now.toLocaleDateString('id-ID')}`;
+    }
+
+    // Update countdown ke trigger berikutnya
+    if (AppState.schedulerActive) updateNextTriggerCountdown(now);
+  }, 1000);
+}
+
+/**
+ * Hitung sisa waktu ke trigger berikutnya
+ */
+function updateNextTriggerCountdown(now) {
+  const schedTimeVal = document.getElementById('schedTime').value || '08:00';
+  const [targetH, targetM] = schedTimeVal.split(':').map(Number);
+  const target = new Date(now);
+  target.setHours(targetH, targetM, 0, 0);
+
+  // Kalau sudah lewat hari ini → besok
+  if (now >= target) target.setDate(target.getDate() + 1);
+
+  // Lewati hari yang tidak aktif
+  let maxTry = 7;
+  while (maxTry-- > 0) {
+    const dow = target.getDay(); // 0=Minggu ... 6=Sabtu
+    if (AppState.activeDays.has(dow)) break;
+    target.setDate(target.getDate() + 1);
+  }
+
+  const diffMs = target - now;
+  const diffH = Math.floor(diffMs / 3600000);
+  const diffM = Math.floor((diffMs % 3600000) / 60000);
+  const diffS = Math.floor((diffMs % 60000) / 1000);
+
+  const el = document.getElementById('nextTriggerCountdown');
+  if (el) {
+    if (diffH > 0) el.textContent = `${diffH}j ${diffM}m ${diffS}d`;
+    else el.textContent = `${diffM}m ${diffS}d`;
+  }
+}
+
+/**
+ * Cek apakah sekarang sudah waktunya trigger
+ */
+function checkTriggerTime() {
+  const now = new Date();
+  const dow = now.getDay(); // 0=Minggu ... 6=Sabtu
+
+  // Cek hari aktif
+  if (!AppState.activeDays.has(dow)) return;
+
+  const schedTimeVal = document.getElementById('schedTime').value || '08:00';
+  const [targetH, targetM] = schedTimeVal.split(':').map(Number);
+
+  const isTargetHour = now.getHours() === targetH;
+  const isTargetMin  = now.getMinutes() === targetM;
+  const todayKey = todayStr();
+
+  // Trigger hanya 1x per hari (di menit yang tepat, cek setiap 5 detik)
+  if (isTargetHour && isTargetMin && AppState.lastTriggeredDate !== todayKey) {
+    AppState.lastTriggeredDate = todayKey;
+    schedLog('🔔 Waktu trigger tercapai! Menjalankan Auto Alpa...', 'warn');
+    runScheduledAutoAlpa(todayKey);
+  }
+}
+
+/**
+ * Jalankan Auto Alpa terjadwal + WA
+ */
+async function runScheduledAutoAlpa(tanggal) {
+  // --- Animasi step 1: menunggu → running ---
+  setStepState(1, 'running');
+  schedLog('⚡ Memulai Auto Alpa untuk: ' + tanggal, 'info');
+
+  try {
+    const waktu = nowStr();
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
+    const absenNis = new Set((absen || []).map(a => a.nis));
+    const belumAbsen = (semua || []).filter(s => !absenNis.has(s.nis));
+
+    setStepState(1, 'done'); setLineState(1, 'done');
+    setStepState(2, 'running');
+
+    let count = 0;
+    for (const s of belumAbsen) {
+      await sbInsert(T.absensi, {
+        nis: s.nis, nama: s.nama, kelas: s.kelas,
+        tanggal, status: 'Alpa', waktu, petugas: 'Auto Trigger'
+      });
+      count++;
+    }
+
+    schedLog(`✅ Auto Alpa selesai: ${count} siswa ditandai Alpa`, 'success');
+    setStepState(2, 'done'); setLineState(2, 'done');
+
+    // Refresh rekap jika tab rekap sedang aktif
+    const rekapDate = document.getElementById('admRekapDate');
+    if (rekapDate && rekapDate.value === tanggal) loadAdminRekap();
+
+    if (AppState.schedWASend) {
+      // WA ke ortu
+      setStepState(3, 'running');
+      schedLog('📲 Mengirim WA ke orang tua siswa Alpa...', 'info');
+      const alpaList = belumAbsen; // semua yg tadi ditandai alpa
+      let waSent = 0;
+      for (const s of alpaList) {
+        const hp = formatHP(s.hp_ortu);
+        if (!hp) continue;
+        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nKami informasikan bahwa putra/putri Bapak/Ibu tercatat *TIDAK HADIR (ALPA)* pada kegiatan pagi hari:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi kepada wali kelas jika ada keterangan.\n\nTerima kasih.\n_SIPAGI - Sistem Presensi Pagi_`;
+        await kirimWA(hp, pesan);
+        waSent++;
+        await new Promise(r => setTimeout(r, 1200));
+      }
+      schedLog(`📨 WA ortu: ${waSent} terkirim`, 'success');
+      setStepState(3, 'done'); setLineState(3, 'done');
+
+      // WA rekap ke wali kelas
+      setStepState(4, 'running');
+      schedLog('📋 Mengirim rekap ke wali kelas...', 'info');
+      const semuaSiswa = semua;
+      const absenBaru = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
+      const absenMapBaru = {};
+      (absenBaru || []).forEach(a => { absenMapBaru[a.nis] = a; });
+      const byKelas = {};
+      semuaSiswa.forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas] = []; byKelas[s.kelas].push(s); });
+      const semuaGuru = await sbSelect(T.guru, `?role=eq.WALI`);
+      const waliList = (semuaGuru || []).filter(g => g.kelas_wali && formatHP(g.hp));
+      let waliSent = 0;
+      for (const guru of waliList) {
+        const hp = formatHP(guru.hp);
+        const siswakelas = byKelas[guru.kelas_wali] || [];
+        let hadir = 0, sakit = 0, izin = 0, alpa = 0, belum = 0;
+        const namaAlpa = [];
+        siswakelas.forEach(s => {
+          const a = absenMapBaru[s.nis];
+          const st = a ? a.status : 'Belum Absen';
+          if (st === 'Hadir') hadir++;
+          else if (st === 'Sakit') sakit++;
+          else if (st === 'Izin') izin++;
+          else if (st === 'Alpa') { alpa++; namaAlpa.push(s.nama); }
+          else belum++;
+        });
+        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi Harian*\n\n📅 Tanggal: ${tanggal}\n🏫 Kelas: ${guru.kelas_wali}\n👤 Wali Kelas: ${guru.nama}\n\n📊 *Rekap:*\n✅ Hadir: ${hadir}\n🤒 Sakit: ${sakit}\n📋 Izin: ${izin}\n❌ Alpa: ${alpa}\n⏳ Belum Absen: ${belum}\n📌 Total: ${siswakelas.length}${namaAlpa.length > 0 ? '\n\n❌ *Siswa Alpa:*\n' + namaAlpa.map(n => '• ' + n).join('\n') : ''}\n\n_Dikirim otomatis oleh SIPAGI Scheduler_`;
+        await kirimWA(hp, pesan);
+        waliSent++;
+        await new Promise(r => setTimeout(r, 1200));
+      }
+      schedLog(`📨 WA wali kelas: ${waliSent} terkirim`, 'success');
+      setStepState(4, 'done'); setLineState(3, 'done');
+      schedLog('🎉 Semua tugas scheduler selesai!', 'success');
+    } else {
+      setStepState(3, 'done'); setLineState(3, 'done');
+      setStepState(4, 'done');
+      schedLog('ℹ️ Kirim WA dinonaktifkan, selesai tanpa WA.', 'info');
+    }
+
+  } catch (err) {
+    schedLog('❌ Error: ' + err.message, 'error');
+    // Reset steps ke pending jika error
+    [1,2,3,4].forEach(i => setStepState(i, 'pending'));
+  }
+}
+
+/**
+ * Set visual state timeline step (pending | running | done)
+ */
+function setStepState(step, state) {
+  const el = document.getElementById(`step${step}Icon`);
+  if (!el) return;
+  el.className = `trigger-step-icon ${state}`;
+}
+function setLineState(line, state) {
+  const el = document.getElementById(`line${line}`);
+  if (!el) return;
+  if (state === 'done') el.classList.add('done');
+  else el.classList.remove('done');
+}
+function resetTimeline() {
+  [1,2,3,4].forEach(i => setStepState(i, 'pending'));
+  [1,2,3].forEach(i => setLineState(i, ''));
+}
+
+/**
+ * Aktifkan / Nonaktifkan Scheduler
+ */
+function toggleScheduler() {
+  if (AppState.schedulerActive) {
+    // Matikan
+    AppState.schedulerActive = false;
+    if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
+
+    // Update UI
+    const card = document.getElementById('schedulerCard');
+    const badge = document.getElementById('schedBadge');
+    const btn = document.getElementById('btnToggleSched');
+    const clock = document.getElementById('schedClock');
+    const nextBadge = document.getElementById('nextTriggerBadge');
+
+    card.classList.remove('scheduler-active');
+    badge.className = 'sched-badge sched-badge-off';
+    badge.innerHTML = '<span class="sched-badge-dot"></span>NONAKTIF';
+    btn.className = 'w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200';
+    btn.innerHTML = '<i class="fas fa-power-off"></i> AKTIFKAN SCHEDULER';
+    clock.classList.remove('active-glow');
+    nextBadge.style.opacity = '0.5';
+
+    resetTimeline();
+    schedLog('⏹ Scheduler dinonaktifkan.', 'warn');
+    document.getElementById('nextTriggerCountdown').textContent = '—';
+  } else {
+    // Aktifkan
+    const schedTime = document.getElementById('schedTime').value;
+    if (!schedTime) { alert('Pilih jam trigger terlebih dahulu!'); return; }
+    if (AppState.activeDays.size === 0) { alert('Pilih minimal 1 hari aktif!'); return; }
+
+    AppState.schedulerActive = true;
+    AppState.lastTriggeredDate = null; // Reset guard
+
+    // Cek setiap 5 detik
+    AppState.schedulerInterval = setInterval(checkTriggerTime, 5000);
+
+    // Update UI
+    const card = document.getElementById('schedulerCard');
+    const badge = document.getElementById('schedBadge');
+    const btn = document.getElementById('btnToggleSched');
+    const clock = document.getElementById('schedClock');
+    const nextBadge = document.getElementById('nextTriggerBadge');
+
+    card.classList.add('scheduler-active');
+    badge.className = 'sched-badge sched-badge-on';
+    badge.innerHTML = '<span class="sched-badge-dot"></span>AKTIF';
+    btn.className = 'w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-red-900 hover:bg-red-800 text-red-200';
+    btn.innerHTML = '<i class="fas fa-stop-circle"></i> NONAKTIFKAN SCHEDULER';
+    clock.classList.add('active-glow');
+    nextBadge.style.opacity = '1';
+
+    resetTimeline();
+    schedLog(`✅ Scheduler aktif! Trigger jam ${schedTime}`, 'success');
+    schedLog(`📅 Hari aktif: ${[...AppState.activeDays].map(d => ['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(', ')}`, 'info');
+    schedLog(`📲 Kirim WA otomatis: ${AppState.schedWASend ? 'YA' : 'TIDAK'}`, 'info');
+    schedLog('⏳ Memantau waktu...', 'info');
+  }
 }
 
 // ============================================
@@ -845,8 +1414,7 @@ function startStudentScan() {
     { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
     onStudentScanSuccess, () => {}
   ).catch(err => {
-    console.error('Camera error:', err);
-    alert('Tidak dapat mengakses kamera.\n\nPastikan:\n1. Izin kamera diberikan\n2. Akses melalui HTTPS\n\nError: ' + err);
+    alert('Tidak dapat mengakses kamera.\n\nError: ' + err);
     stopStudentScan();
   });
 }
@@ -868,24 +1436,21 @@ async function onStudentScanSuccess(decodedText) {
   resDiv.innerHTML = '<i class="fas fa-spinner animate-spin text-3xl text-blue-500 mb-3"></i><p class="text-blue-700 mt-3">Memverifikasi QR Code...</p>';
   const nis = document.getElementById('nisSiswa').value.trim();
   try {
-    if (!decodedText.startsWith('SIPAGI_PAGI|')) throw new Error('QR Code tidak valid! Pastikan scan QR dari guru piket SIPAGI.');
+    if (!decodedText.startsWith('SIPAGI_PAGI|')) throw new Error('QR Code tidak valid!');
     const parts = decodedText.split('|');
     if (parts.length < 3) throw new Error('QR Code tidak lengkap.');
     const qrTimestamp = parseInt(parts[1]);
     const namaGuru = parts[2];
     const now = Date.now();
-    if (now - qrTimestamp > 25000) throw new Error('QR Code sudah kedaluwarsa! Minta QR terbaru dari guru piket.');
+    if (now - qrTimestamp > 25000) throw new Error('QR Code sudah kedaluwarsa!');
     const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
-    if (!siswaList || siswaList.length === 0) throw new Error('NIS tidak ditemukan dalam database. Hubungi admin.');
+    if (!siswaList || siswaList.length === 0) throw new Error('NIS tidak ditemukan dalam database.');
     const siswa = siswaList[0];
     const today = todayStr();
     const existing = await sbSelect(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${today}&limit=1`);
     if (existing && existing.length > 0) throw new Error(`Anda sudah tercatat ${existing[0].status} hari ini pukul ${existing[0].waktu}.`);
     const waktu = nowStr();
-    await sbInsert(T.absensi, {
-      nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas,
-      tanggal: today, status: 'Hadir', waktu, petugas: namaGuru
-    });
+    await sbInsert(T.absensi, { nis: siswa.nis, nama: siswa.nama, kelas: siswa.kelas, tanggal: today, status: 'Hadir', waktu, petugas: namaGuru });
     localStorage.setItem('sipagi_scan_date', today);
     resDiv.className = 'mt-4 p-5 rounded-xl text-center bg-blue-50 border border-blue-200 animate-fade-in';
     resDiv.innerHTML = `<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-check-circle text-4xl text-blue-500"></i></div><h3 class="text-xl font-bold text-blue-700 mb-2">Berhasil!</h3><p class="text-blue-800 font-semibold">${sanitizeHTML(siswa.nama)}</p><p class="text-blue-600">Kelas: ${sanitizeHTML(siswa.kelas)}</p><p class="text-blue-600">Waktu: ${sanitizeHTML(waktu)}</p><button class="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg" onclick="backToHomeAfterSuccess()"><i class="fas fa-check mr-2"></i>Selesai</button>`;
@@ -907,7 +1472,7 @@ function backToHomeAfterSuccess() {
 }
 
 // ============================================
-// GURU PIKET - QR GENERATOR & MANUAL
+// GURU PIKET
 // ============================================
 async function loginPiket(mode) {
   const user = document.getElementById('userGuru').value.trim();
@@ -935,8 +1500,7 @@ async function loginPiket(mode) {
 }
 
 function startDynamicQR() {
-  generateQR();
-  AppState.countdown = 20;
+  generateQR(); AppState.countdown = 20;
   AppState.qrInterval = setInterval(() => {
     AppState.countdown--;
     document.getElementById('countdown').textContent = AppState.countdown;
@@ -1008,8 +1572,7 @@ async function saveManualAttendance() {
     const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
     if (!siswaList || siswaList.length === 0) throw new Error('Siswa tidak ditemukan!');
     const siswa = siswaList[0];
-    const today = todayStr();
-    const waktu = nowStr();
+    const today = todayStr(); const waktu = nowStr();
     const existing = await sbSelect(T.absensi, `?nis=eq.${encodeURIComponent(nis)}&tanggal=eq.${today}&limit=1`);
     let isUpdate = false, statusSebelumnya = '';
     if (existing && existing.length > 0) {
@@ -1128,7 +1691,7 @@ function downloadReport() {
   if (!AppState.waliData) { alert('Muat data terlebih dahulu!'); return; }
   const bulan = document.getElementById('bulanLaporan').value;
   if (!bulan) { alert('Pilih bulan terlebih dahulu!'); return; }
-  alert('Fitur export CSV tersedia. Implementasi download akan menggunakan data Supabase untuk bulan ' + bulan);
+  alert('Implementasi download CSV untuk bulan ' + bulan);
 }
 
 // ============================================
@@ -1156,10 +1719,8 @@ async function loadAdminDashboard() {
   document.getElementById('admRekapDate').value = today;
   try {
     const absen = await sbSelect(T.absensi, `?tanggal=eq.${today}`);
-    const hadir = (absen || []).filter(a => a.status === 'Hadir').length;
-    const alpa = (absen || []).filter(a => a.status === 'Alpa').length;
-    document.getElementById('admHadir').textContent = hadir;
-    document.getElementById('admAlfa').textContent = alpa;
+    document.getElementById('admHadir').textContent = (absen || []).filter(a => a.status === 'Hadir').length;
+    document.getElementById('admAlfa').textContent = (absen || []).filter(a => a.status === 'Alpa').length;
   } catch (err) { console.error('Dashboard error:', err); }
   showAdminTab('siswa');
 }
@@ -1174,7 +1735,7 @@ function showAdminTab(tab) {
   if (tab === 'siswa') loadAdminSiswa();
   else if (tab === 'guru') loadAdminGuru();
   else if (tab === 'rekap') loadAdminRekap();
-  else if (tab === 'autoalpa') loadKelasList();
+  else if (tab === 'autoalpa') { loadKelasList(); renderDayButtons(); }
 }
 
 async function loadAdminSiswa() {
@@ -1201,7 +1762,7 @@ async function loadAdminRekap() {
   const tbody = document.getElementById('tableRekapBody');
   const tgl = document.getElementById('admRekapDate').value;
   tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat...</td></tr>';
-  ['admRekapHadir', 'admRekapSakit', 'admRekapIzin', 'admRekapAlpa', 'admRekapBelum', 'totalRekapDisplay'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+  ['admRekapHadir','admRekapSakit','admRekapIzin','admRekapAlpa','admRekapBelum','totalRekapDisplay'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
   try {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absen = await sbSelect(T.absensi, `?tanggal=eq.${tgl}`);
@@ -1263,7 +1824,7 @@ function renderAdminRekapTable(list) {
 function downloadRekapCSV() {
   if (!AppState.adminRekapData) { alert('Muat data rekap terlebih dahulu!'); return; }
   const tgl = document.getElementById('admRekapDate').value;
-  const rows = [['No', 'NIS', 'Nama', 'Kelas', 'Status']];
+  const rows = [['No','NIS','Nama','Kelas','Status']];
   (AppState.adminRekapData.siswaList || []).forEach((s, i) => rows.push([i + 1, s.nis, s.nama, s.kelas, s.status]));
   const csv = rows.map(r => r.join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -1345,7 +1906,7 @@ async function adminAddStudent() {
   try {
     await sbInsert(T.siswa, { nis, nama, kelas, hp_ortu });
     alert('Siswa berhasil ditambahkan!');
-    ['newNis', 'newNama', 'newKelas', 'newHp'].forEach(id => document.getElementById(id).value = '');
+    ['newNis','newNama','newKelas','newHp'].forEach(id => document.getElementById(id).value = '');
     loadAdminSiswa();
   } catch (err) { alert('Gagal: ' + err.message); }
   setButtonLoading('btnAddSiswa', false);
@@ -1357,15 +1918,14 @@ async function adminAddTeacher() {
   const nama = document.getElementById('newGNama').value.trim();
   const kelas_wali = document.getElementById('newGKelas').value.trim();
   const role = document.getElementById('newGRole').value.trim().toUpperCase() || 'GURU';
-  // ✅ FIX: Tambah field hp untuk tabel guru
   const hp = document.getElementById('newGHp').value.trim();
   if (!username || !password || !nama) { alert('Username, Password, dan Nama harus diisi!'); return; }
-  if (!['GURU', 'WALI', 'ADMIN'].includes(role)) { alert('Role harus: GURU, WALI, atau ADMIN'); return; }
+  if (!['GURU','WALI','ADMIN'].includes(role)) { alert('Role harus: GURU, WALI, atau ADMIN'); return; }
   if (!confirm(`Tambah guru ${nama} dengan role ${role}?`)) return;
   try {
     await sbInsert(T.guru, { username, password, nama, kelas_wali, role, hp });
     alert('Guru berhasil ditambahkan!');
-    ['newGUser', 'newGPass', 'newGNama', 'newGKelas', 'newGRole', 'newGHp'].forEach(id => document.getElementById(id).value = '');
+    ['newGUser','newGPass','newGNama','newGKelas','newGRole','newGHp'].forEach(id => document.getElementById(id).value = '');
     loadAdminGuru();
   } catch (err) { alert('Gagal: ' + err.message); }
 }
@@ -1382,8 +1942,13 @@ async function deleteGuru(username) {
 }
 
 function logoutAdmin() {
+  // Matikan scheduler saat logout
+  if (AppState.schedulerActive) {
+    AppState.schedulerActive = false;
+    if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
+  }
   AppState.adminRekapData = null;
-  ['userAdmin', 'passAdmin'].forEach(id => document.getElementById(id).value = '');
+  ['userAdmin','passAdmin'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginAdminArea').classList.remove('hidden');
   document.getElementById('dashboardAdmin').classList.add('hidden');
   document.getElementById('msgAdmin').textContent = '';
@@ -1392,7 +1957,7 @@ function logoutAdmin() {
 }
 
 // ============================================
-// AUTO ALPA
+// AUTO ALPA MANUAL
 // ============================================
 async function loadKelasList() {
   try {
@@ -1421,7 +1986,7 @@ async function simulasiAutoAlpa() {
     const belumAbsen = (semua || []).filter(s => !absenNis.has(s.nis));
     rt.textContent = '📋 Preview Auto Alpa - ' + today;
     let html = `<div class="grid grid-cols-2 gap-2 mb-3"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Akan di-Alpa</p><p class="text-lg font-bold text-red-700">${belumAbsen.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Sudah Absen</p><p class="text-lg font-bold text-blue-700">${(absen || []).length}</p></div></div>`;
-    if (belumAbsen.length === 0) { html += '<p class="text-blue-600 text-center py-2">✅ Semua siswa sudah absen!</p>'; }
+    if (belumAbsen.length === 0) html += '<p class="text-blue-600 text-center py-2">✅ Semua siswa sudah absen!</p>';
     else {
       html += '<p class="text-xs font-semibold text-red-600 mb-1">❌ Akan ditandai ALPA:</p><div class="max-h-24 overflow-y-auto mb-3 border border-red-200 rounded">';
       belumAbsen.slice(0, 20).forEach((item, i) => { html += `<div class="py-1 px-2 ${i % 2 === 0 ? 'bg-red-50' : 'bg-white'} text-xs"><span class="text-gray-500">${sanitizeHTML(item.kelas)}</span> - ${sanitizeHTML(item.nama)}</div>`; });
@@ -1442,8 +2007,7 @@ async function jalankanAutoAlpaSekarang() {
   rc.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Sedang memproses Auto Alpa...';
   setButtonLoading('btnJalankanAlpa', true);
   try {
-    const today = todayStr();
-    const waktu = nowStr();
+    const today = todayStr(); const waktu = nowStr();
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absen = await sbSelect(T.absensi, `?tanggal=eq.${today}`);
     const absenNis = new Set((absen || []).map(a => a.nis));
@@ -1463,7 +2027,7 @@ async function resetAlpaKelas() {
   const tanggal = document.getElementById('resetTanggal').value;
   const resultEl = document.getElementById('resetAlpaResult');
   if (!kelas || !tanggal) { resultEl.innerHTML = '<span class="text-red-600">Pilih kelas dan tanggal!</span>'; return; }
-  if (!confirm(`Reset semua status Alpa kelas ${kelas} pada ${tanggal}?\n\nSiswa akan dihapus dari data absensi (kembali Belum Absen).`)) return;
+  if (!confirm(`Reset semua status Alpa kelas ${kelas} pada ${tanggal}?`)) return;
   setButtonLoading('btnResetAlpa', true);
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mereset...</span>';
   try {
@@ -1474,9 +2038,8 @@ async function resetAlpaKelas() {
 }
 
 // ============================================
-// ✅ FONNTE - WHATSAPP FUNCTIONS (FIXED & IMPROVED)
+// WA MANUAL (FONNTE)
 // ============================================
-
 async function previewWAKirim() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const previewDiv = document.getElementById('previewWAResult');
@@ -1490,7 +2053,7 @@ async function previewWAKirim() {
     const absenNis = new Set((absen || []).map(a => a.nis));
     const siswaAlpa = (semua || []).filter(s => absenNis.has(s.nis));
     if (siswaAlpa.length === 0) {
-      previewDiv.innerHTML = '<p class="text-blue-600 text-center py-2">✅ Tidak ada siswa Alpa pada tanggal ini!</p>';
+      previewDiv.innerHTML = '<p class="text-blue-600 text-center py-2">✅ Tidak ada siswa Alpa!</p>';
       setButtonLoading('btnPreviewWA', false); return;
     }
     const byKelas = {};
@@ -1523,10 +2086,9 @@ async function kirimWAOrangTua() {
     const absenNis = new Set((absen || []).map(a => a.nis));
     const siswaAlpa = (semua || []).filter(s => absenNis.has(s.nis));
     if (siswaAlpa.length === 0) {
-      resultEl.innerHTML = '<span class="text-blue-600">✅ Tidak ada siswa Alpa, tidak ada WA dikirim.</span>';
+      resultEl.innerHTML = '<span class="text-blue-600">✅ Tidak ada siswa Alpa.</span>';
       setButtonLoading('btnKirimWAOrtu', false); return;
     }
-    // Filter hanya siswa dengan HP valid
     const targetList = siswaAlpa.map(s => ({ ...s, hpFormatted: formatHP(s.hp_ortu) })).filter(s => s.hpFormatted);
     const tanpaHP = siswaAlpa.length - targetList.length;
     let terkirim = 0;
@@ -1536,11 +2098,10 @@ async function kirimWAOrangTua() {
       await kirimWA(s.hpFormatted, pesan);
       terkirim++;
       updateWAProgress(terkirim, targetList.length, `Mengirim ke ${s.nama}...`);
-      // ✅ FIX: Delay 1.2 detik antar pesan (Fonnte rate limit ~50/menit)
       await new Promise(r => setTimeout(r, 1200));
     }
     hideWAProgress();
-    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ WA terkirim ke ${terkirim} orang tua${tanpaHP > 0 ? ', <b>' + tanpaHP + '</b> tidak ada HP' : ''}.</span><br><span class="text-xs text-gray-500">⚠️ Karena keterbatasan browser (CORS), cek status pengiriman di <a href="https://fonnte.com/dashboard" target="_blank" class="text-blue-600 underline">Fonnte Dashboard</a></span>`;
+    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ WA terkirim ke ${terkirim} orang tua${tanpaHP > 0 ? ', <b>' + tanpaHP + '</b> tidak ada HP' : ''}.</span><br><span class="text-xs text-gray-500">Cek status di <a href="https://fonnte.com/dashboard" target="_blank" class="text-blue-600 underline">Fonnte Dashboard</a></span>`;
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAOrtu', false);
 }
@@ -1556,33 +2117,26 @@ async function kirimRekapWaliKelas() {
   try {
     const semuaSiswa = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absen = await sbSelect(T.absensi, `?tanggal=eq.${tanggal}`);
-    // ✅ FIX: Query guru dengan role WALI, ambil kolom hp (bukan hp_ortu)
     const semuaGuru = await sbSelect(T.guru, `?role=eq.WALI`);
     const absenMap = {};
     (absen || []).forEach(a => { absenMap[a.nis] = a; });
     const byKelas = {};
     (semuaSiswa || []).forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas] = []; byKelas[s.kelas].push(s); });
-
-    // Filter wali yang memiliki HP valid
     const waliDenganHP = (semuaGuru || []).filter(g => g.kelas_wali && formatHP(g.hp));
     const waliTanpaHP = (semuaGuru || []).length - waliDenganHP.length;
-
     if (waliDenganHP.length === 0) {
-      resultEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak ada wali kelas dengan nomor HP terdaftar. Tambahkan HP wali kelas di tab Guru.</span>`;
+      resultEl.innerHTML = `<span class="text-amber-600">⚠️ Tidak ada wali kelas dengan nomor HP.</span>`;
       setButtonLoading('btnKirimWAWali', false); return;
     }
-
     let terkirim = 0;
     updateWAProgress(0, waliDenganHP.length, 'Mengirim rekap ke wali kelas...');
-
     for (const guru of waliDenganHP) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
       let hadir = 0, sakit = 0, izin = 0, alpa = 0, belum = 0;
       const namaAlpa = [];
       siswakelas.forEach(s => {
-        const a = absenMap[s.nis];
-        const st = a ? a.status : 'Belum Absen';
+        const a = absenMap[s.nis]; const st = a ? a.status : 'Belum Absen';
         if (st === 'Hadir') hadir++;
         else if (st === 'Sakit') sakit++;
         else if (st === 'Izin') izin++;
@@ -1592,23 +2146,29 @@ async function kirimRekapWaliKelas() {
       const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi Harian*\n\n📅 Tanggal: ${tanggal}\n🏫 Kelas: ${guru.kelas_wali}\n👤 Wali Kelas: ${guru.nama}\n\n📊 *Rekap:*\n✅ Hadir: ${hadir}\n🤒 Sakit: ${sakit}\n📋 Izin: ${izin}\n❌ Alpa: ${alpa}\n⏳ Belum Absen: ${belum}\n📌 Total: ${siswakelas.length}${namaAlpa.length > 0 ? '\n\n❌ *Siswa Alpa:*\n' + namaAlpa.map(n => '• ' + n).join('\n') : ''}\n\n_SIPAGI - Sistem Presensi Pagi_`;
       await kirimWA(hp, pesan);
       terkirim++;
-      updateWAProgress(terkirim, waliDenganHP.length, `Kirim ke ${guru.nama} (${guru.kelas_wali})...`);
-      // ✅ FIX: Delay 1.2 detik antar pesan
+      updateWAProgress(terkirim, waliDenganHP.length, `Kirim ke ${guru.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
-
     hideWAProgress();
-    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${terkirim} wali kelas${waliTanpaHP > 0 ? ', <b>' + waliTanpaHP + '</b> tidak ada HP' : ''}.</span><br><span class="text-xs text-gray-500">⚠️ Cek status di <a href="https://fonnte.com/dashboard" target="_blank" class="text-blue-600 underline">Fonnte Dashboard</a></span>`;
+    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${terkirim} wali kelas${waliTanpaHP > 0 ? ', <b>' + waliTanpaHP + '</b> tidak ada HP' : ''}.</span>`;
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAWali', false);
 }
 
-// Init
+// ============================================
+// INIT
+// ============================================
 document.addEventListener('DOMContentLoaded', () => {
   switchRole('siswa');
   document.getElementById('waliRekapDate').value = todayStr();
   document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0, 7);
   document.getElementById('waKirimTanggal').value = todayStr();
+
+  // Inisialisasi tampilan hari aktif
+  renderDayButtons();
+
+  // Mulai live clock (selalu jalan)
+  startLiveClock();
 });
 </script>
 </body>
