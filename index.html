@@ -410,12 +410,20 @@
         </div>
         <p class="text-xs text-blue-600 mb-2">Format kolom: <code class="bg-blue-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code></p>
         <div class="flex gap-2 mb-3">
-          <select id="templateSiswaKelas" class="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500">
+          <select id="templateSiswaKelas" class="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500" onchange="onTemplateKelasChange()">
             <option value="">-- Semua Kelas --</option>
+            <option value="__baru__">+ Kelas Baru...</option>
           </select>
           <button onclick="downloadTemplateSiswa()" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1 whitespace-nowrap">
             <i class="fas fa-download"></i> Download Template
           </button>
+        </div>
+        <div id="inputKelasBaruArea" class="hidden mb-3">
+          <div class="flex gap-2">
+            <input type="text" id="inputKelasBaru" placeholder="Contoh: XII IPA 3" class="flex-1 px-3 py-2 border-2 border-blue-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+            <span class="text-xs text-blue-600 self-center whitespace-nowrap">← nama kelas baru</span>
+          </div>
+          <p class="text-xs text-blue-500 mt-1"><i class="fas fa-info-circle mr-1"></i>Template kosong akan didownload untuk kelas ini</p>
         </div>
         <div class="import-drop" id="csvDropSiswa" onclick="document.getElementById('csvFileSiswa').click()">
           <input type="file" id="csvFileSiswa" accept=".csv,.xlsx,.xls" onchange="handleImportSiswaFile(this)">
@@ -1401,6 +1409,10 @@ async function loadAdminSiswa() {
     if (selT) {
       selT.innerHTML = '<option value="">-- Semua Kelas --</option>';
       kelasSet.forEach(k => { const o = document.createElement('option'); o.value=k; o.textContent=k; selT.appendChild(o); });
+      // Tambah opsi kelas baru di paling bawah
+      const oBaru = document.createElement('option');
+      oBaru.value = '__baru__'; oBaru.textContent = '+ Kelas Baru...';
+      selT.appendChild(oBaru);
     }
     renderSiswaTable(data || []);
   } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
@@ -2070,8 +2082,47 @@ async function kirimRekapWaliKelas() {
 // ============================================================
 // DOWNLOAD TEMPLATE CSV
 // ============================================================
+function onTemplateKelasChange() {
+  const val = document.getElementById('templateSiswaKelas').value;
+  const area = document.getElementById('inputKelasBaruArea');
+  if (val === '__baru__') {
+    area.classList.remove('hidden');
+    document.getElementById('inputKelasBaru').focus();
+  } else {
+    area.classList.add('hidden');
+    document.getElementById('inputKelasBaru').value = '';
+  }
+}
+
 async function downloadTemplateSiswa() {
-  const kelasFilter = document.getElementById('templateSiswaKelas').value;
+  const kelasSelect = document.getElementById('templateSiswaKelas').value;
+  let kelasFilter = kelasSelect;
+
+  // Cek apakah pilih kelas baru
+  if (kelasSelect === '__baru__') {
+    const kelasInput = document.getElementById('inputKelasBaru').value.trim();
+    if (!kelasInput) {
+      alert('Masukkan nama kelas baru terlebih dahulu!');
+      document.getElementById('inputKelasBaru').focus();
+      return;
+    }
+    kelasFilter = kelasInput;
+    // Download template kosong untuk kelas baru
+    const rows = [
+      ['NIS', 'Nama', 'Kelas', 'HP_Ortu'],
+      ['', 'Siswa 1', kelasFilter, ''],
+      ['', 'Siswa 2', kelasFilter, ''],
+      ['', 'Siswa 3', kelasFilter, ''],
+    ];
+    const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `template_siswa_${kelasFilter.replace(/\s+/g,'_')}.csv`;
+    a.click();
+    return;
+  }
+
   try {
     let data;
     if (kelasFilter) {
@@ -2080,14 +2131,10 @@ async function downloadTemplateSiswa() {
       data = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     }
 
-    // Header
     const rows = [['NIS', 'Nama', 'Kelas', 'HP_Ortu']];
-
     if (data && data.length > 0) {
-      // Isi dengan data siswa yang ada
       data.forEach(s => rows.push([s.nis, s.nama, s.kelas, s.hp_ortu || '']));
     } else {
-      // Kalau tidak ada data, isi dengan contoh
       const kelasContoh = kelasFilter || 'XI IPA 1';
       rows.push(['242001', 'Contoh Siswa 1', kelasContoh, '081234567890']);
       rows.push(['242002', 'Contoh Siswa 2', kelasContoh, '082345678901']);
@@ -2098,7 +2145,7 @@ async function downloadTemplateSiswa() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `template_siswa_${kelasFilter || 'semua_kelas'}.csv`.replace(/\s+/g,'_');
+    a.download = `template_siswa_${(kelasFilter||'semua_kelas').replace(/\s+/g,'_')}.csv`;
     a.click();
   } catch(err) {
     alert('Gagal download template: ' + err.message);
