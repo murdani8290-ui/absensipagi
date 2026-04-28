@@ -407,11 +407,16 @@
       <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
         <div class="flex items-center justify-between mb-2">
           <h4 class="font-semibold text-blue-800"><i class="fas fa-file-csv mr-2"></i>Import CSV</h4>
-          <button onclick="downloadTemplateSiswa()" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1">
-            <i class="fas fa-download"></i> Template CSV
+        </div>
+        <p class="text-xs text-blue-600 mb-2">Format kolom: <code class="bg-blue-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code></p>
+        <div class="flex gap-2 mb-3">
+          <select id="templateSiswaKelas" class="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500">
+            <option value="">-- Semua Kelas --</option>
+          </select>
+          <button onclick="downloadTemplateSiswa()" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1 whitespace-nowrap">
+            <i class="fas fa-download"></i> Download Template
           </button>
         </div>
-        <p class="text-xs text-blue-600 mb-3">Format kolom: <code class="bg-blue-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code></p>
         <div class="import-drop" id="csvDropSiswa" onclick="document.getElementById('csvFileSiswa').click()">
           <input type="file" id="csvFileSiswa" accept=".csv,.xlsx,.xls" onchange="handleImportSiswaFile(this)">
           <i class="fas fa-cloud-upload-alt text-2xl text-blue-400 mb-2 block"></i>
@@ -1391,6 +1396,12 @@ async function loadAdminSiswa() {
     const selK = document.getElementById('filterSiswaKelas');
     selK.innerHTML = '<option value="">Semua Kelas</option>';
     kelasSet.forEach(k => { const o = document.createElement('option'); o.value=k; o.textContent=k; selK.appendChild(o); });
+    // Isi juga dropdown template
+    const selT = document.getElementById('templateSiswaKelas');
+    if (selT) {
+      selT.innerHTML = '<option value="">-- Semua Kelas --</option>';
+      kelasSet.forEach(k => { const o = document.createElement('option'); o.value=k; o.textContent=k; selT.appendChild(o); });
+    }
     renderSiswaTable(data || []);
   } catch (err) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
@@ -2059,21 +2070,39 @@ async function kirimRekapWaliKelas() {
 // ============================================================
 // DOWNLOAD TEMPLATE CSV
 // ============================================================
-function downloadTemplateSiswa() {
-  const rows = [
-    ['NIS', 'Nama', 'Kelas', 'HP_Ortu'],
-    ['242001', 'Ahmad Fauzi', 'XI IPA 1', '081234567890'],
-    ['242002', 'Budi Santoso', 'XI IPA 1', '082345678901'],
-    ['242003', 'Citra Dewi', 'XI IPA 2', ''],
-    ['242004', 'Dina Marlina', 'XI IPA 2', '083456789012'],
-    ['242005', 'Eko Prasetyo', 'XI IPS 1', '084567890123'],
-  ];
-  const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n'); // BOM untuk Excel
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'template_import_siswa.csv';
-  a.click();
+async function downloadTemplateSiswa() {
+  const kelasFilter = document.getElementById('templateSiswaKelas').value;
+  try {
+    let data;
+    if (kelasFilter) {
+      data = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelasFilter)}&order=nama.asc`);
+    } else {
+      data = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    }
+
+    // Header
+    const rows = [['NIS', 'Nama', 'Kelas', 'HP_Ortu']];
+
+    if (data && data.length > 0) {
+      // Isi dengan data siswa yang ada
+      data.forEach(s => rows.push([s.nis, s.nama, s.kelas, s.hp_ortu || '']));
+    } else {
+      // Kalau tidak ada data, isi dengan contoh
+      const kelasContoh = kelasFilter || 'XI IPA 1';
+      rows.push(['242001', 'Contoh Siswa 1', kelasContoh, '081234567890']);
+      rows.push(['242002', 'Contoh Siswa 2', kelasContoh, '082345678901']);
+      rows.push(['242003', 'Contoh Siswa 3', kelasContoh, '']);
+    }
+
+    const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `template_siswa_${kelasFilter || 'semua_kelas'}.csv`.replace(/\s+/g,'_');
+    a.click();
+  } catch(err) {
+    alert('Gagal download template: ' + err.message);
+  }
 }
 
 function downloadTemplateGuru() {
