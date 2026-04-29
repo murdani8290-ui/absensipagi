@@ -1884,7 +1884,6 @@ async function runScheduledAutoAlpa(tanggal) {
       setStepState(3,'done'); setLineState(3,'done');
       setStepState(4,'running');
       schedLog('📋 Mengirim rekap wali kelas...', 'info');
-      // Ambil ulang data absensi setelah auto alpa dijalankan
       const absenBaru = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
       const absenMapBaru = {};
       (absenBaru||[]).forEach(a => { absenMapBaru[a.nis] = a[col]||null; });
@@ -1961,12 +1960,9 @@ function buildPesanOrtu(nama, kelas, tanggal) {
 }
 
 // ============================================================
-// FIX UTAMA: Helper hitung statistik dari absenMap
+// HELPER HITUNG STATISTIK HARIAN
 // ============================================================
 function hitungStat(siswakelas, absenMap) {
-  // absenMap: { nis -> status_string } (untuk rekap harian)
-  // atau { nis -> { tgl_01, tgl_02, ... } } (untuk rekap bulanan)
-  // Fungsi ini khusus untuk rekap HARIAN (value = string status)
   let h=0, s=0, iz=0, al=0, bl=0;
   const namaAlpa = [];
   siswakelas.forEach(sw => {
@@ -2146,17 +2142,13 @@ async function kirimRekapWaliKelas() {
   try {
     const bulan = toBulan(tanggal);
     const col = tglCol(tanggal);
-    // FIX: satu query absensi, build absenMap { nis -> status }
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
-
     const absenMap = {};
     (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
-
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
     let sent=0;
     updateWAProgress(0, waliList.length, 'Mengirim rekap ke wali...');
@@ -2246,9 +2238,7 @@ function updateBerkalaBadge() {
 }
 
 // ============================================================
-// FIX UTAMA: REKAP MINGGUAN
-// Sebelum: query absensi per hari per kelas (N_wali × 7 query)
-// Sesudah: satu query per bulan yang relevan, lalu aggregate di JS
+// REKAP MINGGUAN
 // ============================================================
 async function previewRekapMingguan() {
   const previewDiv = document.getElementById('previewMingguan');
@@ -2260,10 +2250,7 @@ async function previewRekapMingguan() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-
-    // Ambil semua data absensi untuk bulan-bulan yang relevan dalam minggu ini (1 atau 2 bulan)
     const absensiCache = await fetchAbsensiMultiBulan(bulanBulan);
-
     let html = `<p class="font-semibold mb-2">📅 Minggu: ${seninStr} – ${mingguStr}</p>`;
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
     for (const guru of waliList) {
@@ -2286,20 +2273,15 @@ async function kirimRekapMingguan(auto=false) {
   if (resultEl) resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengirim...</span>';
   try {
     const { seninStr, mingguStr, tanggalMinggu, bulanBulan } = getRentangMinggu();
-
-    // FIX: fetch semua data absensi yang dibutuhkan dalam 1-2 query, bukan 7N query
     const [semuaGuru, semua, absensiCache] = await Promise.all([
       sbSelect(T.guru, '?role=eq.WALI'),
       sbSelect(T.siswa, '?order=kelas.asc,nama.asc'),
       fetchAbsensiMultiBulan(bulanBulan)
     ]);
-
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
     let sent = 0;
-
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
@@ -2309,7 +2291,6 @@ async function kirimRekapMingguan(auto=false) {
       if (ok) sent++;
       await new Promise(r => setTimeout(r, 1200));
     }
-
     if (resultEl) resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap mingguan terkirim ke ${sent} wali kelas.</span>`;
     if (auto) schedLog(`📅 Rekap mingguan terkirim: ${sent} wali`, 'success');
   } catch(err) {
@@ -2320,9 +2301,7 @@ async function kirimRekapMingguan(auto=false) {
 }
 
 // ============================================================
-// FIX UTAMA: REKAP BULANAN
-// Sebelum: absenByNis di-build tanpa validasi kolom tgl
-// Sesudah: fetch dengan select=* eksplisit, hitung per siswa
+// REKAP BULANAN
 // ============================================================
 async function previewRekapBulanan() {
   const previewDiv = document.getElementById('previewBulanan');
@@ -2334,15 +2313,11 @@ async function previewRekapBulanan() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-
-    // FIX: fetch dengan select=* agar semua kolom tgl_XX ikut ter-return
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
     const absenByNis = {};
     (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
-
     const [tahun, bln] = bulan.split('-').map(Number);
     const jumlahHari = new Date(tahun, bln, 0).getDate();
-
     let html = `<p class="font-semibold mb-2">📆 Bulan: ${bulan}</p>`;
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
     for (const guru of waliList) {
@@ -2368,36 +2343,26 @@ async function kirimRekapBulanan(auto=false, bulanOverride=null) {
     const [tahun, bln] = bulan.split('-').map(Number);
     const jumlahHari = new Date(tahun, bln, 0).getDate();
     const namaBulan = new Date(tahun, bln-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
-
-    // FIX: tiga query paralel + select=* untuk absensi agar semua kolom tgl_XX ada
     const [semuaGuru, semua, absensi] = await Promise.all([
       sbSelect(T.guru, '?role=eq.WALI'),
       sbSelect(T.siswa, '?order=kelas.asc,nama.asc'),
-      sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`)   // <-- FIX: select=* bukan default
+      sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`)
     ]);
-
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-
-    // FIX: build map { nis -> row absensi LENGKAP dengan semua kolom tgl }
     const absenByNis = {};
     (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
-
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
     let sent = 0;
-
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
-
-      // FIX: gunakan hitungStatBulanan yang iterasi kolom tgl_01..tgl_XX dengan benar
       const stat = hitungStatBulanan(siswakelas, absenByNis, jumlahHari);
       const pesan = buildPesanRekapBulanan(guru, bulan, namaBulan, siswakelas.length, stat);
       const ok = await kirimWA(hp, pesan);
       if (ok) sent++;
       await new Promise(r => setTimeout(r, 1200));
     }
-
     if (resultEl) resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap bulanan terkirim ke ${sent} wali kelas.</span>`;
     if (auto) schedLog(`📆 Rekap bulanan terkirim: ${sent} wali`, 'success');
   } catch(err) {
@@ -2408,33 +2373,24 @@ async function kirimRekapBulanan(auto=false, bulanOverride=null) {
 }
 
 // ============================================================
-// HELPER AGREGASI MINGGUAN & BULANAN (BARU)
+// HELPER AGREGASI (BARU - dengan detail per siswa)
 // ============================================================
 
-/**
- * Hitung rentang minggu (Senin s/d Minggu) dari hari ini
- */
 function getRentangMinggu() {
   const today = new Date();
   const senin = new Date(today);
   senin.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
   senin.setHours(0,0,0,0);
-
-  // Buat array 7 tanggal (string YYYY-MM-DD)
   const tanggalMinggu = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(senin);
     d.setDate(senin.getDate() + i);
     tanggalMinggu.push(d.toISOString().split('T')[0]);
   }
-
   const minggu = new Date(senin);
   minggu.setDate(senin.getDate() + 6);
-
-  // Kumpulkan bulan unik yang tercakup dalam minggu ini (bisa 1 atau 2 bulan)
   const bulanSet = new Set(tanggalMinggu.map(t => toBulan(t)));
   const bulanBulan = [...bulanSet];
-
   return {
     seninStr: senin.toLocaleDateString('id-ID'),
     mingguStr: minggu.toLocaleDateString('id-ID'),
@@ -2443,18 +2399,11 @@ function getRentangMinggu() {
   };
 }
 
-/**
- * FIX: Fetch absensi untuk satu atau dua bulan sekaligus (bukan per hari).
- * Return: { nis -> { tgl_01: 'H', tgl_02: 'A', ... } }
- */
 async function fetchAbsensiMultiBulan(bulanBulan) {
-  // Fetch semua bulan yang relevan secara paralel, dengan select=* agar semua kolom ikut
   const results = await Promise.all(
     bulanBulan.map(bulan => sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`))
   );
-  // Merge: { nis -> { bulan: '2026-04', tgl_01: ..., tgl_02: ..., ... } }
-  // Jika minggu lintas bulan, nis bisa punya 2 row (beda bulan), kita merge per bulan
-  const cache = {}; // { nis -> { bulan -> rowData } }
+  const cache = {};
   results.forEach((rows, idx) => {
     const bulan = bulanBulan[idx];
     (rows||[]).forEach(a => {
@@ -2466,39 +2415,41 @@ async function fetchAbsensiMultiBulan(bulanBulan) {
 }
 
 /**
- * FIX: Hitung statistik mingguan dari cache (tanpa query per hari)
+ * DIPERBARUI: Hitung statistik mingguan dengan detail per siswa
  */
 function hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu) {
   let h=0, s=0, iz=0, al=0, bl=0;
-  const namaAlpa = new Set(); // Set untuk hindari duplikat
+  const detailSiswa = [];
 
   siswakelas.forEach(sw => {
     const nisCacheData = absensiCache[sw.nis] || {};
+    let sh=0, ss=0, siz=0, sal=0, sbl=0;
     tanggalMinggu.forEach(tgl => {
       const bulan = toBulan(tgl);
       const col = tglCol(tgl);
       const rowBulan = nisCacheData[bulan] || {};
       const st = rowBulan[col] || null;
-      if (st==='H') h++;
-      else if (st==='S') s++;
-      else if (st==='I') iz++;
-      else if (st==='A') { al++; namaAlpa.add(sw.nama); }
-      else bl++;
+      if (st==='H') { h++; sh++; }
+      else if (st==='S') { s++; ss++; }
+      else if (st==='I') { iz++; siz++; }
+      else if (st==='A') { al++; sal++; }
+      else { bl++; sbl++; }
     });
+    detailSiswa.push({ nama: sw.nama, h: sh, s: ss, iz: siz, al: sal, bl: sbl });
   });
 
-  return { h, s, iz, al, bl, namaAlpa: [...namaAlpa] };
+  return { h, s, iz, al, bl, detailSiswa };
 }
 
 /**
- * FIX: Hitung statistik bulanan dari absenByNis (row lengkap dengan semua kolom tgl)
+ * DIPERBARUI: Hitung statistik bulanan dengan detail per siswa
  */
 function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
   let h=0, s=0, iz=0, al=0;
-  const siswaAlpaTinggi = [];
+  const detailSiswa = [];
 
   siswakelas.forEach(sw => {
-    const rec = absenByNis[sw.nis] || {}; // row pivot lengkap atau {}
+    const rec = absenByNis[sw.nis] || {};
     let sh=0, sa=0, ss=0, siz=0;
     for (let d = 1; d <= jumlahHari; d++) {
       const col = 'tgl_' + String(d).padStart(2,'0');
@@ -2508,20 +2459,50 @@ function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
       else if (st==='S') { ss++; s++; }
       else if (st==='I') { siz++; iz++; }
     }
-    if (sa >= 3) siswaAlpaTinggi.push({ nama: sw.nama, alpa: sa });
+    detailSiswa.push({ nama: sw.nama, h: sh, s: ss, iz: siz, al: sa });
   });
 
-  return { h, s, iz, al, siswaAlpaTinggi };
+  return { h, s, iz, al, detailSiswa };
 }
 
+/**
+ * DIPERBARUI: Pesan rekap mingguan dengan detail per siswa
+ */
 function buildPesanRekapMingguan(guru, seninStr, mingguStr, totalSiswa, stat) {
-  const { h, s, iz, al, bl, namaAlpa } = stat;
-  return `📅 *REKAP ABSENSI PAGI MINGGUAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi mingguan siswa kelas Bapak/Ibu:\n\n📅 *Periode  :* ${seninStr} – ${mingguStr}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP MINGGUAN:*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n${namaAlpa.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA:*\n' + namaAlpa.map((n,i)=>(i+1)+'. '+n).join('\n') : '\n✅ Tidak ada siswa yang alpa minggu ini.'}\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+  const { h, s, iz, al, bl, detailSiswa } = stat;
+
+  // Urutkan: alpa terbanyak di atas, lalu nama
+  const sorted = [...detailSiswa].sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
+
+  const barisDetail = sorted.map((sw, i) => {
+    const indikator = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
+    return `${String(i+1).padStart(2,'0')}. ${indikator} ${sw.nama}\n    H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+  }).join('\n');
+
+  const adaAlpa = detailSiswa.filter(sw => sw.al > 0).sort((a, b) => b.al - a.al);
+
+  return `📅 *REKAP ABSENSI PAGI MINGGUAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi mingguan siswa kelas Bapak/Ibu:\n\n📅 *Periode  :* ${seninStr} – ${mingguStr}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP TOTAL MINGGU INI:*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n\n📋 *DETAIL PER SISWA:*\n_(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_\n\n${barisDetail}\n${adaAlpa.length > 0 ? '\n⚠️ *SISWA PERLU PERHATIAN:*\n' + adaAlpa.map((sw,i)=>`${i+1}. ${sw.nama} — Alpa ${sw.al}x, Sakit ${sw.s}x, Izin ${sw.iz}x`).join('\n') : '\n✅ Tidak ada siswa yang alpa minggu ini.'}\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
 }
 
+/**
+ * DIPERBARUI: Pesan rekap bulanan dengan detail per siswa
+ */
 function buildPesanRekapBulanan(guru, bulan, namaBulan, totalSiswa, stat) {
-  const { h, s, iz, al, siswaAlpaTinggi } = stat;
-  return `📆 *REKAP ABSENSI PAGI BULANAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi bulan ini:\n\n📆 *Bulan    :* ${namaBulan}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP BULANAN (total pertemuan):*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n${siswaAlpaTinggi.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA ≥ 3:*\n' + siswaAlpaTinggi.map((sw,i)=>(i+1)+'. '+sw.nama+' ('+sw.alpa+'x alpa)').join('\n') : '\n✅ Tidak ada siswa dengan alpa berlebihan.'}\n\nMohon Bapak/Ibu dapat memberikan perhatian kepada siswa yang memiliki catatan alpa tinggi.\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+  const { h, s, iz, al, detailSiswa } = stat;
+
+  // Urutkan: alpa terbanyak di atas
+  const sorted = [...detailSiswa].sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
+
+  const barisDetail = sorted.map((sw, i) => {
+    const indikator = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
+    return `${String(i+1).padStart(2,'0')}. ${indikator} ${sw.nama}\n    H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+  }).join('\n');
+
+  const siswaAlpaTinggi = detailSiswa
+    .filter(sw => sw.al >= 3)
+    .sort((a, b) => b.al - a.al);
+
+  return `📆 *REKAP ABSENSI PAGI BULANAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi bulan ini:\n\n📆 *Bulan    :* ${namaBulan}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP TOTAL BULAN INI:*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n\n📋 *DETAIL PER SISWA:*\n_(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_\n\n${barisDetail}\n${siswaAlpaTinggi.length > 0 ? '\n⚠️ *SISWA ALPA ≥ 3 (PERLU TINDAK LANJUT):*\n' + siswaAlpaTinggi.map((sw,i)=>`${i+1}. ${sw.nama} — Alpa ${sw.al}x, Sakit ${sw.s}x, Izin ${sw.iz}x`).join('\n') : '\n✅ Tidak ada siswa dengan alpa berlebihan bulan ini.'}\n\nMohon Bapak/Ibu dapat memberikan perhatian kepada siswa yang memiliki catatan alpa tinggi.\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
 }
 
 // ============================================================
