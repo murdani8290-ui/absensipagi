@@ -1827,7 +1827,7 @@ async function runScheduledAutoAlpa(tanggal) {
       let waSent=0;
       for (const s of belum) {
         const hp = formatHP(s.hp_ortu); if (!hp) continue;
-        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nPutra/putri Bapak/Ibu tercatat *TIDAK HADIR (ALPA)* pada:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi kepada wali kelas.\n\n_SIPAGI - Sistem Presensi Pagi_`;
+        const pesan = `🏫 *PEMBERITAHUAN KETIDAKHADIRAN SISWA*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu Orang Tua/Wali Murid\ndari *${s.nama}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nDengan hormat, kami sampaikan bahwa putra/putri Bapak/Ibu:\n\n👤 *Nama  :* ${s.nama}\n🏫 *Kelas  :* ${s.kelas}\n📅 *Tanggal:* ${tanggal}\n📌 *Status :* *TIDAK HADIR (ALPA)*\n\ntercatat *tidak hadir* pada kegiatan pagi hari di sekolah tanpa keterangan.\n\nSebagaimana ketentuan tata tertib sekolah, ketidakhadiran tanpa keterangan akan dicatat sebagai *Alpa* dan dapat mempengaruhi nilai kehadiran siswa.\n\nMohon kiranya Bapak/Ibu dapat:\n1️⃣ Menghubungi wali kelas untuk menyampaikan keterangan\n2️⃣ Memastikan putra/putri hadir pada hari berikutnya\n3️⃣ Mengirimkan surat keterangan jika ada keperluan mendesak\n\nDemikian pemberitahuan ini kami sampaikan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Piket Pagi SMA Negeri 10 Pinrang_\n_Sistem Informasi Presensi Pagi (SIPAGI)_`;
         await kirimWA(hp, pesan); waSent++;
         await new Promise(r => setTimeout(r, 1200));
       }
@@ -1856,7 +1856,7 @@ async function runScheduledAutoAlpa(tanggal) {
           else if (st==='A') { al++; namaAlpa.push(sw.nama); }
           else bl++;
         });
-        const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi*\n\n📅 ${tanggal}\n🏫 ${guru.kelas_wali}\n\n✅ Hadir: ${h}\n🤒 Sakit: ${s}\n📋 Izin: ${iz}\n❌ Alpa: ${al}\n⏳ Belum: ${bl}\n📌 Total: ${siswakelas.length}${namaAlpa.length>0?'\n\n❌ Alpa:\n'+namaAlpa.map(n=>'• '+n).join('\n'):''}\n\n_SIPAGI Scheduler_`;
+      const pesan = `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${siswakelas.length} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n, i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nDemikian rekap ini kami sampaikan. Terima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
         await kirimWA(hp, pesan); waliSent++;
         await new Promise(r => setTimeout(r, 1200));
       }
@@ -2051,7 +2051,7 @@ async function kirimWAOrangTua() {
     let sent=0;
     updateWAProgress(0, withHP.length, 'Mengirim WA ke ortu...');
     for (const s of withHP) {
-      const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n\nYth. Orang Tua/Wali dari *${s.nama}* (Kelas ${s.kelas})\n\nPutra/putri tercatat *TIDAK HADIR (ALPA)*:\n\n📅 Tanggal: ${tanggal}\n👤 Siswa: ${s.nama}\n🏫 Kelas: ${s.kelas}\n\nMohon konfirmasi ke wali kelas.\n\n_SIPAGI - Sistem Presensi Pagi_`;
+      const pesan = `🏫 *PEMBERITAHUAN KETIDAKHADIRAN SISWA*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu Orang Tua/Wali Murid dari *${s.nama}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nDengan hormat, kami sampaikan bahwa putra/putri Bapak/Ibu:\n\n👤 *Nama   :* ${s.nama}\n🏫 *Kelas   :* ${s.kelas}\n📅 *Tanggal :* ${tanggal}\n📌 *Status  :* *TIDAK HADIR (ALPA)*\n\ntercatat *tidak hadir* pada kegiatan pagi hari di sekolah tanpa keterangan.\n\nSebagaimana ketentuan tata tertib sekolah, ketidakhadiran tanpa keterangan akan dicatat sebagai *Alpa* dan dapat mempengaruhi nilai kehadiran siswa.\n\nMohon kiranya Bapak/Ibu dapat:\n1️⃣ Menghubungi wali kelas untuk menyampaikan keterangan\n2️⃣ Memastikan putra/putri hadir pada hari berikutnya\n3️⃣ Mengirimkan surat keterangan jika ada keperluan mendesak\n\nDemikian pemberitahuan ini kami sampaikan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Piket Pagi SMA Negeri 10 Pinrang_\n_Sistem Informasi Presensi Pagi (SIPAGI)_`;
       const ok = await kirimWA(s.hpF, pesan);
       if (ok) sent++;
       updateWAProgress(sent, withHP.length, `Mengirim ke ${s.nama}...`);
@@ -2095,7 +2095,7 @@ async function kirimRekapWaliKelas() {
         else if (st==='A') { al++; namaAlpa.push(sw.nama); }
         else bl++;
       });
-      const pesan = `*[SIPAGI - SMAN 10 Pinrang]*\n*Rekap Absensi Pagi*\n\n📅 ${tanggal}\n🏫 ${guru.kelas_wali}\n👤 ${guru.nama}\n\n✅ Hadir: ${h}\n🤒 Sakit: ${s}\n📋 Izin: ${iz}\n❌ Alpa: ${al}\n⏳ Belum: ${bl}\n📌 Total: ${siswakelas.length}${namaAlpa.length>0?'\n\n❌ Alpa:\n'+namaAlpa.map(n=>'• '+n).join('\n'):''}\n\n_SIPAGI_`;
+      const pesan = `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${siswakelas.length} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n, i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nDemikian rekap ini kami sampaikan. Terima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
       const ok = await kirimWA(hp, pesan);
       if (ok) sent++;
       updateWAProgress(sent, waliList.length, `Kirim ke ${guru.nama}...`);
