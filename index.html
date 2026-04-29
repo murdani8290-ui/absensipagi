@@ -397,7 +397,6 @@
 
     <!-- Tab Siswa -->
     <div id="admTabSiswa" class="admin-panel">
-      <!-- Tambah Manual -->
       <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
         <h4 class="font-semibold text-gray-800 mb-3">Tambah Siswa Manual</h4>
         <div class="grid grid-cols-3 gap-2 mb-2">
@@ -411,7 +410,6 @@
         </button>
       </div>
 
-      <!-- Import CSV -->
       <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
         <div class="flex items-center justify-between mb-2">
           <h4 class="font-semibold text-blue-800"><i class="fas fa-file-csv mr-2"></i>Import CSV</h4>
@@ -431,7 +429,6 @@
             <input type="text" id="inputKelasBaru" placeholder="Contoh: XII IPA 3" class="flex-1 px-3 py-2 border-2 border-blue-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
             <span class="text-xs text-blue-600 self-center whitespace-nowrap">← nama kelas baru</span>
           </div>
-          <p class="text-xs text-blue-500 mt-1"><i class="fas fa-info-circle mr-1"></i>Template kosong akan didownload untuk kelas ini</p>
         </div>
         <div class="import-drop" id="csvDropSiswa" onclick="document.getElementById('csvFileSiswa').click()">
           <input type="file" id="csvFileSiswa" accept=".csv,.xlsx,.xls" onchange="handleImportSiswaFile(this)">
@@ -441,7 +438,6 @@
         <div id="csvImportSiswaResult" class="mt-2 text-sm"></div>
       </div>
 
-      <!-- Copy-Paste Import -->
       <div class="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
         <h4 class="font-semibold text-green-800 mb-2"><i class="fas fa-paste mr-2"></i>Import Copy-Paste</h4>
         <p class="text-xs text-green-600 mb-2">Setiap baris: <code class="bg-green-100 px-1 rounded">NIS,Nama,Kelas,HP_Ortu</code> (HP opsional)</p>
@@ -453,7 +449,6 @@
         <div id="pasteSiswaResult" class="mt-2 text-sm"></div>
       </div>
 
-      <!-- Tabel Siswa -->
       <div class="flex gap-2 mb-2">
         <input type="text" id="filterSiswaSearch" placeholder="Cari nama/NIS..." class="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none" oninput="filterSiswaTable()">
         <select id="filterSiswaKelas" class="px-3 py-2 border rounded-lg text-sm focus:outline-none" onchange="filterSiswaTable()">
@@ -490,7 +485,6 @@
         </button>
       </div>
 
-      <!-- Import Copy-Paste Guru -->
       <div class="bg-green-50 rounded-xl p-4 border border-green-200 mb-4">
         <h4 class="font-semibold text-green-800 mb-2"><i class="fas fa-paste mr-2"></i>Import Copy-Paste Guru</h4>
         <p class="text-xs text-green-600 mb-2">Format: <code class="bg-green-100 px-1 rounded">username,password,nama,kelas_wali,role,hp</code></p>
@@ -502,7 +496,6 @@
         <div id="pasteGuruResult" class="mt-2 text-sm"></div>
       </div>
 
-      <!-- Import CSV Guru -->
       <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mb-4">
         <div class="flex items-center justify-between mb-2">
           <h4 class="font-semibold text-blue-800"><i class="fas fa-file-csv mr-2"></i>Import CSV Guru</h4>
@@ -545,7 +538,6 @@
             <option value="S">Sakit</option>
             <option value="I">Izin</option>
             <option value="A">Alpa</option>
-            <option value="">Belum Absen</option>
           </select>
         </div>
       </div>
@@ -564,7 +556,6 @@
       </div>
       <p class="text-xs text-gray-500 text-center mb-3">Total: <span id="totalRekapDisplay">0</span> siswa</p>
 
-      <!-- Edit Panel -->
       <div id="editStatusPanel" class="hidden mt-4 bg-amber-50 rounded-xl p-4 border border-amber-200 mb-4">
         <div class="flex items-center justify-between mb-3">
           <h5 class="font-semibold text-amber-800"><i class="fas fa-edit mr-2"></i>Edit Status</h5>
@@ -591,7 +582,6 @@
         <p id="editStatusResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
       </div>
 
-      <!-- Download & Hapus -->
       <div class="grid grid-cols-2 gap-3 mb-4">
         <button class="py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm" onclick="downloadRekapCSV()">
           <i class="fas fa-file-csv mr-1"></i>CSV Harian
@@ -616,7 +606,6 @@
 
     <!-- Tab Auto Alpa -->
     <div id="admTabAutoalpa" class="admin-panel hidden">
-      <!-- Scheduler Card -->
       <div class="scheduler-card mb-4" id="schedulerCard">
         <div class="p-5">
           <div class="flex items-center justify-between mb-4">
@@ -691,7 +680,8 @@
           </div>
         </div>
       </div>
-<!-- REKAP BERKALA -->
+
+      <!-- REKAP BERKALA -->
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
           <i class="fas fa-calendar-week text-purple-500"></i>Rekap Berkala ke Wali Kelas
@@ -756,7 +746,7 @@
         </div>
       </div>
       <!-- END REKAP BERKALA -->
-      
+
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-3"><i class="fas fa-hand-pointer text-blue-500 mr-2"></i>Jalankan Manual</h5>
         <div class="flex gap-2">
@@ -847,7 +837,7 @@
 
 <script>
 // ============================================================
-// FONNTE CONFIG - via Supabase Edge Function
+// FONNTE CONFIG
 // ============================================================
 const FONNTE_TOKEN = 'V7PRFFCipJkU4s8mzjSQ';
 const FONNTE_PROXY_URL = 'https://pgrcbuwaciukbpfxupjz.supabase.co/functions/v1/fonnte-proxy';
@@ -890,7 +880,7 @@ async function cekKoneksiFonnte() {
     } else if (data.status === false) {
       statusEl.innerHTML = `<span class="text-red-600">❌ Token tidak valid atau device offline.</span>`;
     } else {
-      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Respons tidak terduga — coba kirim WA langsung.</span>`;
+      statusEl.innerHTML = `<span class="text-amber-600">⚠️ Respons tidak terduga.</span>`;
     }
   } catch (err) {
     statusEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
@@ -954,17 +944,13 @@ async function sbDelete(table, params) {
 // ============================================================
 // PIVOT HELPERS
 // ============================================================
-// Ambil nama kolom dari tanggal, misal '2026-04-28' -> 'tgl_28'
 function tglCol(dateStr) {
   const d = new Date(dateStr);
   return 'tgl_' + String(d.getDate()).padStart(2, '0');
 }
-// Ambil bulan dari tanggal, misal '2026-04-28' -> '2026-04'
 function toBulan(dateStr) { return dateStr.slice(0, 7); }
-// Semua kolom tanggal
 const TGL_COLS = Array.from({length:31}, (_,i) => 'tgl_' + String(i+1).padStart(2,'0'));
 
-// Ambil status siswa untuk tanggal tertentu
 async function getStatusHarian(nis, tanggal) {
   const bulan = toBulan(tanggal);
   const col = tglCol(tanggal);
@@ -973,7 +959,6 @@ async function getStatusHarian(nis, tanggal) {
   return data[0][col] || null;
 }
 
-// Set status siswa untuk tanggal tertentu (upsert pivot row)
 async function setStatusHarian(nis, nama, kelas, tanggal, status) {
   const bulan = toBulan(tanggal);
   const col = tglCol(tanggal);
@@ -981,7 +966,6 @@ async function setStatusHarian(nis, nama, kelas, tanggal, status) {
   await sbUpsert(T.absensi, body, 'nis,bulan');
 }
 
-// Ambil semua status untuk satu kelas pada tanggal tertentu
 async function getRekapHarian(kelas, tanggal) {
   const bulan = toBulan(tanggal);
   const col = tglCol(tanggal);
@@ -992,7 +976,6 @@ async function getRekapHarian(kelas, tanggal) {
   return (semua || []).map(s => ({ ...s, status: absenMap[s.nis] || null }));
 }
 
-// Ambil data bulan lengkap untuk satu kelas (pivot)
 async function getDataBulanan(kelas, bulan) {
   const semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
   const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&bulan=eq.${bulan}`);
@@ -1005,13 +988,11 @@ async function getDataBulanan(kelas, bulan) {
 // STATUS LABELS
 // ============================================================
 const STATUS_LABEL = { H:'Hadir', S:'Sakit', I:'Izin', A:'Alpa', null:'Belum Absen', '':'Belum Absen' };
-const STATUS_FULL = { H:'✅ Hadir', S:'🤒 Sakit', I:'📋 Izin', A:'❌ Alpa', null:'⏳ Belum Absen', '':'⏳ Belum Absen' };
 
 function statusBadge(s) {
   const cls = { H:'status-H', S:'status-S', I:'status-I', A:'status-A' };
-  const lbl = { H:'H', S:'S', I:'I', A:'A' };
   if (!s) return '<span class="text-gray-400 text-xs">—</span>';
-  return `<span class="${cls[s] || ''}">${lbl[s] || s}</span>`;
+  return `<span class="${cls[s] || ''}">${s}</span>`;
 }
 
 // ============================================================
@@ -1024,7 +1005,7 @@ const AppState = {
   searchTimeout: null, logoClickCount: 0, logoClickTimer: null,
   schedulerActive: false, schedulerInterval: null, clockInterval: null,
   schedWASend: true, activeDays: new Set([1,2,3,4,5,6]),
-  lastTriggeredDate: null
+  lastTriggeredDate: null, lastMinggTriggered: null, lastBulananTriggered: null
 };
 
 // ============================================================
@@ -1390,24 +1371,13 @@ function exportExcelPivot(siswa, absenMap, bulan, namaFileKelas) {
   if (!siswa || !siswa.length) { alert('Tidak ada data siswa!'); return; }
   const [tahun, bln] = bulan.split('-').map(Number);
   const jumlahHari = new Date(tahun, bln, 0).getDate();
-
-  // Header tanggal: "25-Jan", "26-Jan", dst
   const headerTgl = [];
-  for (let d = 1; d <= jumlahHari; d++) {
-    headerTgl.push(`${d}-${BULAN_NAMA[bln-1]}`);
-  }
+  for (let d = 1; d <= jumlahHari; d++) { headerTgl.push(`${d}-${BULAN_NAMA[bln-1]}`); }
   const header = ['NIS', 'Nama', 'Kelas', ...headerTgl, 'Hadir', 'Sakit', 'Izin', 'Alpa'];
-
-  // Kelompokkan siswa per kelas
   const byKelas = {};
-  siswa.forEach(s => {
-    if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
-    byKelas[s.kelas].push(s);
-  });
-
+  siswa.forEach(s => { if (!byKelas[s.kelas]) byKelas[s.kelas] = []; byKelas[s.kelas].push(s); });
   const wb = XLSX.utils.book_new();
   const kelasList = Object.keys(byKelas).sort();
-
   kelasList.forEach(kelas => {
     const siswakelas = byKelas[kelas];
     const rows = siswakelas.map(s => {
@@ -1417,8 +1387,7 @@ function exportExcelPivot(siswa, absenMap, bulan, namaFileKelas) {
       for (let d = 1; d <= jumlahHari; d++) {
         const col = 'tgl_' + String(d).padStart(2,'0');
         const val = rec[col] || '';
-        const label = STATUS_FULL_EXPORT[val] ?? '';
-        cols.push(label);
+        cols.push(STATUS_FULL_EXPORT[val] ?? '');
         if (val==='H') h++;
         else if (val==='S') sk++;
         else if (val==='I') iz++;
@@ -1426,20 +1395,12 @@ function exportExcelPivot(siswa, absenMap, bulan, namaFileKelas) {
       }
       return [s.nis, s.nama, s.kelas, ...cols, h, sk, iz, al];
     });
-
     const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    ws['!cols'] = [
-      {wch:12},{wch:28},{wch:10},
-      ...Array(jumlahHari).fill({wch:8}),
-      {wch:7},{wch:7},{wch:5},{wch:5}
-    ];
-    // Nama sheet: "Absensi - XI 3" (max 31 karakter)
+    ws['!cols'] = [{wch:12},{wch:28},{wch:10},...Array(jumlahHari).fill({wch:8}),{wch:7},{wch:7},{wch:5},{wch:5}];
     const sheetName = `Absensi - ${kelas}`.replace(/[\\\/\*\?\[\]:]/g,'').slice(0,31);
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
   });
-
-  const namaFile = `Absensi_${namaFileKelas.replace(/\s+/g,'_')}_${bulan}.xlsx`;
-  XLSX.writeFile(wb, namaFile);
+  XLSX.writeFile(wb, `Absensi_${namaFileKelas.replace(/\s+/g,'_')}_${bulan}.xlsx`);
 }
 
 // ============================================================
@@ -1497,12 +1458,10 @@ async function loadAdminSiswa() {
     const selK = document.getElementById('filterSiswaKelas');
     selK.innerHTML = '<option value="">Semua Kelas</option>';
     kelasSet.forEach(k => { const o = document.createElement('option'); o.value=k; o.textContent=k; selK.appendChild(o); });
-    // Isi juga dropdown template
     const selT = document.getElementById('templateSiswaKelas');
     if (selT) {
       selT.innerHTML = '<option value="">-- Semua Kelas --</option>';
       kelasSet.forEach(k => { const o = document.createElement('option'); o.value=k; o.textContent=k; selT.appendChild(o); });
-      // Tambah opsi kelas baru di paling bawah
       const oBaru = document.createElement('option');
       oBaru.value = '__baru__'; oBaru.textContent = '+ Kelas Baru...';
       selT.appendChild(oBaru);
@@ -1580,8 +1539,7 @@ function applyAdminFilters() {
   const fs = document.getElementById('filterStatusAdmin').value;
   let list = AppState.adminRekapData.list || [];
   if (fk) list = list.filter(s => s.kelas === fk);
-  if (fs === '') { /* semua */ }
-  else if (fs) list = list.filter(s => s.status === fs);
+  if (fs) list = list.filter(s => s.status === fs);
   renderAdminRekapTable(list);
   document.getElementById('totalRekapDisplay').textContent = list.length;
 }
@@ -1692,7 +1650,10 @@ async function deleteGuru(username) {
   catch (err) { alert('Gagal: ' + err.message); }
 }
 function logoutAdmin() {
-  if (AppState.schedulerActive) { AppState.schedulerActive = false; if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; } }
+  if (AppState.schedulerActive) {
+    AppState.schedulerActive = false;
+    if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
+  }
   AppState.adminRekapData = null;
   ['userAdmin','passAdmin'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginAdminArea').classList.remove('hidden');
@@ -1725,19 +1686,16 @@ function parseCSVorExcel(file, callback) {
     reader.readAsBinaryString(file);
   }
 }
-
 async function handleImportSiswaFile(input) {
   const file = input.files[0]; if (!file) return;
   const resultEl = document.getElementById('csvImportSiswaResult');
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Membaca file...</span>';
   parseCSVorExcel(file, async rows => {
-    // Skip header jika ada
     const data = rows.filter(r => r[0] && !/^nis$/i.test(r[0]));
     await batchImportSiswa(data, resultEl);
     input.value = '';
   });
 }
-
 async function importSiswaPaste() {
   const text = document.getElementById('pasteSiswa').value.trim();
   const resultEl = document.getElementById('pasteSiswaResult');
@@ -1746,7 +1704,6 @@ async function importSiswaPaste() {
   await batchImportSiswa(rows, resultEl);
   document.getElementById('pasteSiswa').value = '';
 }
-
 async function batchImportSiswa(rows, resultEl) {
   resultEl.innerHTML = `<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengimport ${rows.length} baris...</span>`;
   let ok=0, skip=0, err=0;
@@ -1761,7 +1718,6 @@ async function batchImportSiswa(rows, resultEl) {
   resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Import selesai!</span> Berhasil: ${ok} | Dilewati: ${skip} | Error: ${err}`;
   loadAdminSiswa();
 }
-
 async function handleImportGuruFile(input) {
   const file = input.files[0]; if (!file) return;
   const resultEl = document.getElementById('csvImportGuruResult');
@@ -1772,7 +1728,6 @@ async function handleImportGuruFile(input) {
     input.value = '';
   });
 }
-
 async function importGuruPaste() {
   const text = document.getElementById('pasteGuru').value.trim();
   const resultEl = document.getElementById('pasteGuruResult');
@@ -1781,7 +1736,6 @@ async function importGuruPaste() {
   await batchImportGuru(rows, resultEl);
   document.getElementById('pasteGuru').value = '';
 }
-
 async function batchImportGuru(rows, resultEl) {
   resultEl.innerHTML = `<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengimport ${rows.length} baris...</span>`;
   let ok=0, skip=0, err=0;
@@ -1895,7 +1849,6 @@ function checkTriggerTime() {
     if (now.getDate()===1 && hh===bulH && mm===bulM && AppState.lastBulananTriggered!==bulananKey) {
       AppState.lastBulananTriggered = bulananKey;
       schedLog('📆 Mengirim Rekap Bulanan ke Wali Kelas...', 'warn');
-      // Kirim rekap bulan lalu
       const bulanLalu = getBulanLalu(now);
       kirimRekapBulanan(true, bulanLalu);
     }
@@ -1923,7 +1876,7 @@ async function runScheduledAutoAlpa(tanggal) {
       let waSent=0;
       for (const s of belum) {
         const hp = formatHP(s.hp_ortu); if (!hp) continue;
-        const pesan = `🏫 *PEMBERITAHUAN KETIDAKHADIRAN SISWA*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu Orang Tua/Wali Murid\ndari *${s.nama}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nDengan hormat, kami sampaikan bahwa putra/putri Bapak/Ibu:\n\n👤 *Nama  :* ${s.nama}\n🏫 *Kelas  :* ${s.kelas}\n📅 *Tanggal:* ${tanggal}\n📌 *Status :* *TIDAK HADIR (ALPA)*\n\ntercatat *tidak hadir* pada kegiatan pagi hari di sekolah tanpa keterangan.\n\nSebagaimana ketentuan tata tertib sekolah, ketidakhadiran tanpa keterangan akan dicatat sebagai *Alpa* dan dapat mempengaruhi nilai kehadiran siswa.\n\nMohon kiranya Bapak/Ibu dapat:\n1️⃣ Menghubungi wali kelas untuk menyampaikan keterangan\n2️⃣ Memastikan putra/putri hadir pada hari berikutnya\n3️⃣ Mengirimkan surat keterangan jika ada keperluan mendesak\n\nDemikian pemberitahuan ini kami sampaikan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Piket Pagi SMA Negeri 10 Pinrang_\n_Sistem Informasi Presensi Pagi (SIPAGI)_`;
+        const pesan = buildPesanOrtu(s.nama, s.kelas, tanggal);
         await kirimWA(hp, pesan); waSent++;
         await new Promise(r => setTimeout(r, 1200));
       }
@@ -1931,6 +1884,7 @@ async function runScheduledAutoAlpa(tanggal) {
       setStepState(3,'done'); setLineState(3,'done');
       setStepState(4,'running');
       schedLog('📋 Mengirim rekap wali kelas...', 'info');
+      // Ambil ulang data absensi setelah auto alpa dijalankan
       const absenBaru = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
       const absenMapBaru = {};
       (absenBaru||[]).forEach(a => { absenMapBaru[a.nis] = a[col]||null; });
@@ -1942,17 +1896,8 @@ async function runScheduledAutoAlpa(tanggal) {
       for (const guru of waliList) {
         const hp = formatHP(guru.hp);
         const siswakelas = byKelas[guru.kelas_wali] || [];
-        let h=0, s=0, iz=0, al=0, bl=0;
-        const namaAlpa=[];
-        siswakelas.forEach(sw => {
-          const st = absenMapBaru[sw.nis]||null;
-          if (st==='H') h++;
-          else if (st==='S') s++;
-          else if (st==='I') iz++;
-          else if (st==='A') { al++; namaAlpa.push(sw.nama); }
-          else bl++;
-        });
-      const pesan = `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${siswakelas.length} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n, i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nDemikian rekap ini kami sampaikan. Terima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+        const stat = hitungStat(siswakelas, absenMapBaru);
+        const pesan = buildPesanRekapHarian(guru, tanggal, siswakelas.length, stat);
         await kirimWA(hp, pesan); waliSent++;
         await new Promise(r => setTimeout(r, 1200));
       }
@@ -1985,6 +1930,7 @@ function toggleScheduler() {
     document.getElementById('nextTriggerBadge').style.opacity='0.5';
     document.getElementById('nextTriggerCountdown').textContent='—';
     resetTimeline();
+    updateBerkalaBadge();
     schedLog('⏹ Scheduler dinonaktifkan.', 'warn');
   } else {
     const schedTime = document.getElementById('schedTime').value;
@@ -2001,11 +1947,42 @@ function toggleScheduler() {
     document.getElementById('schedClock').classList.add('active-glow');
     document.getElementById('nextTriggerBadge').style.opacity='1';
     resetTimeline();
+    updateBerkalaBadge();
     schedLog(`✅ Aktif! Trigger jam ${schedTime}`, 'success');
     schedLog(`📅 Hari: ${[...AppState.activeDays].map(d=>['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(', ')}`, 'info');
-    // Aktifkan badge rekap berkala
-    updateBerkalaBadge();
   }
+}
+
+// ============================================================
+// HELPER PESAN WA
+// ============================================================
+function buildPesanOrtu(nama, kelas, tanggal) {
+  return `🏫 *PEMBERITAHUAN KETIDAKHADIRAN SISWA*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu Orang Tua/Wali Murid\ndari *${nama}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nDengan hormat, kami sampaikan bahwa putra/putri Bapak/Ibu:\n\n👤 *Nama  :* ${nama}\n🏫 *Kelas  :* ${kelas}\n📅 *Tanggal:* ${tanggal}\n📌 *Status :* *TIDAK HADIR (ALPA)*\n\ntercatat *tidak hadir* pada kegiatan pagi hari di sekolah tanpa keterangan.\n\nMohon kiranya Bapak/Ibu dapat:\n1️⃣ Menghubungi wali kelas untuk menyampaikan keterangan\n2️⃣ Memastikan putra/putri hadir pada hari berikutnya\n3️⃣ Mengirimkan surat keterangan jika ada keperluan mendesak\n\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Piket Pagi SMA Negeri 10 Pinrang_\n_Sistem Informasi Presensi Pagi (SIPAGI)_`;
+}
+
+// ============================================================
+// FIX UTAMA: Helper hitung statistik dari absenMap
+// ============================================================
+function hitungStat(siswakelas, absenMap) {
+  // absenMap: { nis -> status_string } (untuk rekap harian)
+  // atau { nis -> { tgl_01, tgl_02, ... } } (untuk rekap bulanan)
+  // Fungsi ini khusus untuk rekap HARIAN (value = string status)
+  let h=0, s=0, iz=0, al=0, bl=0;
+  const namaAlpa = [];
+  siswakelas.forEach(sw => {
+    const st = absenMap[sw.nis] || null;
+    if (st==='H') h++;
+    else if (st==='S') s++;
+    else if (st==='I') iz++;
+    else if (st==='A') { al++; namaAlpa.push(sw.nama); }
+    else bl++;
+  });
+  return { h, s, iz, al, bl, namaAlpa };
+}
+
+function buildPesanRekapHarian(guru, tanggal, totalSiswa, stat) {
+  const { h, s, iz, al, bl, namaAlpa } = stat;
+  return `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${totalSiswa} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n,i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
 }
 
 // ============================================================
@@ -2149,8 +2126,7 @@ async function kirimWAOrangTua() {
     let sent=0;
     updateWAProgress(0, withHP.length, 'Mengirim WA ke ortu...');
     for (const s of withHP) {
-      const pesan = `🏫 *PEMBERITAHUAN KETIDAKHADIRAN SISWA*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu Orang Tua/Wali Murid dari *${s.nama}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nDengan hormat, kami sampaikan bahwa putra/putri Bapak/Ibu:\n\n👤 *Nama   :* ${s.nama}\n🏫 *Kelas   :* ${s.kelas}\n📅 *Tanggal :* ${tanggal}\n📌 *Status  :* *TIDAK HADIR (ALPA)*\n\ntercatat *tidak hadir* pada kegiatan pagi hari di sekolah tanpa keterangan.\n\nSebagaimana ketentuan tata tertib sekolah, ketidakhadiran tanpa keterangan akan dicatat sebagai *Alpa* dan dapat mempengaruhi nilai kehadiran siswa.\n\nMohon kiranya Bapak/Ibu dapat:\n1️⃣ Menghubungi wali kelas untuk menyampaikan keterangan\n2️⃣ Memastikan putra/putri hadir pada hari berikutnya\n3️⃣ Mengirimkan surat keterangan jika ada keperluan mendesak\n\nDemikian pemberitahuan ini kami sampaikan. Atas perhatian dan kerja sama Bapak/Ibu, kami ucapkan terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Piket Pagi SMA Negeri 10 Pinrang_\n_Sistem Informasi Presensi Pagi (SIPAGI)_`;
-      const ok = await kirimWA(s.hpF, pesan);
+      const ok = await kirimWA(s.hpF, buildPesanOrtu(s.nama, s.kelas, tanggal));
       if (ok) sent++;
       updateWAProgress(sent, withHP.length, `Mengirim ke ${s.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
@@ -2170,30 +2146,25 @@ async function kirimRekapWaliKelas() {
   try {
     const bulan = toBulan(tanggal);
     const col = tglCol(tanggal);
+    // FIX: satu query absensi, build absenMap { nis -> status }
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,kelas,${col}`);
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
+
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
     let sent=0;
     updateWAProgress(0, waliList.length, 'Mengirim rekap ke wali...');
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
-      let h=0, s=0, iz=0, al=0, bl=0;
-      const namaAlpa=[];
-      siswakelas.forEach(sw => {
-        const st = absenMap[sw.nis]||null;
-        if (st==='H') h++;
-        else if (st==='S') s++;
-        else if (st==='I') iz++;
-        else if (st==='A') { al++; namaAlpa.push(sw.nama); }
-        else bl++;
-      });
-      const pesan = `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${siswakelas.length} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n, i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nDemikian rekap ini kami sampaikan. Terima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+      const stat = hitungStat(siswakelas, absenMap);
+      const pesan = buildPesanRekapHarian(guru, tanggal, siswakelas.length, stat);
       const ok = await kirimWA(hp, pesan);
       if (ok) sent++;
       updateWAProgress(sent, waliList.length, `Kirim ke ${guru.nama}...`);
@@ -2211,88 +2182,48 @@ async function kirimRekapWaliKelas() {
 function onTemplateKelasChange() {
   const val = document.getElementById('templateSiswaKelas').value;
   const area = document.getElementById('inputKelasBaruArea');
-  if (val === '__baru__') {
-    area.classList.remove('hidden');
-    document.getElementById('inputKelasBaru').focus();
-  } else {
-    area.classList.add('hidden');
-    document.getElementById('inputKelasBaru').value = '';
-  }
+  if (val === '__baru__') { area.classList.remove('hidden'); document.getElementById('inputKelasBaru').focus(); }
+  else { area.classList.add('hidden'); document.getElementById('inputKelasBaru').value = ''; }
 }
-
 async function downloadTemplateSiswa() {
   const kelasSelect = document.getElementById('templateSiswaKelas').value;
   let kelasFilter = kelasSelect;
-
-  // Cek apakah pilih kelas baru
   if (kelasSelect === '__baru__') {
     const kelasInput = document.getElementById('inputKelasBaru').value.trim();
-    if (!kelasInput) {
-      alert('Masukkan nama kelas baru terlebih dahulu!');
-      document.getElementById('inputKelasBaru').focus();
-      return;
-    }
+    if (!kelasInput) { alert('Masukkan nama kelas baru terlebih dahulu!'); document.getElementById('inputKelasBaru').focus(); return; }
     kelasFilter = kelasInput;
-    // Download template kosong untuk kelas baru
-    const rows = [
-      ['NIS', 'Nama', 'Kelas', 'HP_Ortu'],
-      ['', 'Siswa 1', kelasFilter, ''],
-      ['', 'Siswa 2', kelasFilter, ''],
-      ['', 'Siswa 3', kelasFilter, ''],
-    ];
+    const rows = [['NIS','Nama','Kelas','HP_Ortu'],['','Siswa 1',kelasFilter,''],['','Siswa 2',kelasFilter,'']];
     const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `template_siswa_${kelasFilter.replace(/\s+/g,'_')}.csv`;
-    a.click();
-    return;
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `template_siswa_${kelasFilter.replace(/\s+/g,'_')}.csv`; a.click(); return;
   }
-
   try {
     let data;
-    if (kelasFilter) {
-      data = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelasFilter)}&order=nama.asc`);
-    } else {
-      data = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    }
-
-    const rows = [['NIS', 'Nama', 'Kelas', 'HP_Ortu']];
-    if (data && data.length > 0) {
-      data.forEach(s => rows.push([s.nis, s.nama, s.kelas, s.hp_ortu || '']));
-    } else {
-      const kelasContoh = kelasFilter || 'XI IPA 1';
-      rows.push(['242001', 'Contoh Siswa 1', kelasContoh, '081234567890']);
-      rows.push(['242002', 'Contoh Siswa 2', kelasContoh, '082345678901']);
-      rows.push(['242003', 'Contoh Siswa 3', kelasContoh, '']);
-    }
-
+    if (kelasFilter) data = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelasFilter)}&order=nama.asc`);
+    else data = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const rows = [['NIS','Nama','Kelas','HP_Ortu']];
+    if (data && data.length > 0) { data.forEach(s => rows.push([s.nis, s.nama, s.kelas, s.hp_ortu||''])); }
+    else { const kc = kelasFilter||'XI IPA 1'; rows.push(['242001','Contoh Siswa 1',kc,'081234567890']); rows.push(['242002','Contoh Siswa 2',kc,'']); }
     const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `template_siswa_${(kelasFilter||'semua_kelas').replace(/\s+/g,'_')}.csv`;
-    a.click();
-  } catch(err) {
-    alert('Gagal download template: ' + err.message);
-  }
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `template_siswa_${(kelasFilter||'semua_kelas').replace(/\s+/g,'_')}.csv`; a.click();
+  } catch(err) { alert('Gagal download template: ' + err.message); }
 }
-
 function downloadTemplateGuru() {
   const rows = [
-    ['username', 'password', 'nama', 'kelas_wali', 'role', 'hp'],
-    ['pkkarim', 'pass123', 'Pak Karim', 'XI IPA 1', 'WALI', '081234567890'],
-    ['busari', 'pass456', 'Bu Sari', 'XI IPA 2', 'WALI', '082345678901'],
-    ['pkbudi', 'pass789', 'Pak Budi', '', 'GURU', '083456789012'],
-    ['admin01', 'adminpass', 'Administrator', '', 'ADMIN', '084567890123'],
+    ['username','password','nama','kelas_wali','role','hp'],
+    ['pkkarim','pass123','Pak Karim','XI IPA 1','WALI','081234567890'],
+    ['busari','pass456','Bu Sari','XI IPA 2','WALI','082345678901'],
+    ['pkbudi','pass789','Pak Budi','','GURU','083456789012'],
   ];
   const csv = '\uFEFF' + rows.map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'template_import_guru.csv';
-  a.click();
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'template_import_guru.csv'; a.click();
 }
+
 // ============================================================
 // HELPER REKAP BERKALA
 // ============================================================
@@ -2302,97 +2233,67 @@ function getWeekKey(date) {
   d.setDate(d.getDate() - d.getDay() + 1);
   return d.toISOString().split('T')[0];
 }
-
 function getBulanLalu(date) {
   const d = new Date(date.getFullYear(), date.getMonth() - 1, 1);
   return d.toISOString().slice(0,7);
 }
-
 function updateBerkalaBadge() {
   ['schedMinggBadge','schedBulananBadge'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (AppState.schedulerActive) {
-      el.className = 'sched-badge sched-badge-on';
-      el.innerHTML = '<span class="sched-badge-dot"></span>ON';
-    } else {
-      el.className = 'sched-badge sched-badge-off';
-      el.innerHTML = '<span class="sched-badge-dot"></span>OFF';
-    }
+    const el = document.getElementById(id); if (!el) return;
+    if (AppState.schedulerActive) { el.className='sched-badge sched-badge-on'; el.innerHTML='<span class="sched-badge-dot"></span>ON'; }
+    else { el.className='sched-badge sched-badge-off'; el.innerHTML='<span class="sched-badge-dot"></span>OFF'; }
   });
 }
 
 // ============================================================
-// PREVIEW REKAP MINGGUAN
+// FIX UTAMA: REKAP MINGGUAN
+// Sebelum: query absensi per hari per kelas (N_wali × 7 query)
+// Sesudah: satu query per bulan yang relevan, lalu aggregate di JS
 // ============================================================
 async function previewRekapMingguan() {
   const previewDiv = document.getElementById('previewMingguan');
   previewDiv.classList.remove('hidden');
   previewDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Memuat...';
   try {
-    const today = new Date();
-    const senin = new Date(today);
-    senin.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    const minggu = new Date(senin); minggu.setDate(senin.getDate() + 6);
-
+    const { seninStr, mingguStr, tanggalMinggu, bulanBulan } = getRentangMinggu();
     const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
 
-    let html = `<p class="font-semibold mb-2">📅 Minggu: ${senin.toLocaleDateString('id-ID')} – ${minggu.toLocaleDateString('id-ID')}</p>`;
-    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
+    // Ambil semua data absensi untuk bulan-bulan yang relevan dalam minggu ini (1 atau 2 bulan)
+    const absensiCache = await fetchAbsensiMultiBulan(bulanBulan);
 
+    let html = `<p class="font-semibold mb-2">📅 Minggu: ${seninStr} – ${mingguStr}</p>`;
+    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
     for (const guru of waliList) {
       const siswakelas = byKelas[guru.kelas_wali] || [];
-      let totalH=0, totalA=0, totalS=0, totalI=0;
-
-      for (let i=0; i<7; i++) {
-        const tgl = new Date(senin); tgl.setDate(senin.getDate()+i);
-        const tglStr = tgl.toISOString().split('T')[0];
-        const bulan = toBulan(tglStr);
-        const col = tglCol(tglStr);
-        const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(guru.kelas_wali)}&bulan=eq.${bulan}&select=nis,${col}`);
-        const absenMap = {};
-        (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-        siswakelas.forEach(s => {
-          const st = absenMap[s.nis]||null;
-          if (st==='H') totalH++;
-          else if (st==='A') totalA++;
-          else if (st==='S') totalS++;
-          else if (st==='I') totalI++;
-        });
-      }
-
+      const stat = hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu);
       const hp = formatHP(guru.hp);
       html += `<div class="mb-2 p-2 bg-purple-50 border border-purple-200 rounded">
         <p class="font-semibold text-purple-700">${sanitizeHTML(guru.kelas_wali)} — ${sanitizeHTML(guru.nama)} ${hp?'<span class="text-green-600">✓</span>':'<span class="text-red-500">✗ No HP</span>'}</p>
-        <p class="text-xs text-gray-600">H:${totalH} | S:${totalS} | I:${totalI} | A:${totalA}</p>
+        <p class="text-xs text-gray-600">H:${stat.h} | S:${stat.s} | I:${stat.iz} | A:${stat.al}</p>
       </div>`;
     }
     previewDiv.innerHTML = html;
   } catch(err) { previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
 }
 
-// ============================================================
-// KIRIM REKAP MINGGUAN
-// ============================================================
 async function kirimRekapMingguan(auto=false) {
   const resultEl = document.getElementById('resultMingguan');
   if (!auto && !confirm('Kirim rekap mingguan ke semua wali kelas sekarang?')) return;
   setButtonLoading('btnKirimMingg', true);
   if (resultEl) resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengirim...</span>';
-
   try {
-    const today = new Date();
-    const senin = new Date(today);
-    senin.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-    const minggu = new Date(senin); minggu.setDate(senin.getDate() + 6);
-    const tglMulai = senin.toLocaleDateString('id-ID');
-    const tglAkhir = minggu.toLocaleDateString('id-ID');
+    const { seninStr, mingguStr, tanggalMinggu, bulanBulan } = getRentangMinggu();
 
-    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
-    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    // FIX: fetch semua data absensi yang dibutuhkan dalam 1-2 query, bukan 7N query
+    const [semuaGuru, semua, absensiCache] = await Promise.all([
+      sbSelect(T.guru, '?role=eq.WALI'),
+      sbSelect(T.siswa, '?order=kelas.asc,nama.asc'),
+      fetchAbsensiMultiBulan(bulanBulan)
+    ]);
+
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
 
@@ -2402,29 +2303,8 @@ async function kirimRekapMingguan(auto=false) {
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
-      let totalH=0, totalA=0, totalS=0, totalI=0, totalBl=0;
-      const namaAlpa = [];
-
-      for (let i=0; i<7; i++) {
-        const tgl = new Date(senin); tgl.setDate(senin.getDate()+i);
-        const tglStr = tgl.toISOString().split('T')[0];
-        const bulan = toBulan(tglStr);
-        const col = tglCol(tglStr);
-        const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(guru.kelas_wali)}&bulan=eq.${bulan}&select=nis,${col}`);
-        const absenMap = {};
-        (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-        siswakelas.forEach(s => {
-          const st = absenMap[s.nis]||null;
-          if (st==='H') totalH++;
-          else if (st==='A') { totalA++; if(!namaAlpa.includes(s.nama)) namaAlpa.push(s.nama); }
-          else if (st==='S') totalS++;
-          else if (st==='I') totalI++;
-          else totalBl++;
-        });
-      }
-
-      const pesan = `📅 *REKAP ABSENSI PAGI MINGGUAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi mingguan siswa kelas Bapak/Ibu:\n\n📅 *Periode  :* ${tglMulai} – ${tglAkhir}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${siswakelas.length} orang\n\n📊 *REKAP MINGGUAN:*\n✅ Total Hadir  : ${totalH}x\n🤒 Total Sakit  : ${totalS}x\n📋 Total Izin   : ${totalI}x\n❌ Total Alpa   : ${totalA}x\n${namaAlpa.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA:*\n' + namaAlpa.map((n,i)=>(i+1)+'. '+n).join('\n') : '\n✅ Tidak ada siswa yang alpa minggu ini.'}\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
-
+      const stat = hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu);
+      const pesan = buildPesanRekapMingguan(guru, seninStr, mingguStr, siswakelas.length, stat);
       const ok = await kirimWA(hp, pesan);
       if (ok) sent++;
       await new Promise(r => setTimeout(r, 1200));
@@ -2440,7 +2320,9 @@ async function kirimRekapMingguan(auto=false) {
 }
 
 // ============================================================
-// PREVIEW REKAP BULANAN
+// FIX UTAMA: REKAP BULANAN
+// Sebelum: absenByNis di-build tanpa validasi kolom tgl
+// Sesudah: fetch dengan select=* eksplisit, hitung per siswa
 // ============================================================
 async function previewRekapBulanan() {
   const previewDiv = document.getElementById('previewBulanan');
@@ -2452,7 +2334,9 @@ async function previewRekapBulanan() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}`);
+
+    // FIX: fetch dengan select=* agar semua kolom tgl_XX ikut ter-return
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
     const absenByNis = {};
     (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
 
@@ -2461,51 +2345,41 @@ async function previewRekapBulanan() {
 
     let html = `<p class="font-semibold mb-2">📆 Bulan: ${bulan}</p>`;
     const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
-
     for (const guru of waliList) {
       const siswakelas = byKelas[guru.kelas_wali] || [];
-      let totalH=0, totalA=0, totalS=0, totalI=0;
-      siswakelas.forEach(s => {
-        const rec = absenByNis[s.nis] || {};
-        for (let d=1; d<=jumlahHari; d++) {
-          const col = 'tgl_' + String(d).padStart(2,'0');
-          const st = rec[col]||null;
-          if (st==='H') totalH++;
-          else if (st==='A') totalA++;
-          else if (st==='S') totalS++;
-          else if (st==='I') totalI++;
-        }
-      });
+      const stat = hitungStatBulanan(siswakelas, absenByNis, jumlahHari);
       const hp = formatHP(guru.hp);
       html += `<div class="mb-2 p-2 bg-indigo-50 border border-indigo-200 rounded">
         <p class="font-semibold text-indigo-700">${sanitizeHTML(guru.kelas_wali)} — ${sanitizeHTML(guru.nama)} ${hp?'<span class="text-green-600">✓</span>':'<span class="text-red-500">✗ No HP</span>'}</p>
-        <p class="text-xs text-gray-600">H:${totalH} | S:${totalS} | I:${totalI} | A:${totalA}</p>
+        <p class="text-xs text-gray-600">H:${stat.h} | S:${stat.s} | I:${stat.iz} | A:${stat.al}</p>
       </div>`;
     }
     previewDiv.innerHTML = html;
   } catch(err) { previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
 }
 
-// ============================================================
-// KIRIM REKAP BULANAN
-// ============================================================
 async function kirimRekapBulanan(auto=false, bulanOverride=null) {
   const resultEl = document.getElementById('resultBulanan');
   const bulan = bulanOverride || document.getElementById('pilihanBulanBulanan').value || new Date().toISOString().slice(0,7);
   if (!auto && !confirm(`Kirim rekap bulanan ${bulan} ke semua wali kelas sekarang?`)) return;
   setButtonLoading('btnKirimBulanan', true);
   if (resultEl) resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengirim...</span>';
-
   try {
     const [tahun, bln] = bulan.split('-').map(Number);
     const jumlahHari = new Date(tahun, bln, 0).getDate();
     const namaBulan = new Date(tahun, bln-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
 
-    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
-    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
-    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}`);
+    // FIX: tiga query paralel + select=* untuk absensi agar semua kolom tgl_XX ada
+    const [semuaGuru, semua, absensi] = await Promise.all([
+      sbSelect(T.guru, '?role=eq.WALI'),
+      sbSelect(T.siswa, '?order=kelas.asc,nama.asc'),
+      sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`)   // <-- FIX: select=* bukan default
+    ]);
+
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+
+    // FIX: build map { nis -> row absensi LENGKAP dengan semua kolom tgl }
     const absenByNis = {};
     (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
 
@@ -2515,25 +2389,10 @@ async function kirimRekapBulanan(auto=false, bulanOverride=null) {
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
-      let totalH=0, totalA=0, totalS=0, totalI=0;
-      const siswaAlpaTinggi = [];
 
-      siswakelas.forEach(s => {
-        const rec = absenByNis[s.nis] || {};
-        let h=0, a=0, sk=0, iz=0;
-        for (let d=1; d<=jumlahHari; d++) {
-          const col = 'tgl_' + String(d).padStart(2,'0');
-          const st = rec[col]||null;
-          if (st==='H') { h++; totalH++; }
-          else if (st==='A') { a++; totalA++; }
-          else if (st==='S') { sk++; totalS++; }
-          else if (st==='I') { iz++; totalI++; }
-        }
-        if (a >= 3) siswaAlpaTinggi.push({ nama: s.nama, alpa: a });
-      });
-
-      const pesan = `📆 *REKAP ABSENSI PAGI BULANAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi bulan ini:\n\n📆 *Bulan    :* ${namaBulan}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${siswakelas.length} orang\n\n📊 *REKAP BULANAN (total pertemuan):*\n✅ Total Hadir  : ${totalH}x\n🤒 Total Sakit  : ${totalS}x\n📋 Total Izin   : ${totalI}x\n❌ Total Alpa   : ${totalA}x\n${siswaAlpaTinggi.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA ≥ 3:*\n' + siswaAlpaTinggi.map((s,i)=>(i+1)+'. '+s.nama+' ('+s.alpa+'x alpa)').join('\n') : '\n✅ Tidak ada siswa dengan alpa berlebihan.'}\n\nMohon Bapak/Ibu dapat memberikan perhatian dan pembinaan kepada siswa yang memiliki catatan alpa tinggi.\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
-
+      // FIX: gunakan hitungStatBulanan yang iterasi kolom tgl_01..tgl_XX dengan benar
+      const stat = hitungStatBulanan(siswakelas, absenByNis, jumlahHari);
+      const pesan = buildPesanRekapBulanan(guru, bulan, namaBulan, siswakelas.length, stat);
       const ok = await kirimWA(hp, pesan);
       if (ok) sent++;
       await new Promise(r => setTimeout(r, 1200));
@@ -2547,6 +2406,124 @@ async function kirimRekapBulanan(auto=false, bulanOverride=null) {
   }
   setButtonLoading('btnKirimBulanan', false);
 }
+
+// ============================================================
+// HELPER AGREGASI MINGGUAN & BULANAN (BARU)
+// ============================================================
+
+/**
+ * Hitung rentang minggu (Senin s/d Minggu) dari hari ini
+ */
+function getRentangMinggu() {
+  const today = new Date();
+  const senin = new Date(today);
+  senin.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+  senin.setHours(0,0,0,0);
+
+  // Buat array 7 tanggal (string YYYY-MM-DD)
+  const tanggalMinggu = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(senin);
+    d.setDate(senin.getDate() + i);
+    tanggalMinggu.push(d.toISOString().split('T')[0]);
+  }
+
+  const minggu = new Date(senin);
+  minggu.setDate(senin.getDate() + 6);
+
+  // Kumpulkan bulan unik yang tercakup dalam minggu ini (bisa 1 atau 2 bulan)
+  const bulanSet = new Set(tanggalMinggu.map(t => toBulan(t)));
+  const bulanBulan = [...bulanSet];
+
+  return {
+    seninStr: senin.toLocaleDateString('id-ID'),
+    mingguStr: minggu.toLocaleDateString('id-ID'),
+    tanggalMinggu,
+    bulanBulan
+  };
+}
+
+/**
+ * FIX: Fetch absensi untuk satu atau dua bulan sekaligus (bukan per hari).
+ * Return: { nis -> { tgl_01: 'H', tgl_02: 'A', ... } }
+ */
+async function fetchAbsensiMultiBulan(bulanBulan) {
+  // Fetch semua bulan yang relevan secara paralel, dengan select=* agar semua kolom ikut
+  const results = await Promise.all(
+    bulanBulan.map(bulan => sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`))
+  );
+  // Merge: { nis -> { bulan: '2026-04', tgl_01: ..., tgl_02: ..., ... } }
+  // Jika minggu lintas bulan, nis bisa punya 2 row (beda bulan), kita merge per bulan
+  const cache = {}; // { nis -> { bulan -> rowData } }
+  results.forEach((rows, idx) => {
+    const bulan = bulanBulan[idx];
+    (rows||[]).forEach(a => {
+      if (!cache[a.nis]) cache[a.nis] = {};
+      cache[a.nis][bulan] = a;
+    });
+  });
+  return cache;
+}
+
+/**
+ * FIX: Hitung statistik mingguan dari cache (tanpa query per hari)
+ */
+function hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu) {
+  let h=0, s=0, iz=0, al=0, bl=0;
+  const namaAlpa = new Set(); // Set untuk hindari duplikat
+
+  siswakelas.forEach(sw => {
+    const nisCacheData = absensiCache[sw.nis] || {};
+    tanggalMinggu.forEach(tgl => {
+      const bulan = toBulan(tgl);
+      const col = tglCol(tgl);
+      const rowBulan = nisCacheData[bulan] || {};
+      const st = rowBulan[col] || null;
+      if (st==='H') h++;
+      else if (st==='S') s++;
+      else if (st==='I') iz++;
+      else if (st==='A') { al++; namaAlpa.add(sw.nama); }
+      else bl++;
+    });
+  });
+
+  return { h, s, iz, al, bl, namaAlpa: [...namaAlpa] };
+}
+
+/**
+ * FIX: Hitung statistik bulanan dari absenByNis (row lengkap dengan semua kolom tgl)
+ */
+function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
+  let h=0, s=0, iz=0, al=0;
+  const siswaAlpaTinggi = [];
+
+  siswakelas.forEach(sw => {
+    const rec = absenByNis[sw.nis] || {}; // row pivot lengkap atau {}
+    let sh=0, sa=0, ss=0, siz=0;
+    for (let d = 1; d <= jumlahHari; d++) {
+      const col = 'tgl_' + String(d).padStart(2,'0');
+      const st = rec[col] || null;
+      if (st==='H') { sh++; h++; }
+      else if (st==='A') { sa++; al++; }
+      else if (st==='S') { ss++; s++; }
+      else if (st==='I') { siz++; iz++; }
+    }
+    if (sa >= 3) siswaAlpaTinggi.push({ nama: sw.nama, alpa: sa });
+  });
+
+  return { h, s, iz, al, siswaAlpaTinggi };
+}
+
+function buildPesanRekapMingguan(guru, seninStr, mingguStr, totalSiswa, stat) {
+  const { h, s, iz, al, bl, namaAlpa } = stat;
+  return `📅 *REKAP ABSENSI PAGI MINGGUAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi mingguan siswa kelas Bapak/Ibu:\n\n📅 *Periode  :* ${seninStr} – ${mingguStr}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP MINGGUAN:*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n${namaAlpa.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA:*\n' + namaAlpa.map((n,i)=>(i+1)+'. '+n).join('\n') : '\n✅ Tidak ada siswa yang alpa minggu ini.'}\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+}
+
+function buildPesanRekapBulanan(guru, bulan, namaBulan, totalSiswa, stat) {
+  const { h, s, iz, al, siswaAlpaTinggi } = stat;
+  return `📆 *REKAP ABSENSI PAGI BULANAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi bulan ini:\n\n📆 *Bulan    :* ${namaBulan}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP BULANAN (total pertemuan):*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n${siswaAlpaTinggi.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA ≥ 3:*\n' + siswaAlpaTinggi.map((sw,i)=>(i+1)+'. '+sw.nama+' ('+sw.alpa+'x alpa)').join('\n') : '\n✅ Tidak ada siswa dengan alpa berlebihan.'}\n\nMohon Bapak/Ibu dapat memberikan perhatian kepada siswa yang memiliki catatan alpa tinggi.\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+}
+
 // ============================================================
 // INIT
 // ============================================================
@@ -2558,19 +2535,15 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDayButtons();
   startLiveClock();
 
-  // Register Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('SW registered:', reg.scope))
       .catch(err => console.log('SW error:', err));
   }
 
-  // PWA Install Prompt
   let deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', e => {
-    e.preventDefault();
-    deferredPrompt = e;
-    // Tampilkan tombol install di footer
+    e.preventDefault(); deferredPrompt = e;
     const btn = document.getElementById('btnInstallPWA');
     if (btn) btn.classList.remove('hidden');
   });
@@ -2583,10 +2556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      const btn = document.getElementById('btnInstallPWA');
-      if (btn) btn.classList.add('hidden');
-    }
+    if (outcome === 'accepted') { const btn = document.getElementById('btnInstallPWA'); if (btn) btn.classList.add('hidden'); }
     deferredPrompt = null;
   };
 });
