@@ -2293,7 +2293,260 @@ function downloadTemplateGuru() {
   a.download = 'template_import_guru.csv';
   a.click();
 }
+// ============================================================
+// HELPER REKAP BERKALA
+// ============================================================
+function getWeekKey(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay() + 1);
+  return d.toISOString().split('T')[0];
+}
 
+function getBulanLalu(date) {
+  const d = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+  return d.toISOString().slice(0,7);
+}
+
+function updateBerkalaBadge() {
+  ['schedMinggBadge','schedBulananBadge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (AppState.schedulerActive) {
+      el.className = 'sched-badge sched-badge-on';
+      el.innerHTML = '<span class="sched-badge-dot"></span>ON';
+    } else {
+      el.className = 'sched-badge sched-badge-off';
+      el.innerHTML = '<span class="sched-badge-dot"></span>OFF';
+    }
+  });
+}
+
+// ============================================================
+// PREVIEW REKAP MINGGUAN
+// ============================================================
+async function previewRekapMingguan() {
+  const previewDiv = document.getElementById('previewMingguan');
+  previewDiv.classList.remove('hidden');
+  previewDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Memuat...';
+  try {
+    const today = new Date();
+    const senin = new Date(today);
+    senin.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+    const minggu = new Date(senin); minggu.setDate(senin.getDate() + 6);
+
+    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const byKelas = {};
+    (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+
+    let html = `<p class="font-semibold mb-2">📅 Minggu: ${senin.toLocaleDateString('id-ID')} – ${minggu.toLocaleDateString('id-ID')}</p>`;
+    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
+
+    for (const guru of waliList) {
+      const siswakelas = byKelas[guru.kelas_wali] || [];
+      let totalH=0, totalA=0, totalS=0, totalI=0;
+
+      for (let i=0; i<7; i++) {
+        const tgl = new Date(senin); tgl.setDate(senin.getDate()+i);
+        const tglStr = tgl.toISOString().split('T')[0];
+        const bulan = toBulan(tglStr);
+        const col = tglCol(tglStr);
+        const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(guru.kelas_wali)}&bulan=eq.${bulan}&select=nis,${col}`);
+        const absenMap = {};
+        (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+        siswakelas.forEach(s => {
+          const st = absenMap[s.nis]||null;
+          if (st==='H') totalH++;
+          else if (st==='A') totalA++;
+          else if (st==='S') totalS++;
+          else if (st==='I') totalI++;
+        });
+      }
+
+      const hp = formatHP(guru.hp);
+      html += `<div class="mb-2 p-2 bg-purple-50 border border-purple-200 rounded">
+        <p class="font-semibold text-purple-700">${sanitizeHTML(guru.kelas_wali)} — ${sanitizeHTML(guru.nama)} ${hp?'<span class="text-green-600">✓</span>':'<span class="text-red-500">✗ No HP</span>'}</p>
+        <p class="text-xs text-gray-600">H:${totalH} | S:${totalS} | I:${totalI} | A:${totalA}</p>
+      </div>`;
+    }
+    previewDiv.innerHTML = html;
+  } catch(err) { previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
+}
+
+// ============================================================
+// KIRIM REKAP MINGGUAN
+// ============================================================
+async function kirimRekapMingguan(auto=false) {
+  const resultEl = document.getElementById('resultMingguan');
+  if (!auto && !confirm('Kirim rekap mingguan ke semua wali kelas sekarang?')) return;
+  setButtonLoading('btnKirimMingg', true);
+  if (resultEl) resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengirim...</span>';
+
+  try {
+    const today = new Date();
+    const senin = new Date(today);
+    senin.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+    const minggu = new Date(senin); minggu.setDate(senin.getDate() + 6);
+    const tglMulai = senin.toLocaleDateString('id-ID');
+    const tglAkhir = minggu.toLocaleDateString('id-ID');
+
+    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const byKelas = {};
+    (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+
+    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
+    let sent = 0;
+
+    for (const guru of waliList) {
+      const hp = formatHP(guru.hp);
+      const siswakelas = byKelas[guru.kelas_wali] || [];
+      let totalH=0, totalA=0, totalS=0, totalI=0, totalBl=0;
+      const namaAlpa = [];
+
+      for (let i=0; i<7; i++) {
+        const tgl = new Date(senin); tgl.setDate(senin.getDate()+i);
+        const tglStr = tgl.toISOString().split('T')[0];
+        const bulan = toBulan(tglStr);
+        const col = tglCol(tglStr);
+        const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(guru.kelas_wali)}&bulan=eq.${bulan}&select=nis,${col}`);
+        const absenMap = {};
+        (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+        siswakelas.forEach(s => {
+          const st = absenMap[s.nis]||null;
+          if (st==='H') totalH++;
+          else if (st==='A') { totalA++; if(!namaAlpa.includes(s.nama)) namaAlpa.push(s.nama); }
+          else if (st==='S') totalS++;
+          else if (st==='I') totalI++;
+          else totalBl++;
+        });
+      }
+
+      const pesan = `📅 *REKAP ABSENSI PAGI MINGGUAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi mingguan siswa kelas Bapak/Ibu:\n\n📅 *Periode  :* ${tglMulai} – ${tglAkhir}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${siswakelas.length} orang\n\n📊 *REKAP MINGGUAN:*\n✅ Total Hadir  : ${totalH}x\n🤒 Total Sakit  : ${totalS}x\n📋 Total Izin   : ${totalI}x\n❌ Total Alpa   : ${totalA}x\n${namaAlpa.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA:*\n' + namaAlpa.map((n,i)=>(i+1)+'. '+n).join('\n') : '\n✅ Tidak ada siswa yang alpa minggu ini.'}\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+
+      const ok = await kirimWA(hp, pesan);
+      if (ok) sent++;
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    if (resultEl) resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap mingguan terkirim ke ${sent} wali kelas.</span>`;
+    if (auto) schedLog(`📅 Rekap mingguan terkirim: ${sent} wali`, 'success');
+  } catch(err) {
+    if (resultEl) resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+    if (auto) schedLog('❌ Rekap mingguan gagal: ' + err.message, 'error');
+  }
+  setButtonLoading('btnKirimMingg', false);
+}
+
+// ============================================================
+// PREVIEW REKAP BULANAN
+// ============================================================
+async function previewRekapBulanan() {
+  const previewDiv = document.getElementById('previewBulanan');
+  const bulan = document.getElementById('pilihanBulanBulanan').value || new Date().toISOString().slice(0,7);
+  previewDiv.classList.remove('hidden');
+  previewDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Memuat...';
+  try {
+    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const byKelas = {};
+    (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}`);
+    const absenByNis = {};
+    (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
+
+    const [tahun, bln] = bulan.split('-').map(Number);
+    const jumlahHari = new Date(tahun, bln, 0).getDate();
+
+    let html = `<p class="font-semibold mb-2">📆 Bulan: ${bulan}</p>`;
+    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali);
+
+    for (const guru of waliList) {
+      const siswakelas = byKelas[guru.kelas_wali] || [];
+      let totalH=0, totalA=0, totalS=0, totalI=0;
+      siswakelas.forEach(s => {
+        const rec = absenByNis[s.nis] || {};
+        for (let d=1; d<=jumlahHari; d++) {
+          const col = 'tgl_' + String(d).padStart(2,'0');
+          const st = rec[col]||null;
+          if (st==='H') totalH++;
+          else if (st==='A') totalA++;
+          else if (st==='S') totalS++;
+          else if (st==='I') totalI++;
+        }
+      });
+      const hp = formatHP(guru.hp);
+      html += `<div class="mb-2 p-2 bg-indigo-50 border border-indigo-200 rounded">
+        <p class="font-semibold text-indigo-700">${sanitizeHTML(guru.kelas_wali)} — ${sanitizeHTML(guru.nama)} ${hp?'<span class="text-green-600">✓</span>':'<span class="text-red-500">✗ No HP</span>'}</p>
+        <p class="text-xs text-gray-600">H:${totalH} | S:${totalS} | I:${totalI} | A:${totalA}</p>
+      </div>`;
+    }
+    previewDiv.innerHTML = html;
+  } catch(err) { previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`; }
+}
+
+// ============================================================
+// KIRIM REKAP BULANAN
+// ============================================================
+async function kirimRekapBulanan(auto=false, bulanOverride=null) {
+  const resultEl = document.getElementById('resultBulanan');
+  const bulan = bulanOverride || document.getElementById('pilihanBulanBulanan').value || new Date().toISOString().slice(0,7);
+  if (!auto && !confirm(`Kirim rekap bulanan ${bulan} ke semua wali kelas sekarang?`)) return;
+  setButtonLoading('btnKirimBulanan', true);
+  if (resultEl) resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengirim...</span>';
+
+  try {
+    const [tahun, bln] = bulan.split('-').map(Number);
+    const jumlahHari = new Date(tahun, bln, 0).getDate();
+    const namaBulan = new Date(tahun, bln-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
+
+    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}`);
+    const byKelas = {};
+    (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
+    const absenByNis = {};
+    (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
+
+    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
+    let sent = 0;
+
+    for (const guru of waliList) {
+      const hp = formatHP(guru.hp);
+      const siswakelas = byKelas[guru.kelas_wali] || [];
+      let totalH=0, totalA=0, totalS=0, totalI=0;
+      const siswaAlpaTinggi = [];
+
+      siswakelas.forEach(s => {
+        const rec = absenByNis[s.nis] || {};
+        let h=0, a=0, sk=0, iz=0;
+        for (let d=1; d<=jumlahHari; d++) {
+          const col = 'tgl_' + String(d).padStart(2,'0');
+          const st = rec[col]||null;
+          if (st==='H') { h++; totalH++; }
+          else if (st==='A') { a++; totalA++; }
+          else if (st==='S') { sk++; totalS++; }
+          else if (st==='I') { iz++; totalI++; }
+        }
+        if (a >= 3) siswaAlpaTinggi.push({ nama: s.nama, alpa: a });
+      });
+
+      const pesan = `📆 *REKAP ABSENSI PAGI BULANAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi bulan ini:\n\n📆 *Bulan    :* ${namaBulan}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${siswakelas.length} orang\n\n📊 *REKAP BULANAN (total pertemuan):*\n✅ Total Hadir  : ${totalH}x\n🤒 Total Sakit  : ${totalS}x\n📋 Total Izin   : ${totalI}x\n❌ Total Alpa   : ${totalA}x\n${siswaAlpaTinggi.length > 0 ? '\n⚠️ *SISWA DENGAN ALPA ≥ 3:*\n' + siswaAlpaTinggi.map((s,i)=>(i+1)+'. '+s.nama+' ('+s.alpa+'x alpa)').join('\n') : '\n✅ Tidak ada siswa dengan alpa berlebihan.'}\n\nMohon Bapak/Ibu dapat memberikan perhatian dan pembinaan kepada siswa yang memiliki catatan alpa tinggi.\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+
+      const ok = await kirimWA(hp, pesan);
+      if (ok) sent++;
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    if (resultEl) resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap bulanan terkirim ke ${sent} wali kelas.</span>`;
+    if (auto) schedLog(`📆 Rekap bulanan terkirim: ${sent} wali`, 'success');
+  } catch(err) {
+    if (resultEl) resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+    if (auto) schedLog('❌ Rekap bulanan gagal: ' + err.message, 'error');
+  }
+  setButtonLoading('btnKirimBulanan', false);
+}
 // ============================================================
 // INIT
 // ============================================================
