@@ -756,6 +756,28 @@
       <span class="sched-badge-dot"></span>OFF
     </span>
   </div>
+
+  <!-- JAM KIRIM HARIAN -->
+  <div class="flex items-center gap-3 mb-3">
+    <label class="text-xs text-rose-700 font-semibold w-28">JAM KIRIM HARIAN</label>
+    <input type="time" id="schedBKHarianTime" value="08:30"
+      class="dark-time-input" style="width:110px;background:#fff1f2;color:#9f1239;border-color:#fda4af">
+  </div>
+
+  <!-- JAM KIRIM MINGGUAN -->
+  <div class="flex items-center gap-3 mb-3">
+    <label class="text-xs text-rose-700 font-semibold w-28">JAM KIRIM MINGGU</label>
+    <input type="time" id="schedBKMinggTime" value="20:30"
+      class="dark-time-input" style="width:110px;background:#fff1f2;color:#9f1239;border-color:#fda4af">
+  </div>
+
+  <!-- JAM KIRIM BULANAN -->
+  <div class="flex items-center gap-3 mb-4">
+    <label class="text-xs text-rose-700 font-semibold w-28">JAM KIRIM BULANAN</label>
+    <input type="time" id="schedBKBulananTime" value="21:00"
+      class="dark-time-input" style="width:110px;background:#fff1f2;color:#9f1239;border-color:#fda4af">
+  </div>
+
   <div class="flex gap-2 mb-3">
     <button onclick="previewRekapBK('harian')" class="flex-1 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-medium rounded-lg text-xs">
       <i class="fas fa-eye mr-1"></i>Preview Harian
@@ -1044,7 +1066,9 @@ const AppState = {
   searchTimeout: null, logoClickCount: 0, logoClickTimer: null,
   schedulerActive: false, schedulerInterval: null, clockInterval: null,
   schedWASend: true, activeDays: new Set([1,2,3,4,5,6]),
-  lastTriggeredDate: null, lastMinggTriggered: null, lastBulananTriggered: null
+  lastTriggeredDate: null, lastMinggTriggered: null, lastBulananTriggered: null, lastBKHarianTriggered: null,
+lastBKMinggTriggered: null,
+lastBKBulananTriggered: null
 };
 
 // ============================================================
@@ -1892,6 +1916,43 @@ function checkTriggerTime() {
       kirimRekapBulanan(true, bulanLalu);
     }
   }
+
+  // === REKAP BK HARIAN ===
+  if (AppState.schedulerActive && AppState.activeDays.has(now.getDay())) {
+    const bkHarianTime = document.getElementById('schedBKHarianTime').value || '08:30';
+    const [bkHH, bkHM] = bkHarianTime.split(':').map(Number);
+    const bkHarianKey = 'bk_harian_' + todayKey;
+    if (hh===bkHH && mm===bkHM && AppState.lastBKHarianTriggered!==bkHarianKey) {
+      AppState.lastBKHarianTriggered = bkHarianKey;
+      schedLog('🎓 Mengirim Rekap BK Harian otomatis...', 'warn');
+      kirimRekapBK('harian', true);
+    }
+  }
+
+  // === REKAP BK MINGGUAN — Senin malam ===
+  if (AppState.schedulerActive) {
+    const bkMinggTime = document.getElementById('schedBKMinggTime').value || '20:30';
+    const [bkMH, bkMM] = bkMinggTime.split(':').map(Number);
+    const bkMinggKey = 'bk_minggu_' + getWeekKey(now);
+    if (now.getDay()===1 && hh===bkMH && mm===bkMM && AppState.lastBKMinggTriggered!==bkMinggKey) {
+      AppState.lastBKMinggTriggered = bkMinggKey;
+      schedLog('🎓 Mengirim Rekap BK Mingguan otomatis...', 'warn');
+      kirimRekapBK('mingguan', true);
+    }
+  }
+
+  // === REKAP BK BULANAN — tanggal 1 malam ===
+  if (AppState.schedulerActive) {
+    const bkBulananTime = document.getElementById('schedBKBulananTime').value || '21:00';
+    const [bkBH, bkBM] = bkBulananTime.split(':').map(Number);
+    const bkBulananKey = 'bk_bulanan_' + toBulan(todayKey);
+    if (now.getDate()===1 && hh===bkBH && mm===bkBM && AppState.lastBKBulananTriggered!==bkBulananKey) {
+      AppState.lastBKBulananTriggered = bkBulananKey;
+      schedLog('🎓 Mengirim Rekap BK Bulanan otomatis...', 'warn');
+      const bulanLalu = getBulanLalu(now);
+      kirimRekapBK('bulanan', true, bulanLalu);
+    }
+  }
 }
 async function runScheduledAutoAlpa(tanggal) {
   setStepState(1,'running');
@@ -2269,10 +2330,15 @@ function getBulanLalu(date) {
   return d.toISOString().slice(0,7);
 }
 function updateBerkalaBadge() {
-  ['schedMinggBadge','schedBulananBadge'].forEach(id => {
+  ['schedMinggBadge','schedBulananBadge','schedBKBadge'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
-    if (AppState.schedulerActive) { el.className='sched-badge sched-badge-on'; el.innerHTML='<span class="sched-badge-dot"></span>ON'; }
-    else { el.className='sched-badge sched-badge-off'; el.innerHTML='<span class="sched-badge-dot"></span>OFF'; }
+    if (AppState.schedulerActive) {
+      el.className='sched-badge sched-badge-on';
+      el.innerHTML='<span class="sched-badge-dot"></span>ON';
+    } else {
+      el.className='sched-badge sched-badge-off';
+      el.innerHTML='<span class="sched-badge-dot"></span>OFF';
+    }
   });
 }
 
