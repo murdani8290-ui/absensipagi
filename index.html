@@ -1967,7 +1967,18 @@ async function runScheduledAutoAlpa(tanggal) {
     const belum = (semua||[]).filter(s => !absenMap[s.nis]);
     setStepState(1,'done'); setLineState(1,'done');
     setStepState(2,'running');
-    for (const s of belum) { await setStatusHarian(s.nis, s.nama, s.kelas, tanggal, 'A'); }
+    if (belum.length > 0) {
+  const col = tglCol(tanggal);
+  const bulan = toBulan(tanggal);
+  const batchBody = belum.map(s => ({
+    nis: s.nis,
+    nama: s.nama,
+    kelas: s.kelas,
+    bulan: bulan,
+    [col]: 'A'
+  }));
+  await sbUpsert(T.absensi, batchBody, 'nis,bulan');
+}
     schedLog(`✅ Auto Alpa: ${belum.length} siswa ditandai Alpa`, 'success');
     setStepState(2,'done'); setLineState(2,'done');
     if (AppState.schedWASend) {
@@ -2141,7 +2152,18 @@ async function jalankanAutoAlpaSekarang() {
     const absenMap = {};
     (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
     const belum = (semua||[]).filter(s => !absenMap[s.nis]);
-    for (const s of belum) { await setStatusHarian(s.nis, s.nama, s.kelas, today, 'A'); }
+    if (belum.length > 0) {
+  const col = tglCol(tanggal);
+  const bulan = toBulan(tanggal);
+  const batchBody = belum.map(s => ({
+    nis: s.nis,
+    nama: s.nama,
+    kelas: s.kelas,
+    bulan: bulan,
+    [col]: 'A'
+  }));
+  await sbUpsert(T.absensi, batchBody, 'nis,bulan');
+}
     rt.textContent = '✅ Auto Alpa Selesai - ' + today;
     rc.innerHTML = `<div class="grid grid-cols-2 gap-2"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Ditandai Alpa</p><p class="text-lg font-bold text-red-700">${belum.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Total Siswa</p><p class="text-lg font-bold text-blue-700">${semua.length}</p></div></div>`;
     loadAdminRekap();
