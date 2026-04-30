@@ -477,7 +477,7 @@
           <input type="text" id="newGKelas" placeholder="Wali Kelas (opsional)" class="px-3 py-2 border rounded-lg text-sm">
         </div>
         <div class="grid grid-cols-2 gap-2 mb-3">
-          <input type="text" id="newGRole" placeholder="Role: GURU/WALI/ADMIN" class="px-3 py-2 border rounded-lg text-sm">
+          <input type="text" id="newGRole" placeholder="Role: GURU/WALI/ADMIN/BK" class="px-3 py-2 border rounded-lg text-sm">
           <input type="text" id="newGHp" placeholder="No. HP Guru" class="px-3 py-2 border rounded-lg text-sm">
         </div>
         <button class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm" onclick="adminAddTeacher()">
@@ -745,6 +745,45 @@
           <p id="resultBulanan" class="text-xs text-center mt-2 min-h-[16px]"></p>
         </div>
       </div>
+      <!-- Rekap BK -->
+<div class="bg-rose-50 rounded-xl p-4 border border-rose-200 mt-3">
+  <div class="flex items-center justify-between mb-3">
+    <div>
+      <p class="font-semibold text-rose-800 text-sm"><i class="fas fa-user-shield mr-1"></i>Rekap BK (Alpa ≥ 3)</p>
+      <p class="text-xs text-rose-500 mt-0.5">Harian, Mingguan & Bulanan ke Guru BK</p>
+    </div>
+    <span class="sched-badge sched-badge-off" id="schedBKBadge">
+      <span class="sched-badge-dot"></span>OFF
+    </span>
+  </div>
+  <div class="flex gap-2 mb-3">
+    <button onclick="previewRekapBK('harian')" class="flex-1 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-medium rounded-lg text-xs">
+      <i class="fas fa-eye mr-1"></i>Preview Harian
+    </button>
+    <button onclick="kirimRekapBK('harian')" id="btnKirimBKHarian" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg text-xs">
+      <i class="fas fa-paper-plane mr-1"></i>Kirim Harian
+    </button>
+  </div>
+  <div class="flex gap-2 mb-3">
+    <button onclick="previewRekapBK('mingguan')" class="flex-1 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-medium rounded-lg text-xs">
+      <i class="fas fa-eye mr-1"></i>Preview Mingguan
+    </button>
+    <button onclick="kirimRekapBK('mingguan')" id="btnKirimBKMingguan" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg text-xs">
+      <i class="fas fa-paper-plane mr-1"></i>Kirim Mingguan
+    </button>
+  </div>
+  <div class="flex gap-2 mb-2">
+    <input type="month" id="pilihanBulanBK" class="flex-1 px-3 py-2 border border-rose-200 rounded-lg text-xs focus:outline-none bg-white">
+    <button onclick="previewRekapBK('bulanan')" class="flex-1 py-2 bg-rose-100 hover:bg-rose-200 text-rose-700 font-medium rounded-lg text-xs">
+      <i class="fas fa-eye mr-1"></i>Preview Bulanan
+    </button>
+    <button onclick="kirimRekapBK('bulanan')" id="btnKirimBKBulanan" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg text-xs">
+      <i class="fas fa-paper-plane mr-1"></i>Kirim Bulanan
+    </button>
+  </div>
+  <div id="previewBK" class="hidden mt-3 bg-white rounded-lg p-3 border border-rose-200 max-h-48 overflow-y-auto custom-scrollbar text-xs text-gray-600"></div>
+  <p id="resultBK" class="text-xs text-center mt-2 min-h-[16px]"></p>
+</div>
       <!-- END REKAP BERKALA -->
 
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
@@ -1631,7 +1670,7 @@ async function adminAddTeacher() {
   const role = document.getElementById('newGRole').value.trim().toUpperCase() || 'GURU';
   const hp = document.getElementById('newGHp').value.trim();
   if (!username || !password || !nama) { alert('Username, Password, dan Nama harus diisi!'); return; }
-  if (!['GURU','WALI','ADMIN'].includes(role)) { alert('Role harus: GURU, WALI, atau ADMIN'); return; }
+  if (!['GURU','WALI','ADMIN','BK'].includes(role)) { alert('Role harus: GURU, WALI, ADMIN, atau BK'); return; }
   try {
     await sbInsert(T.guru, { username, password, nama, kelas_wali, role, hp });
     alert('Guru berhasil ditambahkan!');
@@ -1743,7 +1782,7 @@ async function batchImportGuru(rows, resultEl) {
     const [username, password, nama, kelas_wali='', role='GURU', hp=''] = r;
     if (!username || !password || !nama) { skip++; continue; }
     const roleUp = role.toUpperCase();
-    if (!['GURU','WALI','ADMIN'].includes(roleUp)) { skip++; continue; }
+    if (!['GURU','WALI','ADMIN','BK'].includes(roleUp)) { skip++; continue; }
     try {
       await sbUpsert(T.guru, { username, password, nama, kelas_wali: kelas_wali||'', role: roleUp, hp: hp||'' }, 'username');
       ok++;
@@ -2541,6 +2580,162 @@ document.addEventListener('DOMContentLoaded', () => {
     deferredPrompt = null;
   };
 });
+  // ============================================================
+// REKAP BK (ALPA ≥ 3)
+// ============================================================
+const MIN_ALPA_BK = 3;
+
+async function getBKList() {
+  const data = await sbSelect(T.guru, '?role=eq.BK');
+  return (data || []).filter(g => formatHP(g.hp));
+}
+
+async function previewRekapBK(mode) {
+  const previewDiv = document.getElementById('previewBK');
+  previewDiv.classList.remove('hidden');
+  previewDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Memuat...';
+  try {
+    const { siswaAlpa, label } = await getSiswaAlpaBK(mode);
+    if (!siswaAlpa.length) {
+      previewDiv.innerHTML = `<p class="text-green-600 text-center py-2">✅ Tidak ada siswa dengan alpa ≥ ${MIN_ALPA_BK}x (${label})</p>`;
+      return;
+    }
+    const bkList = await getBKList();
+    let html = `<p class="font-semibold mb-2 text-rose-700">📋 ${siswaAlpa.length} siswa alpa ≥ ${MIN_ALPA_BK}x (${label}):</p>`;
+    siswaAlpa.forEach((s, i) => {
+      html += `<div class="py-1 px-2 ${i%2===0?'bg-rose-50':''} rounded text-xs">
+        <span class="font-semibold">${i+1}. ${sanitizeHTML(s.nama)}</span>
+        <span class="text-gray-500 ml-1">[${sanitizeHTML(s.kelas)}]</span>
+        <span class="text-red-600 ml-1">Alpa: ${s.al}x</span>
+        <span class="text-amber-600 ml-1">Sakit: ${s.s}x</span>
+        <span class="text-sky-600 ml-1">Izin: ${s.iz}x</span>
+      </div>`;
+    });
+    html += `<p class="mt-2 text-gray-500">Akan dikirim ke ${bkList.length} guru BK.</p>`;
+    if (!bkList.length) html += `<p class="text-red-500 mt-1">⚠️ Tidak ada guru BK dengan HP terdaftar!</p>`;
+    previewDiv.innerHTML = html;
+  } catch(err) {
+    previewDiv.innerHTML = `<span class="text-red-600">Error: ${sanitizeHTML(err.message)}</span>`;
+  }
+}
+
+async function kirimRekapBK(mode, auto=false) {
+  const resultEl = document.getElementById('resultBK');
+  const btnId = { harian:'btnKirimBKHarian', mingguan:'btnKirimBKMingguan', bulanan:'btnKirimBKBulanan' }[mode];
+  if (!auto && !confirm(`Kirim rekap BK (${mode}) ke guru BK sekarang?`)) return;
+  setButtonLoading(btnId, true);
+  if (resultEl) resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mengirim...</span>';
+  try {
+    const { siswaAlpa, label, extra } = await getSiswaAlpaBK(mode);
+    const bkList = await getBKList();
+    if (!bkList.length) {
+      if (resultEl) resultEl.innerHTML = '<span class="text-red-600">❌ Tidak ada guru BK dengan HP terdaftar!</span>';
+      setButtonLoading(btnId, false); return;
+    }
+    let sent = 0;
+    for (const guru of bkList) {
+      const hp = formatHP(guru.hp);
+      const pesan = buildPesanRekapBK(guru, mode, label, siswaAlpa, extra);
+      const ok = await kirimWA(hp, pesan);
+      if (ok) sent++;
+      await new Promise(r => setTimeout(r, 1200));
+    }
+    if (resultEl) resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap BK (${mode}) terkirim ke ${sent} guru BK.</span>`;
+    if (auto) schedLog(`🎓 Rekap BK ${mode} terkirim: ${sent} guru BK`, 'success');
+  } catch(err) {
+    if (resultEl) resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+    if (auto) schedLog('❌ Rekap BK gagal: ' + err.message, 'error');
+  }
+  setButtonLoading(btnId, false);
+}
+
+async function getSiswaAlpaBK(mode) {
+  const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+  let label = '', extra = {}, siswaAlpa = [];
+
+  if (mode === 'harian') {
+    const tanggal = todayStr();
+    label = tanggal;
+    extra = { tanggal };
+    const bulan = toBulan(tanggal);
+    const col = tglCol(tanggal);
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+    const absenMap = {};
+    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
+    // Harian: siswa yang hari ini Alpa (langsung lapor BK)
+    siswaAlpa = (semua||[])
+      .filter(s => absenMap[s.nis] === 'A')
+      .map(s => ({ ...s, al: 1, s: 0, iz: 0, h: 0 }));
+
+  } else if (mode === 'mingguan') {
+    const { seninStr, mingguStr, tanggalMinggu, bulanBulan } = getRentangMinggu();
+    label = `${seninStr} – ${mingguStr}`;
+    extra = { seninStr, mingguStr };
+    const absensiCache = await fetchAbsensiMultiBulan(bulanBulan);
+    const stats = hitungStatMingguan(semua||[], absensiCache, tanggalMinggu);
+    siswaAlpa = stats.detailSiswa
+      .filter(sw => sw.al >= MIN_ALPA_BK)
+      .map(sw => ({ ...semua.find(s=>s.nama===sw.nama)||{}, ...sw }))
+      .sort((a,b) => b.al-a.al || a.nama.localeCompare(b.nama));
+
+  } else if (mode === 'bulanan') {
+    const bulan = document.getElementById('pilihanBulanBK').value || new Date().toISOString().slice(0,7);
+    const [tahun, bln] = bulan.split('-').map(Number);
+    const jumlahHari = new Date(tahun, bln, 0).getDate();
+    const namaBulan = new Date(tahun, bln-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
+    label = namaBulan;
+    extra = { bulan, namaBulan };
+    const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
+    const absenByNis = {};
+    (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
+    const stats = hitungStatBulanan(semua||[], absenByNis, jumlahHari);
+    siswaAlpa = stats.detailSiswa
+      .filter(sw => sw.al >= MIN_ALPA_BK)
+      .map(sw => ({ ...semua.find(s=>s.nama===sw.nama)||{}, ...sw }))
+      .sort((a,b) => b.al-a.al || a.nama.localeCompare(b.nama));
+  }
+
+  return { siswaAlpa, label, extra };
+}
+
+function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
+  const modeLabel = { harian:'HARIAN', mingguan:'MINGGUAN', bulanan:'BULANAN' }[mode] || mode.toUpperCase();
+  const byKelas = {};
+  siswaAlpa.forEach(s => {
+    if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
+    byKelas[s.kelas].push(s);
+  });
+
+  let keteranganMode = '';
+  if (mode === 'harian') {
+    keteranganMode = `📅 *Tanggal :* ${label}\n📌 *Kategori:* Siswa tidak hadir (Alpa) hari ini`;
+  } else if (mode === 'mingguan') {
+    keteranganMode = `📅 *Periode  :* ${label}\n📌 *Kategori:* Siswa Alpa ≥ ${MIN_ALPA_BK}x dalam minggu ini`;
+  } else if (mode === 'bulanan') {
+    keteranganMode = `📅 *Bulan    :* ${label}\n📌 *Kategori:* Siswa Alpa ≥ ${MIN_ALPA_BK}x dalam bulan ini`;
+  }
+
+  const barisPerKelas = Object.entries(byKelas).map(([kelas, list]) => {
+    const detail = list.map((sw, i) =>
+      `  ${String(i+1).padStart(2,'0')}. ${sw.nama}${mode !== 'harian' ? ` — A:${sw.al}x, S:${sw.s||0}x, I:${sw.iz||0}x` : ''}`
+    ).join('\n');
+    return `🏫 *${kelas}* (${list.length} siswa)\n${detail}`;
+  }).join('\n\n');
+
+  return `🎓 *LAPORAN SISWA BERMASALAH — ${modeLabel}*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nGuru Bimbingan Konseling (BK)\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut laporan siswa yang perlu mendapat perhatian BK:\n\n${keteranganMode}\n👥 *Jumlah   :* ${siswaAlpa.length} siswa\n\n📋 *DAFTAR SISWA:*\n\n${barisPerKelas}\n\nMohon Bapak/Ibu guru BK dapat segera menindaklanjuti dengan:\n1️⃣ Memanggil siswa yang bersangkutan\n2️⃣ Berkoordinasi dengan wali kelas masing-masing\n3️⃣ Menghubungi orang tua/wali jika diperlukan\n\nData ini digenerate otomatis oleh sistem SIPAGI.\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+}
+
+// ============================================================
+// INTEGRASI SCHEDULER → REKAP BK OTOMATIS
+// ============================================================
+// Patch: tambahkan trigger BK ke runScheduledAutoAlpa
+const _origRunScheduled = runScheduledAutoAlpa;
+async function runScheduledAutoAlpa(tanggal) {
+  await _origRunScheduled(tanggal);
+  // Setelah auto alpa selesai, kirim rekap BK harian otomatis
+  schedLog('🎓 Mengirim Rekap BK Harian...', 'info');
+  await kirimRekapBK('harian', true);
+}
 </script>
 </body>
 </html>
