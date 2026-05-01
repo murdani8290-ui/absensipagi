@@ -1036,6 +1036,15 @@ async function getRekapHarian(kelas, tanggal) {
   (absensi || []).forEach(a => { absenMap[a.nis] = a[col] || null; });
   return (semua || []).map(s => ({ ...s, status: absenMap[s.nis] || null }));
 }
+  async function getRekapHarianSemua(tanggal) {
+  const bulan = toBulan(tanggal);
+  const col = tglCol(tanggal);
+  const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+  const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
+  const absenMap = {};
+  (absensi || []).forEach(a => { absenMap[a.nis] = a[col] || null; });
+  return (semua || []).map(s => ({ ...s, status: absenMap[s.nis] || null }));
+}
 
 async function getDataBulanan(kelas, bulan) {
   const semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
@@ -1222,7 +1231,7 @@ async function loginPiket(mode) {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
     if (!data || !data.length) throw new Error('Username atau password salah!');
     const guru = data[0];
-    if (!['GURU','WALI','ADMIN'].includes(guru.role)) throw new Error('Akun ini tidak memiliki akses piket!');
+    if (!['GURU','WALI','ADMIN','BK'].includes(guru.role)) throw new Error('Akun ini tidak memiliki akses piket!');
     AppState.activeTeacher = guru.nama;
     document.getElementById('loginGuruArea').classList.add('hidden');
     if (mode === 'manual') {
@@ -1325,10 +1334,10 @@ async function loginWali() {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
     if (!data || !data.length) throw new Error('Username atau password salah!');
     const guru = data[0];
-    if (!['WALI','ADMIN'].includes(guru.role)) throw new Error('Akun ini bukan wali kelas!');
-    AppState.activeClass = guru.kelas_wali;
+    if (!['WALI','ADMIN','BK'].includes(guru.role)) throw new Error('Akun ini tidak memiliki akses!');
+AppState.activeClass = guru.role === 'BK' ? '__ALL__' : guru.kelas_wali;
     document.getElementById('waliNama').textContent = guru.nama;
-    document.getElementById('waliKelas').textContent = guru.kelas_wali;
+    document.getElementById('waliKelas').textContent = guru.role === 'BK' ? 'Semua Kelas (BK)' : guru.kelas_wali;
     const today = todayStr();
     document.getElementById('waliRekapDate').value = today;
     document.getElementById('loginWaliArea').classList.add('hidden');
@@ -1346,7 +1355,9 @@ async function loadWaliData(kelas, tanggal) {
   const tbody = document.getElementById('tableWaliRekapBody');
   tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat...</td></tr>';
   try {
-    const list = await getRekapHarian(kelas, tanggal);
+    const list = kelas === '__ALL__' 
+  ? await getRekapHarianSemua(tanggal) 
+  : await getRekapHarian(kelas, tanggal);
     let hadir=0, sakit=0, izin=0, alpa=0, belum=0;
     const listH=[], listSI=[], listA=[], listBelum=[];
     list.forEach(s => {
