@@ -1342,7 +1342,7 @@ AppState.activeClass = guru.role === 'BK' ? '__ALL__' : guru.kelas_wali;
     document.getElementById('waliRekapDate').value = today;
     document.getElementById('loginWaliArea').classList.add('hidden');
     document.getElementById('dashboardWali').classList.remove('hidden');
-    loadWaliData(guru.kelas_wali, today);
+    loadWaliData(AppState.activeClass, today);
   } catch (err) { showMessage('msgWali', err.message, 'error'); }
   setButtonLoading('btnLoginWali', false);
 }
