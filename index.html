@@ -2777,7 +2777,7 @@ const savedServerDays = localStorage.getItem('serverActiveDays');
 if (savedServerDays) {
   const days = JSON.parse(savedServerDays);
   serverActiveDays.clear();
-  days.forEach((d: number) => serverActiveDays.add(d));
+  days.forEach((d) => serverActiveDays.add(d));
 }
 renderServerDayButtons();
   if ('serviceWorker' in navigator) {
