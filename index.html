@@ -1206,7 +1206,13 @@ function switchRole(role) {
 }
 function handleLogoClick() {
   clearTimeout(AppState.logoClickTimer); AppState.logoClickCount++;
-  if (AppState.logoClickCount >= 5) { AppState.logoClickCount = 0; switchRole('admin'); return; }
+  if (AppState.logoClickCount >= 5) {
+    AppState.logoClickCount = 0;
+    const btnAdmin = document.getElementById('btnAdmin');
+    if (btnAdmin) btnAdmin.classList.remove('hidden');
+    switchRole('admin');
+    return;
+  }
   AppState.logoClickTimer = setTimeout(() => { AppState.logoClickCount = 0; }, 1000);
 }
 
