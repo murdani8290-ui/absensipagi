@@ -1905,13 +1905,12 @@ function toggleDay(day) {
   else AppState.activeDays.add(day);
   renderDayButtons();
 }
-function renderServerDayButtons() {
-  document.querySelectorAll('#serverDayButtons .server-day-btn').forEach(btn => {
+function renderDayButtons() {
+  document.querySelectorAll('#dayButtons .day-btn').forEach(btn => {
     const d = parseInt(btn.dataset.day);
-    btn.classList.toggle('active-day', serverActiveDays.has(d));
+    btn.classList.toggle('active-day', AppState.activeDays.has(d));
   });
 }
-
 function toggleServerDay(day) {
   if (serverActiveDays.has(day)) serverActiveDays.delete(day);
   else serverActiveDays.add(day);
