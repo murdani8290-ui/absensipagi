@@ -1121,7 +1121,9 @@ function statusBadge(s) {
 // ============================================================
 // STATE
 // ============================================================
-const AppState = {
+const serverActiveDays = new Set([1,2,3,4,5,6]);
+  
+  const AppState = {
   scanner: null, qrInterval: null, countdown: 20,
   activeTeacher: '', activeClass: '',
   waliData: null, adminRekapData: null, allSiswaCache: null,
@@ -1909,6 +1911,20 @@ function renderDayButtons() {
     btn.classList.toggle('active-day', AppState.activeDays.has(d));
   });
 }
+
+function toggleServerDay(day) {
+  if (serverActiveDays.has(day)) serverActiveDays.delete(day);
+  else serverActiveDays.add(day);
+  renderServerDayButtons();
+}
+
+function renderServerDayButtons() {
+  document.querySelectorAll('.server-day-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    btn.classList.toggle('active-day', serverActiveDays.has(d));
+  });
+}
+
 function toggleSchedWA() {
   AppState.schedWASend = !AppState.schedWASend;
   document.getElementById('schedWAToggle').classList.toggle('on', AppState.schedWASend);
