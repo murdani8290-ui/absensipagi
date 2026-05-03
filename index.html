@@ -824,21 +824,37 @@
 <!-- Atur Jam Server -->
 <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
   <h5 class="font-semibold text-gray-800 mb-3">
-    <i class="fas fa-clock text-blue-500 mr-2"></i>Atur Jam Auto Alpa Server
+    <i class="fas fa-server text-blue-500 mr-2"></i>Atur Jam Server Otomatis
   </h5>
-  <p class="text-xs text-gray-500 mb-3">
-    Jam ini berjalan otomatis di server meski browser ditutup
-  </p>
-  <div class="flex gap-2 items-center mb-3">
-    <label class="text-sm text-gray-700 font-medium w-24">Jam WITA</label>
-    <input type="time" id="serverSchedTime" value="08:00"
-      class="dark-time-input" style="width:120px">
+  <p class="text-xs text-gray-500 mb-3">Jam berjalan otomatis meski browser ditutup</p>
+
+  <div class="space-y-3">
+    <div class="flex items-center gap-3">
+      <label class="text-xs text-gray-700 font-semibold w-28">Auto Alpa</label>
+      <input type="time" id="serverSchedAutoAlpa" value="08:00" class="dark-time-input" style="width:110px">
+      <button onclick="updateServerSchedule('autoalpa')" id="btnSaveAutoAlpa"
+        class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs">
+        <i class="fas fa-save mr-1"></i>Simpan
+      </button>
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="text-xs text-gray-700 font-semibold w-28">Rekap Mingguan</label>
+      <input type="time" id="serverSchedMingguan" value="20:00" class="dark-time-input" style="width:110px">
+      <button onclick="updateServerSchedule('mingguan')" id="btnSaveMingguan"
+        class="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-xs">
+        <i class="fas fa-save mr-1"></i>Simpan
+      </button>
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="text-xs text-gray-700 font-semibold w-28">Rekap Bulanan</label>
+      <input type="time" id="serverSchedBulanan" value="20:00" class="dark-time-input" style="width:110px">
+      <button onclick="updateServerSchedule('bulanan')" id="btnSaveBulanan"
+        class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs">
+        <i class="fas fa-save mr-1"></i>Simpan
+      </button>
+    </div>
   </div>
-  <button onclick="updateServerSchedule()" id="btnUpdateSched"
-    class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm">
-    <i class="fas fa-save mr-1"></i>Simpan Jam ke Server
-  </button>
-  <p id="updateSchedResult" class="text-xs text-center mt-2 min-h-[16px]"></p>
+  <p id="updateSchedResult" class="text-xs text-center mt-3 min-h-[16px]"></p>
 </div>
       <!-- Kirim WA Manual -->
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
@@ -2318,11 +2334,21 @@ async function kirimRekapWaliKelas() {
   } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAWali', false);
 }
-async function updateServerSchedule() {
-  const jam = document.getElementById('serverSchedTime').value;
+async function updateServerSchedule(type) {
+  const inputId = {
+    autoalpa: 'serverSchedAutoAlpa',
+    mingguan: 'serverSchedMingguan',
+    bulanan: 'serverSchedBulanan'
+  }[type];
+  const btnId = {
+    autoalpa: 'btnSaveAutoAlpa',
+    mingguan: 'btnSaveMingguan',
+    bulanan: 'btnSaveBulanan'
+  }[type];
+  const jam = document.getElementById(inputId).value;
   const resultEl = document.getElementById('updateSchedResult');
   if (!jam) { resultEl.innerHTML = '<span class="text-red-600">Pilih jam!</span>'; return; }
-  setButtonLoading('btnUpdateSched', true);
+  setButtonLoading(btnId, true);
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
   try {
     const res = await fetch('https://pgrcbuwaciukbpfxupjz.supabase.co/functions/v1/update-schedule', {
@@ -2331,18 +2357,21 @@ async function updateServerSchedule() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
       },
-      body: JSON.stringify({ jamWITA: jam })
+      body: JSON.stringify({ type, jamWITA: jam })
     });
     const data = await res.json();
     if (data.success) {
-      resultEl.innerHTML = `<span class="text-green-600">✅ Jam server diubah ke ${jam} WITA</span>`;
+      const label = { autoalpa:'Auto Alpa', mingguan:'Rekap Mingguan', bulanan:'Rekap Bulanan' }[type];
+      resultEl.innerHTML = `<span class="text-green-600">✅ ${label} diubah ke ${jam} WITA</span>`;
+      // Simpan ke localStorage
+      localStorage.setItem('serverSched_' + type, jam);
     } else {
       throw new Error(data.error);
     }
   } catch(err) {
     resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
   }
-  setButtonLoading('btnUpdateSched', false);
+  setButtonLoading(btnId, false);
 }
 // ============================================================
 // DOWNLOAD TEMPLATE CSV
@@ -2696,7 +2725,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('waKirimTanggal').value = todayStr();
   renderDayButtons();
   startLiveClock();
-
+// Restore jam server dari localStorage
+['autoalpa','mingguan','bulanan'].forEach(type => {
+  const saved = localStorage.getItem('serverSched_' + type);
+  const inputId = { autoalpa:'serverSchedAutoAlpa', mingguan:'serverSchedMingguan', bulanan:'serverSchedBulanan' }[type];
+  if (saved && document.getElementById(inputId)) {
+    document.getElementById(inputId).value = saved;
+  }
+});
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('SW registered:', reg.scope))
