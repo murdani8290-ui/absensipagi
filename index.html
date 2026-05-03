@@ -1480,11 +1480,21 @@ async function downloadLaporanBulanan(role) {
   const kelas = AppState.activeClass;
   if (!kelas) { alert('Kelas tidak ditemukan!'); return; }
   try {
-    const { siswa, absenMap } = await getDataBulanan(kelas, bulan);
-    exportExcelPivot(siswa, absenMap, bulan, kelas);
+    let siswa, absenMap = {};
+    if (kelas === '__ALL__') {
+      // BK: ambil semua siswa semua kelas
+      siswa = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+      const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
+      (absensi || []).forEach(a => { absenMap[a.nis] = a; });
+      exportExcelPivot(siswa || [], absenMap, bulan, 'Semua_Kelas');
+    } else {
+      const result = await getDataBulanan(kelas, bulan);
+      siswa = result.siswa;
+      absenMap = result.absenMap;
+      exportExcelPivot(siswa, absenMap, bulan, kelas);
+    }
   } catch (err) { alert('Gagal: ' + err.message); }
 }
-
 async function downloadAdminExcelBulanan() {
   const bulan = document.getElementById('admRekapDate').value.slice(0,7);
   if (!bulan) { alert('Pilih bulan di filter rekap terlebih dahulu!'); return; }
