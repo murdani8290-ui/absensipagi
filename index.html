@@ -823,39 +823,72 @@
       </div>
 <!-- Atur Jam Server -->
 <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
-  <h5 class="font-semibold text-gray-800 mb-3">
+  <h5 class="font-semibold text-gray-800 mb-1">
     <i class="fas fa-server text-blue-500 mr-2"></i>Atur Jam Server Otomatis
   </h5>
   <p class="text-xs text-gray-500 mb-3">Jam berjalan otomatis meski browser ditutup</p>
 
-  <div class="space-y-3">
-    <div class="flex items-center gap-3">
-      <label class="text-xs text-gray-700 font-semibold w-28">Auto Alpa</label>
-      <input type="time" id="serverSchedAutoAlpa" value="08:00" class="dark-time-input" style="width:110px">
+  <!-- Auto Alpa -->
+  <div class="bg-gray-50 rounded-xl p-3 border border-gray-200 mb-3">
+    <p class="text-xs font-semibold text-gray-700 mb-2"><i class="fas fa-bolt text-amber-500 mr-1"></i>Auto Alpa</p>
+    <div class="flex items-center gap-2 mb-2">
+      <label class="text-xs text-gray-600 w-16">Jam WITA</label>
+      <input type="time" id="serverSchedAutoAlpa" value="08:00" class="dark-time-input" style="width:110px;background:#f9fafb;color:#1f2937;border-color:#d1d5db">
       <button onclick="updateServerSchedule('autoalpa')" id="btnSaveAutoAlpa"
         class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs">
         <i class="fas fa-save mr-1"></i>Simpan
       </button>
     </div>
-    <div class="flex items-center gap-3">
-      <label class="text-xs text-gray-700 font-semibold w-28">Rekap Mingguan</label>
-      <input type="time" id="serverSchedMingguan" value="20:00" class="dark-time-input" style="width:110px">
-      <button onclick="updateServerSchedule('mingguan')" id="btnSaveMingguan"
-        class="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-xs">
-        <i class="fas fa-save mr-1"></i>Simpan
-      </button>
-    </div>
-    <div class="flex items-center gap-3">
-      <label class="text-xs text-gray-700 font-semibold w-28">Rekap Bulanan</label>
-      <input type="time" id="serverSchedBulanan" value="20:00" class="dark-time-input" style="width:110px">
-      <button onclick="updateServerSchedule('bulanan')" id="btnSaveBulanan"
-        class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs">
-        <i class="fas fa-save mr-1"></i>Simpan
-      </button>
+    <div>
+      <p class="text-xs text-gray-600 mb-1">Hari Aktif:</p>
+      <div class="flex gap-1" id="serverDayButtons">
+        <button onclick="toggleServerDay(1)" class="server-day-btn day-btn" data-day="1">SEN</button>
+        <button onclick="toggleServerDay(2)" class="server-day-btn day-btn" data-day="2">SEL</button>
+        <button onclick="toggleServerDay(3)" class="server-day-btn day-btn" data-day="3">RAB</button>
+        <button onclick="toggleServerDay(4)" class="server-day-btn day-btn" data-day="4">KAM</button>
+        <button onclick="toggleServerDay(5)" class="server-day-btn day-btn" data-day="5">JUM</button>
+        <button onclick="toggleServerDay(6)" class="server-day-btn day-btn" data-day="6">SAB</button>
+      </div>
     </div>
   </div>
-  <p id="updateSchedResult" class="text-xs text-center mt-3 min-h-[16px]"></p>
+
+  <!-- Rekap Mingguan -->
+  <div class="flex items-center gap-2 mb-2">
+    <label class="text-xs text-gray-600 w-28">Rekap Mingguan</label>
+    <input type="time" id="serverSchedMingguan" value="20:00" class="dark-time-input" style="width:110px;background:#f9fafb;color:#1f2937;border-color:#d1d5db">
+    <button onclick="updateServerSchedule('mingguan')" id="btnSaveMingguan"
+      class="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg text-xs">
+      <i class="fas fa-save mr-1"></i>Simpan
+    </button>
+  </div>
+
+  <!-- Rekap Bulanan -->
+  <div class="flex items-center gap-2 mb-3">
+    <label class="text-xs text-gray-600 w-28">Rekap Bulanan</label>
+    <input type="time" id="serverSchedBulanan" value="20:00" class="dark-time-input" style="width:110px;background:#f9fafb;color:#1f2937;border-color:#d1d5db">
+    <button onclick="updateServerSchedule('bulanan')" id="btnSaveBulanan"
+      class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs">
+      <i class="fas fa-save mr-1"></i>Simpan
+    </button>
+  </div>
+
+  <p id="updateSchedResult" class="text-xs text-center mt-2 min-h-[16px]"></p>
 </div>
+      const serverActiveDays = new Set([1,2,3,4,5,6]);
+
+function toggleServerDay(day) {
+  if (serverActiveDays.has(day)) serverActiveDays.delete(day);
+  else serverActiveDays.add(day);
+  renderServerDayButtons();
+  localStorage.setItem('serverActiveDays', JSON.stringify([...serverActiveDays]));
+}
+
+function renderServerDayButtons() {
+  document.querySelectorAll('.server-day-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    btn.classList.toggle('active-day', serverActiveDays.has(d));
+  });
+}
       <!-- Kirim WA Manual -->
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-1 flex items-center gap-2">
@@ -2349,26 +2382,36 @@ async function updateServerSchedule(type) {
   const resultEl = document.getElementById('updateSchedResult');
   if (!jam) { resultEl.innerHTML = '<span class="text-red-600">Pilih jam!</span>'; return; }
   setButtonLoading(btnId, true);
-  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
+  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan ke server...</span>';
   try {
+    const body: any = { type, jamWITA: jam };
+    // Kirim hari aktif hanya untuk autoalpa
+    if (type === 'autoalpa') {
+      body.hariAktif = [...AppState.activeDays].sort();
+    }
     const res = await fetch('https://pgrcbuwaciukbpfxupjz.supabase.co/functions/v1/update-schedule', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
       },
-      body: JSON.stringify({ type, jamWITA: jam })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (data.success) {
       const label = { autoalpa:'Auto Alpa', mingguan:'Rekap Mingguan', bulanan:'Rekap Bulanan' }[type];
-      resultEl.innerHTML = `<span class="text-green-600">✅ ${label} diubah ke ${jam} WITA</span>`;
-      // Simpan ke localStorage
+      const hariLabel = type === 'autoalpa' 
+        ? ` (${[...AppState.activeDays].sort().map(d=>['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(',')})`
+        : '';
+      resultEl.innerHTML = `<span class="text-green-600">✅ ${label} diubah ke ${jam} WITA${hariLabel}</span>`;
       localStorage.setItem('serverSched_' + type, jam);
+      if (type === 'autoalpa') {
+        localStorage.setItem('activeDays', JSON.stringify([...AppState.activeDays]));
+      }
     } else {
       throw new Error(data.error);
     }
-  } catch(err) {
+  } catch(err: any) {
     resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
   }
   setButtonLoading(btnId, false);
@@ -2725,14 +2768,27 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('waKirimTanggal').value = todayStr();
   renderDayButtons();
   startLiveClock();
-// Restore jam server dari localStorage
+// Restore jam & hari server dari localStorage
 ['autoalpa','mingguan','bulanan'].forEach(type => {
   const saved = localStorage.getItem('serverSched_' + type);
-  const inputId = { autoalpa:'serverSchedAutoAlpa', mingguan:'serverSchedMingguan', bulanan:'serverSchedBulanan' }[type];
+  const inputId = {
+    autoalpa:'serverSchedAutoAlpa',
+    mingguan:'serverSchedMingguan',
+    bulanan:'serverSchedBulanan'
+  }[type];
   if (saved && document.getElementById(inputId)) {
     document.getElementById(inputId).value = saved;
   }
 });
+
+// Restore hari aktif server
+const savedServerDays = localStorage.getItem('serverActiveDays');
+if (savedServerDays) {
+  const days = JSON.parse(savedServerDays);
+  serverActiveDays.clear();
+  days.forEach((d: number) => serverActiveDays.add(d));
+}
+renderServerDayButtons();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('SW registered:', reg.scope))
