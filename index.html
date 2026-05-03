@@ -874,21 +874,7 @@
 
   <p id="updateSchedResult" class="text-xs text-center mt-2 min-h-[16px]"></p>
 </div>
-      const serverActiveDays = new Set([1,2,3,4,5,6]);
-
-function toggleServerDay(day) {
-  if (serverActiveDays.has(day)) serverActiveDays.delete(day);
-  else serverActiveDays.add(day);
-  renderServerDayButtons();
-  localStorage.setItem('serverActiveDays', JSON.stringify([...serverActiveDays]));
-}
-
-function renderServerDayButtons() {
-  document.querySelectorAll('.server-day-btn').forEach(btn => {
-    const d = parseInt(btn.dataset.day);
-    btn.classList.toggle('active-day', serverActiveDays.has(d));
-  });
-}
+    
       <!-- Kirim WA Manual -->
       <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
         <h5 class="font-semibold text-gray-800 mb-1 flex items-center gap-2">
@@ -2390,8 +2376,7 @@ async function updateServerSchedule(type) {
   setButtonLoading(btnId, true);
   resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan ke server...</span>';
   try {
-    const body: any = { type, jamWITA: jam };
-    // Kirim hari aktif hanya untuk autoalpa
+    const body = { type, jamWITA: jam };
     if (type === 'autoalpa') {
       body.hariAktif = [...AppState.activeDays].sort();
     }
@@ -2417,7 +2402,7 @@ async function updateServerSchedule(type) {
     } else {
       throw new Error(data.error);
     }
-  } catch(err: any) {
+  } catch(err) {
     resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
   }
   setButtonLoading(btnId, false);
