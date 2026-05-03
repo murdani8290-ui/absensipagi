@@ -1486,7 +1486,10 @@ async function downloadLaporanBulanan(role) {
       siswa = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
       const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
       (absensi || []).forEach(a => { absenMap[a.nis] = a; });
-      exportExcelPivot(siswa || [], absenMap, bulan, 'Semua_Kelas');
+     console.log('siswa:', siswa);
+console.log('absenMap:', absenMap);
+console.log('jumlah siswa:', (siswa||[]).length);
+exportExcelPivot(siswa || [], absenMap, bulan, 'Semua_Kelas');
     } else {
       const result = await getDataBulanan(kelas, bulan);
       siswa = result.siswa;
