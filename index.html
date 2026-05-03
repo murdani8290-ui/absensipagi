@@ -2378,7 +2378,7 @@ async function updateServerSchedule(type) {
   try {
     const body = { type, jamWITA: jam };
     if (type === 'autoalpa') {
-      body.hariAktif = [...AppState.activeDays].sort();
+      body.hariAktif = [...serverActiveDays].sort();
     }
     const res = await fetch('https://pgrcbuwaciukbpfxupjz.supabase.co/functions/v1/update-schedule', {
       method: 'POST',
@@ -2390,15 +2390,20 @@ async function updateServerSchedule(type) {
     });
     const data = await res.json();
     if (data.success) {
+      // Simpan ke tabel config Supabase
+      if (type === 'autoalpa') {
+        await sbUpsert('config', { key: 'sched_autoalpa', value: jam }, 'key');
+        await sbUpsert('config', { key: 'sched_autoalpa_hari', value: JSON.stringify([...serverActiveDays].sort()) }, 'key');
+      } else if (type === 'mingguan') {
+        await sbUpsert('config', { key: 'sched_mingguan', value: jam }, 'key');
+      } else if (type === 'bulanan') {
+        await sbUpsert('config', { key: 'sched_bulanan', value: jam }, 'key');
+      }
       const label = { autoalpa:'Auto Alpa', mingguan:'Rekap Mingguan', bulanan:'Rekap Bulanan' }[type];
-      const hariLabel = type === 'autoalpa' 
-        ? ` (${[...AppState.activeDays].sort().map(d=>['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(',')})`
+      const hariLabel = type === 'autoalpa'
+        ? ` (${[...serverActiveDays].sort().map(d=>['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(',')})`
         : '';
       resultEl.innerHTML = `<span class="text-green-600">✅ ${label} diubah ke ${jam} WITA${hariLabel}</span>`;
-      localStorage.setItem('serverSched_' + type, jam);
-      if (type === 'autoalpa') {
-        localStorage.setItem('activeDays', JSON.stringify([...AppState.activeDays]));
-      }
     } else {
       throw new Error(data.error);
     }
@@ -2760,26 +2765,39 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDayButtons();
   startLiveClock();
 // Restore jam & hari server dari localStorage
-['autoalpa','mingguan','bulanan'].forEach(type => {
-  const saved = localStorage.getItem('serverSched_' + type);
-  const inputId = {
-    autoalpa:'serverSchedAutoAlpa',
-    mingguan:'serverSchedMingguan',
-    bulanan:'serverSchedBulanan'
-  }[type];
-  if (saved && document.getElementById(inputId)) {
-    document.getElementById(inputId).value = saved;
+// Load config jadwal dari Supabase server
+  async function loadServerConfig() {
+    try {
+      const data = await sbSelect('config', '');
+      if (!data || !data.length) return;
+      data.forEach(row => {
+        if (row.key === 'sched_autoalpa') {
+          const el = document.getElementById('serverSchedAutoAlpa');
+          if (el) el.value = row.value;
+        }
+        if (row.key === 'sched_mingguan') {
+          const el = document.getElementById('serverSchedMingguan');
+          if (el) el.value = row.value;
+        }
+        if (row.key === 'sched_bulanan') {
+          const el = document.getElementById('serverSchedBulanan');
+          if (el) el.value = row.value;
+        }
+        if (row.key === 'sched_autoalpa_hari') {
+          try {
+            const days = JSON.parse(row.value);
+            serverActiveDays.clear();
+            days.forEach(d => serverActiveDays.add(d));
+            renderServerDayButtons();
+          } catch(e) {}
+        }
+      });
+    } catch(err) {
+      console.error('Load config error:', err);
+    }
   }
-});
-
-// Restore hari aktif server
-const savedServerDays = localStorage.getItem('serverActiveDays');
-if (savedServerDays) {
-  const days = JSON.parse(savedServerDays);
-  serverActiveDays.clear();
-  days.forEach((d) => serverActiveDays.add(d));
-}
-renderServerDayButtons();
+  loadServerConfig();
+  renderServerDayButtons();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js')
       .then(reg => console.log('SW registered:', reg.scope))
