@@ -1581,7 +1581,7 @@ function showAdminTab(tab) {
   if (tab === 'siswa') loadAdminSiswa();
   else if (tab === 'guru') loadAdminGuru();
   else if (tab === 'rekap') loadAdminRekap();
-  else if (tab === 'autoalpa') { loadKelasList(); renderDayButtons(); }
+  else if (tab === 'autoalpa') { loadKelasList(); renderDayButtons(); loadServerConfig(); }
 }
 async function loadAdminSiswa() {
   const tbody = document.getElementById('tableSiswaBody');
@@ -2772,7 +2772,37 @@ function buildPesanRekapBulanan(guru, bulan, namaBulan, totalSiswa, stat) {
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+async function loadServerConfig() {
+  try {
+    const data = await sbSelect('config', '');
+    if (!data || !data.length) return;
+    data.forEach(row => {
+      if (row.key === 'sched_autoalpa') {
+        const el = document.getElementById('serverSchedAutoAlpa');
+        if (el) el.value = row.value;
+      }
+      if (row.key === 'sched_mingguan') {
+        const el = document.getElementById('serverSchedMingguan');
+        if (el) el.value = row.value;
+      }
+      if (row.key === 'sched_bulanan') {
+        const el = document.getElementById('serverSchedBulanan');
+        if (el) el.value = row.value;
+      }
+      if (row.key === 'sched_autoalpa_hari') {
+        try {
+          const days = JSON.parse(row.value);
+          serverActiveDays.clear();
+          days.forEach(d => serverActiveDays.add(d));
+          renderServerDayButtons();
+        } catch(e) {}
+      }
+    });
+  } catch(err) {
+    console.error('Load config error:', err);
+  }
+}
+  document.addEventListener('DOMContentLoaded', () => {
   switchRole('siswa');
   document.getElementById('waliRekapDate').value = todayStr();
   document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0,7);
@@ -2781,36 +2811,7 @@ document.addEventListener('DOMContentLoaded', () => {
   startLiveClock();
 // Restore jam & hari server dari localStorage
 // Load config jadwal dari Supabase server
-  async function loadServerConfig() {
-    try {
-      const data = await sbSelect('config', '');
-      if (!data || !data.length) return;
-      data.forEach(row => {
-        if (row.key === 'sched_autoalpa') {
-          const el = document.getElementById('serverSchedAutoAlpa');
-          if (el) el.value = row.value;
-        }
-        if (row.key === 'sched_mingguan') {
-          const el = document.getElementById('serverSchedMingguan');
-          if (el) el.value = row.value;
-        }
-        if (row.key === 'sched_bulanan') {
-          const el = document.getElementById('serverSchedBulanan');
-          if (el) el.value = row.value;
-        }
-        if (row.key === 'sched_autoalpa_hari') {
-          try {
-            const days = JSON.parse(row.value);
-            serverActiveDays.clear();
-            days.forEach(d => serverActiveDays.add(d));
-            renderServerDayButtons();
-          } catch(e) {}
-        }
-      });
-    } catch(err) {
-      console.error('Load config error:', err);
-    }
-  }
+ 
   loadServerConfig();
   
   if ('serviceWorker' in navigator) {
