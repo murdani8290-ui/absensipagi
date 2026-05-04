@@ -324,6 +324,58 @@
         </table>
       </div>
     </div>
+    <!-- Rekap & Download Mingguan -->
+<div class="bg-purple-50 rounded-xl p-4 border border-purple-200 mb-4">
+  <h4 class="font-semibold text-purple-800 mb-3"><i class="fas fa-calendar-week text-purple-600 mr-2"></i>Rekap & Unduh Mingguan</h4>
+  <div class="flex gap-2 mb-3">
+    <input type="week" id="waliPilihanMinggu" class="flex-1 px-4 py-2 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none bg-white text-sm">
+    <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all" onclick="loadWaliDataMingguan()">
+      <i class="fas fa-search"></i>
+    </button>
+  </div>
+  <p class="text-xs text-purple-500 mb-3">Kosongkan untuk minggu berjalan</p>
+  <div class="grid grid-cols-2 gap-3 mb-3">
+    <div class="stat-card bg-white p-3 rounded-xl border-b-4 border-blue-500 shadow text-center">
+      <p class="text-xs text-gray-500 uppercase">Hadir</p>
+      <p class="text-2xl font-bold text-blue-600" id="valHadirMingg">0</p>
+    </div>
+    <div class="stat-card bg-white p-3 rounded-xl border-b-4 border-gray-400 shadow text-center">
+      <p class="text-xs text-gray-500 uppercase">Belum</p>
+      <p class="text-2xl font-bold text-gray-600" id="valBelumMingg">0</p>
+    </div>
+    <div class="stat-card bg-white p-3 rounded-xl border-b-4 border-amber-500 shadow text-center">
+      <p class="text-xs text-gray-500 uppercase">Sakit/Izin</p>
+      <p class="text-2xl font-bold text-amber-600" id="valSakitMingg">0</p>
+    </div>
+    <div class="stat-card bg-white p-3 rounded-xl border-b-4 border-red-500 shadow text-center">
+      <p class="text-xs text-gray-500 uppercase">Alpa</p>
+      <p class="text-2xl font-bold text-red-600" id="valAlpaMingg">0</p>
+    </div>
+  </div>
+  <p class="text-xs text-purple-500 mb-2">Periode: <b id="displayPeriodeMingg">-</b></p>
+  <div class="bg-white rounded-xl border border-purple-200 mb-3">
+    <div class="max-h-64 overflow-y-auto custom-scrollbar">
+      <table class="w-full text-sm">
+        <thead class="bg-purple-50 sticky top-0">
+          <tr>
+            <th class="text-left p-3 w-10">No</th>
+            <th class="text-left p-3">Nama Siswa</th>
+            <th class="text-center p-3 w-10">H</th>
+            <th class="text-center p-3 w-10">S</th>
+            <th class="text-center p-3 w-10">I</th>
+            <th class="text-center p-3 w-10">A</th>
+          </tr>
+        </thead>
+        <tbody id="tableWaliRekapMinggBody">
+          <tr><td colspan="6" class="text-center py-4 text-gray-500">Pilih minggu untuk melihat rekap</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <button class="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all text-sm" onclick="downloadExcelMingguanWali()">
+    <i class="fas fa-file-excel mr-2"></i>Download Excel Mingguan
+  </button>
+</div>
     <!-- Download Laporan Bulanan -->
     <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
       <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-file-excel text-green-600 mr-2"></i>Unduh Laporan Bulanan</h4>
