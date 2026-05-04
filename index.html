@@ -1403,11 +1403,14 @@ function searchStudent(keyword) {
       if (isNum) data = await sbSelect(T.siswa, `?nis=ilike.*${encodeURIComponent(keyword)}*&limit=10`);
       else data = await sbSelect(T.siswa, `?nama=ilike.*${encodeURIComponent(keyword)}*&limit=10`);
       if (!data || !data.length) { res.innerHTML = '<div class="p-3 text-red-500 text-center">Siswa tidak ditemukan</div>'; return; }
-      res.innerHTML = data.map(item => `<div class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50" onclick="selectStudent('${sanitizeHTML(item.nis)}','${sanitizeHTML(item.nama)}','${sanitizeHTML(item.kelas)}')"><p class="font-semibold text-blue-700">${sanitizeHTML(item.nama)}</p><p class="text-sm text-gray-500">NIS: ${sanitizeHTML(item.nis)} | Kelas: ${sanitizeHTML(item.kelas)}</p></div>`).join('');
+      res.innerHTML = data.map(item => `<div class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50" onclick="selectStudent('${encodeURIComponent(item.nis)}','${encodeURIComponent(item.nama)}','${encodeURIComponent(item.kelas)}')"><p class="font-semibold text-blue-700">${sanitizeHTML(item.nama)}</p><p class="text-sm text-gray-500">NIS: ${sanitizeHTML(item.nis)} | Kelas: ${sanitizeHTML(item.kelas)}</p></div>`).join('');
     } catch (err) { res.innerHTML = `<div class="p-3 text-red-500 text-center">Error: ${sanitizeHTML(err.message)}</div>`; }
   }, 500);
 }
 function selectStudent(nis, nama, kelas) {
+  nis   = decodeURIComponent(nis);
+  nama  = decodeURIComponent(nama);
+  kelas = decodeURIComponent(kelas);
   document.getElementById('manualNis').value = nis;
   document.getElementById('manualSearchInput').value = nama;
   document.getElementById('searchResults').classList.add('hidden');
@@ -1498,6 +1501,163 @@ async function loadWaliData(kelas, tanggal) {
     }).join('');
   } catch (err) { tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`; }
 }
+  async function loadWaliDataMingguan() {
+  const inputMinggu = document.getElementById('waliPilihanMinggu').value;
+  const tbody = document.getElementById('tableWaliRekapMinggBody');
+
+  let tanggalMinggu = [];
+  if (inputMinggu) {
+    const [tahun, mingguStr] = inputMinggu.split('-W');
+    const senin = getSeninDariWeek(parseInt(tahun), parseInt(mingguStr));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(senin);
+      d.setDate(senin.getDate() + i);
+      tanggalMinggu.push(d.toISOString().split('T')[0]);
+    }
+  } else {
+    tanggalMinggu = getRentangMinggu().tanggalMinggu;
+  }
+
+  const seninStr = new Date(tanggalMinggu[0] + 'T00:00:00').toLocaleDateString('id-ID');
+  const mingguStr = new Date(tanggalMinggu[6] + 'T00:00:00').toLocaleDateString('id-ID');
+  document.getElementById('displayPeriodeMingg').textContent = `${seninStr} – ${mingguStr}`;
+
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat...</td></tr>';
+
+  try {
+    const kelas = AppState.activeClass;
+    let semua;
+    if (kelas === '__ALL__') {
+      semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    } else {
+      semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
+    }
+
+    const bulanBulan = [...new Set(tanggalMinggu.map(t => toBulan(t)))];
+    const absensiCache = await fetchAbsensiMultiBulan(bulanBulan);
+    const stat = hitungStatMingguan(semua || [], absensiCache, tanggalMinggu);
+
+    document.getElementById('valHadirMingg').textContent = stat.h;
+    document.getElementById('valBelumMingg').textContent = stat.bl;
+    document.getElementById('valSakitMingg').textContent = stat.s + stat.iz;
+    document.getElementById('valAlpaMingg').textContent = stat.al;
+
+    if (!stat.detailSiswa.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Belum ada data</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = stat.detailSiswa.map((sw, i) => `
+      <tr class="border-b border-gray-100 hover:bg-gray-50">
+        <td class="p-3 text-gray-500">${i + 1}</td>
+        <td class="p-3">${sanitizeHTML(sw.nama)}</td>
+        <td class="p-3 text-center text-blue-600 font-semibold">${sw.h}</td>
+        <td class="p-3 text-center text-amber-600 font-semibold">${sw.s}</td>
+        <td class="p-3 text-center text-sky-600 font-semibold">${sw.iz}</td>
+        <td class="p-3 text-center text-red-600 font-semibold">${sw.al}</td>
+      </tr>
+    `).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`;
+  }
+}
+
+function getSeninDariWeek(tahun, minggu) {
+  const d = new Date(tahun, 0, 1 + (minggu - 1) * 7);
+  const hari = d.getDay();
+  const senin = new Date(d);
+  senin.setDate(d.getDate() - (hari === 0 ? 6 : hari - 1));
+  return senin;
+}
+  async function downloadExcelMingguanWali() {
+  const inputMinggu = document.getElementById('waliPilihanMinggu').value;
+  const kelas = AppState.activeClass;
+
+  if (!kelas) { alert('Kelas tidak ditemukan!'); return; }
+
+  // Hitung rentang minggu
+  let tanggalMinggu = [];
+  if (inputMinggu) {
+    const [tahun, mingguStr] = inputMinggu.split('-W');
+    const senin = getSeninDariWeek(parseInt(tahun), parseInt(mingguStr));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(senin);
+      d.setDate(senin.getDate() + i);
+      tanggalMinggu.push(d.toISOString().split('T')[0]);
+    }
+  } else {
+    tanggalMinggu = getRentangMinggu().tanggalMinggu;
+  }
+
+  const seninStr = tanggalMinggu[0];
+  const mingguStr = tanggalMinggu[6];
+
+  try {
+    let semua;
+    if (kelas === '__ALL__') {
+      semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    } else {
+      semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
+    }
+
+    const bulanBulan = [...new Set(tanggalMinggu.map(t => toBulan(t)))];
+    const absensiCache = await fetchAbsensiMultiBulan(bulanBulan);
+
+    // Header tabel: kolom hari
+    const NAMA_HARI = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+    const headerHari = tanggalMinggu.map((tgl, i) => {
+      const d = new Date(tgl + 'T00:00:00');
+      return `${NAMA_HARI[i === 6 ? 6 : i]} ${d.getDate()}/${d.getMonth()+1}`;
+    });
+
+    const header = ['No', 'NIS', 'Nama', 'Kelas', ...headerHari, 'H', 'S', 'I', 'A'];
+
+    // Kelompokkan per kelas
+    const byKelas = {};
+    (semua || []).forEach(s => {
+      if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
+      byKelas[s.kelas].push(s);
+    });
+
+    const wb = XLSX.utils.book_new();
+
+    Object.keys(byKelas).sort().forEach(k => {
+      const siswakelas = byKelas[k];
+      const rows = siswakelas.map((s, i) => {
+        const nisCacheData = absensiCache[s.nis] || {};
+        let sh=0, ss=0, siz=0, sal=0;
+        const kolHari = tanggalMinggu.map(tgl => {
+          const bulan = toBulan(tgl);
+          const col = tglCol(tgl);
+          const rowBulan = nisCacheData[bulan] || {};
+          const st = rowBulan[col] || '';
+          if (st==='H') sh++;
+          else if (st==='S') ss++;
+          else if (st==='I') siz++;
+          else if (st==='A') sal++;
+          return st;
+        });
+        return [i+1, s.nis, s.nama, s.kelas, ...kolHari, sh, ss, siz, sal];
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+      ws['!cols'] = [
+        {wch:4}, {wch:12}, {wch:28}, {wch:10},
+        ...Array(7).fill({wch:9}),
+        {wch:5}, {wch:5}, {wch:5}, {wch:5}
+      ];
+      const sheetName = `Absensi - ${k}`.replace(/[\\\/\*\?\[\]:]/g,'').slice(0,31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    const namaFile = kelas === '__ALL__' ? 'Semua_Kelas' : kelas.replace(/\s+/g,'_');
+    XLSX.writeFile(wb, `Rekap_Mingguan_${namaFile}_${seninStr}_sd_${mingguStr}.xlsx`);
+
+  } catch (err) {
+    alert('Gagal download: ' + err.message);
+  }
+}
 function showWaliList(type) {
   if (!AppState.waliData) return;
   const map = {
@@ -1538,9 +1698,6 @@ async function downloadLaporanBulanan(role) {
       siswa = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
       const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
       (absensi || []).forEach(a => { absenMap[a.nis] = a; });
-     console.log('siswa:', siswa);
-console.log('absenMap:', absenMap);
-console.log('jumlah siswa:', (siswa||[]).length);
 exportExcelPivot(siswa || [], absenMap, bulan, 'Semua_Kelas');
     } else {
       const result = await getDataBulanan(kelas, bulan);
@@ -1682,7 +1839,7 @@ function renderSiswaTable(data) {
   const tbody = document.getElementById('tableSiswaBody');
   document.getElementById('totalSiswaCount').textContent = data.length;
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Tidak ada data</td></tr>'; return; }
-  tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3 text-xs">${sanitizeHTML(r.nis)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3 text-xs">${sanitizeHTML(r.kelas)}</td><td class="p-3 text-center"><button onclick="deleteSiswa('${sanitizeHTML(r.nis)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+  tbody.innerHTML = data.map(r => `<tr class="border-b border-gray-100 hover:bg-gray-50"><td class="p-3 text-xs">${sanitizeHTML(r.nis)}</td><td class="p-3">${sanitizeHTML(r.nama)}</td><td class="p-3 text-xs">${sanitizeHTML(r.kelas)}</td><td class="p-3 text-center"><button onclick="deleteSiswa('${encodeURIComponent(r.nis)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button></td></tr>`).join('');
 }
 async function loadAdminGuru() {
   const tbody = document.getElementById('tableGuruBody');
@@ -1748,7 +1905,7 @@ function renderAdminRekapTable(list) {
   if (!list || !list.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Tidak ada data</td></tr>'; return; }
   tbody.innerHTML = list.map((row,i) => {
     const n=sanitizeHTML(row.nis), na=sanitizeHTML(row.nama), k=sanitizeHTML(row.kelas), s=row.status||'';
-    return `<tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openEditPanel('${n}','${na}','${k}','${s}')"><td class="p-3 text-gray-500">${i+1}</td><td class="p-3">${na}</td><td class="p-3 text-xs">${k}</td><td class="p-3 text-center">${statusBadge(row.status)}</td><td class="p-3 text-center"><button class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs rounded" onclick="event.stopPropagation();openEditPanel('${n}','${na}','${k}','${s}')"><i class="fas fa-edit"></i></button></td></tr>`;
+    return `<tr class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="openEditPanel('${encodeURIComponent(n)}','${encodeURIComponent(na)}','${encodeURIComponent(k)}','${s}')"><td class="p-3 text-gray-500">${i+1}</td><td class="p-3">${na}</td><td class="p-3 text-xs">${k}</td><td class="p-3 text-center">${statusBadge(row.status)}</td><td class="p-3 text-center"><button class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs rounded" onclick="event.stopPropagation();openEditPanel('${n}','${na}','${k}','${s}')"><i class="fas fa-edit"></i></button></td></tr>`;
   }).join('');
 }
 function downloadRekapCSV() {
@@ -1762,6 +1919,9 @@ function downloadRekapCSV() {
   a.download = `rekap_harian_${tgl}.csv`; a.click();
 }
 function openEditPanel(nis, nama, kelas, status) {
+  nis   = decodeURIComponent(nis);
+  nama  = decodeURIComponent(nama);
+  kelas = decodeURIComponent(kelas);
   document.getElementById('editStatusPanel').classList.remove('hidden');
   document.getElementById('editNamaSiswa').textContent = nama;
   document.getElementById('editNisSiswa').textContent = nis;
@@ -1840,6 +2000,7 @@ async function adminAddTeacher() {
   } catch (err) { alert('Gagal: ' + err.message); }
 }
 async function deleteSiswa(nis) {
+  nis = decodeURIComponent(nis);
   if (!confirm(`Hapus siswa NIS ${nis}?`)) return;
   try { await sbDelete(T.siswa, `?nis=eq.${encodeURIComponent(nis)}`); loadAdminSiswa(); }
   catch (err) { alert('Gagal: ' + err.message); }
@@ -2035,7 +2196,7 @@ function checkTriggerTime() {
   if (AppState.schedulerActive && AppState.activeDays.has(now.getDay())) {
     const schedTimeVal = document.getElementById('schedTime').value || '08:00';
     const [targetH, targetM] = schedTimeVal.split(':').map(Number);
-    if (hh===targetH && mm===targetM && AppState.lastTriggeredDate!==todayKey) {
+    if (hh===targetH && mm>=targetM && mm<targetM+2 && AppState.lastTriggeredDate!==todayKey) {
       AppState.lastTriggeredDate = todayKey;
       schedLog('🔔 Waktu trigger! Menjalankan Auto Alpa...', 'warn');
       runScheduledAutoAlpa(todayKey);
@@ -2047,7 +2208,7 @@ function checkTriggerTime() {
     const minggTime = document.getElementById('schedMinggTime').value || '20:00';
     const [minggH, minggM] = minggTime.split(':').map(Number);
     const mingguKey = 'minggu_' + getWeekKey(now);
-    if (now.getDay()===1 && hh===minggH && mm===minggM && AppState.lastMinggTriggered!==mingguKey) {
+    if (now.getDay()===1 && hh===minggH && mm>=minggM && mm<minggM+2 && AppState.lastMinggTriggered!==mingguKey) {
       AppState.lastMinggTriggered = mingguKey;
       schedLog('📅 Mengirim Rekap Mingguan ke Wali Kelas...', 'warn');
       kirimRekapMingguan(true);
@@ -2059,7 +2220,7 @@ function checkTriggerTime() {
     const bulananTime = document.getElementById('schedBulananTime').value || '20:00';
     const [bulH, bulM] = bulananTime.split(':').map(Number);
     const bulananKey = 'bulanan_' + toBulan(todayKey);
-    if (now.getDate()===1 && hh===bulH && mm===bulM && AppState.lastBulananTriggered!==bulananKey) {
+    if (now.getDate()===1 && hh===bulH && mm>=bulM && mm<bulM+2 && AppState.lastBulananTriggered!==bulananKey) {
       AppState.lastBulananTriggered = bulananKey;
       schedLog('📆 Mengirim Rekap Bulanan ke Wali Kelas...', 'warn');
       const bulanLalu = getBulanLalu(now);
@@ -2072,7 +2233,7 @@ function checkTriggerTime() {
     const bkHarianTime = document.getElementById('schedBKHarianTime').value || '08:30';
     const [bkHH, bkHM] = bkHarianTime.split(':').map(Number);
     const bkHarianKey = 'bk_harian_' + todayKey;
-    if (hh===bkHH && mm===bkHM && AppState.lastBKHarianTriggered!==bkHarianKey) {
+    if (hh===bkHH && mm>=bkHM && mm<bkHM+2 && AppState.lastBKHarianTriggered!==bkHarianKey) {
       AppState.lastBKHarianTriggered = bkHarianKey;
       schedLog('🎓 Mengirim Rekap BK Harian otomatis...', 'warn');
       kirimRekapBK('harian', true);
@@ -2084,7 +2245,7 @@ function checkTriggerTime() {
     const bkMinggTime = document.getElementById('schedBKMinggTime').value || '20:30';
     const [bkMH, bkMM] = bkMinggTime.split(':').map(Number);
     const bkMinggKey = 'bk_minggu_' + getWeekKey(now);
-    if (now.getDay()===1 && hh===bkMH && mm===bkMM && AppState.lastBKMinggTriggered!==bkMinggKey) {
+    if (now.getDay()===1 && hh===bkMH && mm>=bkMM && mm<bkMM+2 && AppState.lastBKMinggTriggered!==bkMinggKey) {
       AppState.lastBKMinggTriggered = bkMinggKey;
       schedLog('🎓 Mengirim Rekap BK Mingguan otomatis...', 'warn');
       kirimRekapBK('mingguan', true);
@@ -2096,7 +2257,7 @@ function checkTriggerTime() {
     const bkBulananTime = document.getElementById('schedBKBulananTime').value || '21:00';
     const [bkBH, bkBM] = bkBulananTime.split(':').map(Number);
     const bkBulananKey = 'bk_bulanan_' + toBulan(todayKey);
-    if (now.getDate()===1 && hh===bkBH && mm===bkBM && AppState.lastBKBulananTriggered!==bkBulananKey) {
+    if (now.getDate()===1 && hh===bkBH && mm>=bkBM && mm<bkBM+2 && AppState.lastBKBulananTriggered!==bkBulananKey) {
       AppState.lastBKBulananTriggered = bkBulananKey;
       schedLog('🎓 Mengirim Rekap BK Bulanan otomatis...', 'warn');
       const bulanLalu = getBulanLalu(now);
@@ -2118,8 +2279,6 @@ async function runScheduledAutoAlpa(tanggal) {
     setStepState(1,'done'); setLineState(1,'done');
     setStepState(2,'running');
     if (belum.length > 0) {
-  const col = tglCol(tanggal);
-  const bulan = toBulan(tanggal);
   const batchBody = belum.map(s => ({
     nis: s.nis,
     nama: s.nama,
@@ -2764,7 +2923,7 @@ function hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu) {
       else if (st==='A') { al++; sal++; }
       else { bl++; sbl++; }
     });
-    detailSiswa.push({ nama: sw.nama, h: sh, s: ss, iz: siz, al: sal, bl: sbl });
+    detailSiswa.push({ nis: sw.nis, kelas: sw.kelas, nama: sw.nama, h: sh, s: ss, iz: siz, al: sal, bl: sbl });
   });
 
   return { h, s, iz, al, bl, detailSiswa };
@@ -2774,12 +2933,12 @@ function hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu) {
  * DIPERBARUI: Hitung statistik bulanan dengan detail per siswa
  */
 function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
-  let h=0, s=0, iz=0, al=0;
+  let h=0, s=0, iz=0, al=0, bl=0;        // ✅ tambah bl
   const detailSiswa = [];
 
   siswakelas.forEach(sw => {
     const rec = absenByNis[sw.nis] || {};
-    let sh=0, sa=0, ss=0, siz=0;
+    let sh=0, sa=0, ss=0, siz=0, sbl=0;  // ✅ tambah sbl
     for (let d = 1; d <= jumlahHari; d++) {
       const col = 'tgl_' + String(d).padStart(2,'0');
       const st = rec[col] || null;
@@ -2787,13 +2946,13 @@ function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
       else if (st==='A') { sa++; al++; }
       else if (st==='S') { ss++; s++; }
       else if (st==='I') { siz++; iz++; }
+      else { sbl++; bl++; }               // ✅ tambah counter belum absen
     }
-    detailSiswa.push({ nama: sw.nama, h: sh, s: ss, iz: siz, al: sa });
+    detailSiswa.push({ nis: sw.nis, kelas: sw.kelas, nama: sw.nama, h: sh, s: ss, iz: siz, al: sa, bl: sbl }); // ✅ tambah nis, kelas, bl
   });
 
-  return { h, s, iz, al, detailSiswa };
+  return { h, s, iz, al, bl, detailSiswa }; // ✅ tambah bl
 }
-
 /**
  * DIPERBARUI: Pesan rekap mingguan dengan detail per siswa
  */
@@ -2999,7 +3158,7 @@ async function getSiswaAlpaBK(mode) {
     const stats = hitungStatMingguan(semua||[], absensiCache, tanggalMinggu);
     siswaAlpa = stats.detailSiswa
       .filter(sw => sw.al >= MIN_ALPA_BK)
-      .map(sw => ({ ...semua.find(s=>s.nama===sw.nama)||{}, ...sw }))
+      .map(sw => ({ ...semua.find(s=>s.nis===sw.nis)||{}, ...sw }))
       .sort((a,b) => b.al-a.al || a.nama.localeCompare(b.nama));
 
   } else if (mode === 'bulanan') {
@@ -3015,7 +3174,7 @@ async function getSiswaAlpaBK(mode) {
     const stats = hitungStatBulanan(semua||[], absenByNis, jumlahHari);
     siswaAlpa = stats.detailSiswa
       .filter(sw => sw.al >= MIN_ALPA_BK)
-      .map(sw => ({ ...semua.find(s=>s.nama===sw.nama)||{}, ...sw }))
+      .map(sw => ({ ...semua.find(s=>s.nis===sw.nis)||{}, ...sw }))
       .sort((a,b) => b.al-a.al || a.nama.localeCompare(b.nama));
   }
 
