@@ -1157,15 +1157,19 @@
           <canvas id="adminFotoCanvas" class="hidden"></canvas>
         </div>
         <div class="flex gap-2">
-          <button onclick="ambilFotoAdmin()"
-            class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm">
-            <i class="fas fa-camera mr-1"></i>Ambil Foto
-          </button>
-          <button onclick="stopAdminKamera()"
-            class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
-            <i class="fas fa-times mr-1"></i>Batal
-          </button>
-        </div>
+  <button onclick="ambilFotoAdmin()"
+    class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm">
+    <i class="fas fa-camera mr-1"></i>Ambil Foto
+  </button>
+  <button onclick="flipAdminKamera()"
+    class="flex-1 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl text-sm">
+    <i class="fas fa-sync-alt mr-1"></i>Balik
+  </button>
+  <button onclick="stopAdminKamera()"
+    class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
+    <i class="fas fa-times mr-1"></i>Batal
+  </button>
+</div>
       </div>
       <button onclick="startAdminKamera()" id="btnAdminKamera"
         class="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl text-sm">
