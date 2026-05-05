@@ -2167,8 +2167,8 @@ async function saveEditStatus() {
     const siswa = siswaList && siswaList.length > 0 ? siswaList[0] : { nis, nama:'', kelas:'' };
     await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, tgl, statusBaru || null);
     const statusLama = document.getElementById('editStatusLama').textContent;
-const statusBaru = document.getElementById('editStatusBaru');
-const labelBaru = statusBaru.options[statusBaru.selectedIndex].text;
+const statusBaruEl = document.getElementById('editStatusBaru');
+const labelBaru = statusBaruEl.options[statusBaruEl.selectedIndex].text;
 resultEl.innerHTML = `<span class="text-green-600">✅ Status berhasil diubah dari <b>${sanitizeHTML(statusLama)}</b> → <b>${sanitizeHTML(labelBaru)}</b></span>`;
     setTimeout(() => { loadAdminRekap(); closeEditPanel(); }, 1200);
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
