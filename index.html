@@ -1433,7 +1433,9 @@ async function saveManualAttendance() {
     document.getElementById('manualNis').value = '';
     document.getElementById('manualSearchInput').value = '';
     document.getElementById('selectedSiswaInfo').classList.add('hidden');
-    resultDiv.innerHTML = `<span class="text-blue-600">✓ Berhasil! ${sanitizeHTML(siswa.nama)} tercatat <b>${STATUS_LABEL[status]}</b></span>`;
+    const statusLama = await getStatusHarian(siswa.nis, todayStr());
+const pesanLama = statusLama ? ` (diubah dari <b>${STATUS_LABEL[statusLama]}</b>)` : '';
+resultDiv.innerHTML = `<span class="text-blue-600">✓ Berhasil! ${sanitizeHTML(siswa.nama)} tercatat <b>${STATUS_LABEL[status]}</b>${pesanLama}</span>`;
   } catch (err) { resultDiv.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnSimpanManual', false);
 }
