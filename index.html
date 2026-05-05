@@ -3455,6 +3455,7 @@ let faceDetectionInterval = null;
 let faceModelsLoaded = false;
 let currentFotoBlob = null;
 let adminKameraStream = null;
+let adminFacingMode = 'user';
 const FACE_MATCH_THRESHOLD = 0.45; // makin kecil makin ketat
 const FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
 
@@ -3717,7 +3718,7 @@ async function selectStudentWajah(nis, nama, kelas) {
 async function startAdminKamera() {
   try {
     adminKameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 } }
+      video: { facingMode: adminFacingMode, width: { ideal: 640 } }
     });
     const video = document.getElementById('adminFotoVideo');
     video.srcObject = adminKameraStream;
@@ -3731,7 +3732,11 @@ function stopAdminKamera() {
   document.getElementById('adminFotoArea').classList.add('hidden');
   document.getElementById('btnAdminKamera').classList.remove('hidden');
 }
-
+function flipAdminKamera() {
+  adminFacingMode = adminFacingMode === 'user' ? 'environment' : 'user';
+  stopAdminKamera();
+  setTimeout(() => startAdminKamera(), 300);
+}
 function ambilFotoAdmin() {
   const video = document.getElementById('adminFotoVideo');
   const canvas = document.getElementById('adminFotoCanvas');
