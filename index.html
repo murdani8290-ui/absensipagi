@@ -4189,13 +4189,17 @@ async function prosesAbsenPiketWajah(siswa, distance) {
     const existing = await getStatusHarian(siswa.nis, today);
 
     if (existing) {
-      resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-amber-50 border border-amber-200';
-      resultDiv.innerHTML = `
-        <i class="fas fa-exclamation-triangle text-3xl text-amber-500 mb-2 block"></i>
-        <p class="font-bold text-amber-700">${sanitizeHTML(siswa.nama)}</p>
-        <p class="text-amber-600 text-sm">Sudah tercatat ${STATUS_LABEL[existing]} hari ini</p>`;
-      return;
-    }
+  const siswaFull2 = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
+  const dataSiswa2 = siswaFull2 && siswaFull2.length ? siswaFull2[0] : siswa;
+  resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-amber-50 border border-amber-200';
+  resultDiv.innerHTML = `
+    <i class="fas fa-exclamation-triangle text-3xl text-amber-500 mb-2 block"></i>
+    <p class="font-bold text-amber-700 text-lg">${sanitizeHTML(dataSiswa2.nama)}</p>
+    <p class="text-amber-600 text-sm">NIS: ${sanitizeHTML(dataSiswa2.nis)}</p>
+    <p class="text-amber-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa2.kelas)}</p>
+    <p class="text-amber-500 text-sm mt-1 font-semibold">Sudah tercatat ${STATUS_LABEL[existing]} hari ini</p>`;
+  return;
+}
 
     const siswaFull = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
     const dataSiswa = siswaFull && siswaFull.length ? siswaFull[0] : siswa;
@@ -4203,11 +4207,12 @@ async function prosesAbsenPiketWajah(siswa, distance) {
 
     const akurasi = Math.round((1 - distance) * 100);
     resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-green-50 border border-green-200';
-    resultDiv.innerHTML = `
-      <i class="fas fa-check-circle text-3xl text-green-500 mb-2 block"></i>
-      <p class="font-bold text-green-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
-      <p class="text-green-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
-      <p class="text-green-500 text-xs mt-1">Akurasi: ${akurasi}% • ${nowStr()}</p>`;
+resultDiv.innerHTML = `
+  <i class="fas fa-check-circle text-3xl text-green-500 mb-2 block"></i>
+  <p class="font-bold text-green-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
+  <p class="text-green-600 text-sm">NIS: ${sanitizeHTML(dataSiswa.nis)}</p>
+  <p class="text-green-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
+  <p class="text-green-500 text-xs mt-1">Akurasi: ${akurasi}% • ${nowStr()}</p>`;
 
     // Auto reset setelah 3 detik
     setTimeout(() => resetPiketScan(), 3000);
