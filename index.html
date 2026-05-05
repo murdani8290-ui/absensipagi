@@ -172,7 +172,7 @@
     <i class="fas fa-qrcode mr-1"></i>QR Code
   </button>
   <button onclick="setAbsenMode('wajah')" id="btnModeWajah"
-    class="flex-1 py-2 px-3 border-2 border-gray-200 bg-white text-gray-600 font-semibold rounded-xl text-sm transition-all">
+    class="flex-1 py-2 px-3 border-2 border-gray-200 bg-white text-gray-600 font-semibold rounded-xl text-sm transition-all hidden">
     <i class="fas fa-camera mr-1"></i>Absen Wajah
   </button>
 </div>
@@ -1155,6 +1155,23 @@
     </div>
     <!-- Tab Wajah -->
 <div id="admTabWajah" class="admin-panel hidden">
+  <!-- Toggle Absen Wajah Siswa -->
+<div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h4 class="font-semibold text-gray-800">
+        <i class="fas fa-toggle-on text-blue-500 mr-2"></i>Fitur Absen Wajah Siswa
+      </h4>
+      <p class="text-xs text-gray-500 mt-1">Aktifkan agar tombol absen wajah muncul di halaman siswa</p>
+    </div>
+    <div class="toggle-wrap" onclick="toggleFiturWajahSiswa()" id="wrapToggleWajahSiswa">
+      <div class="toggle-track" id="toggleWajahSiswaTrack">
+        <div class="toggle-thumb"></div>
+      </div>
+    </div>
+  </div>
+  <p id="statusFiturWajah" class="text-xs mt-3 text-center text-gray-500">Memuat status...</p>
+</div>
   <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
     <h4 class="font-semibold text-gray-800 mb-3">
       <i class="fas fa-camera text-blue-500 mr-2"></i>Daftarkan Wajah Siswa
@@ -2078,7 +2095,10 @@ function showAdminTab(tab) {
   else if (tab === 'guru') loadAdminGuru();
   else if (tab === 'rekap') loadAdminRekap();
   else if (tab === 'autoalpa') { loadKelasList(); renderDayButtons(); loadServerConfig(); }
-  else if (tab === 'wajah') { loadWajahList(); }
+  else if (tab === 'wajah') {
+  loadWajahList();
+  loadFiturWajahStatus(); // ← tambahkan ini agar toggle sinkron saat tab dibuka
+}
 }
 async function loadAdminSiswa() {
   const tbody = document.getElementById('tableSiswaBody');
@@ -3346,6 +3366,59 @@ function buildPesanRekapBulanan(guru, bulan, namaBulan, totalSiswa, stat) {
 }
 
 // ============================================================
+  // ============================================================
+// TOGGLE FITUR ABSEN WAJAH SISWA (oleh Admin)
+// ============================================================
+let fiturWajahSiswaAktif = false;
+
+async function loadFiturWajahStatus() {
+  try {
+    const data = await sbSelect('config', '?key=eq.fitur_absen_wajah_siswa&limit=1');
+    const aktif = data && data.length && data[0].value === 'true';
+    fiturWajahSiswaAktif = aktif;
+    applyFiturWajahSiswa(aktif);
+  } catch(err) {
+    console.error('Gagal load status fitur wajah:', err);
+  }
+}
+
+function applyFiturWajahSiswa(aktif) {
+  // Tampilkan/sembunyikan tombol di halaman siswa
+  const btnWajah = document.getElementById('btnModeWajah');
+  if (btnWajah) {
+    if (aktif) btnWajah.classList.remove('hidden');
+    else btnWajah.classList.add('hidden');
+  }
+
+  // Update UI toggle di admin
+  const track = document.getElementById('toggleWajahSiswaTrack');
+  const statusEl = document.getElementById('statusFiturWajah');
+  if (track) track.classList.toggle('on', aktif);
+  if (statusEl) {
+    statusEl.innerHTML = aktif
+      ? '<span class="text-green-600 font-semibold">✅ Aktif — tombol absen wajah terlihat oleh siswa</span>'
+      : '<span class="text-red-500 font-semibold">❌ Nonaktif — tombol absen wajah disembunyikan</span>';
+  }
+}
+
+async function toggleFiturWajahSiswa() {
+  const statusEl = document.getElementById('statusFiturWajah');
+  const nilaiBaru = !fiturWajahSiswaAktif;
+  fiturWajahSiswaAktif = nilaiBaru;
+  applyFiturWajahSiswa(nilaiBaru);
+
+  if (statusEl) statusEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
+
+  try {
+    await sbUpsert('config', { key: 'fitur_absen_wajah_siswa', value: String(nilaiBaru) }, 'key');
+    applyFiturWajahSiswa(nilaiBaru); // refresh tampilan
+  } catch(err) {
+    // Rollback jika gagal
+    fiturWajahSiswaAktif = !nilaiBaru;
+    applyFiturWajahSiswa(!nilaiBaru);
+    if (statusEl) statusEl.innerHTML = `<span class="text-red-600">❌ Gagal menyimpan: ${sanitizeHTML(err.message)}</span>`;
+  }
+}
 // INIT
 // ============================================================
 async function loadServerConfig() {
@@ -3392,6 +3465,7 @@ async function loadServerConfig() {
 }
   document.addEventListener('DOMContentLoaded', () => {
   switchRole('siswa');
+  loadFiturWajahStatus(); // ← tambahkan ini
   document.getElementById('waliRekapDate').value = todayStr();
   document.getElementById('bulanLaporan').value = new Date().toISOString().slice(0,7);
   document.getElementById('waKirimTanggal').value = todayStr();
