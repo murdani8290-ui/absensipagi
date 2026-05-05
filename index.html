@@ -2928,7 +2928,14 @@ async function updateServerSchedule(type) {
 } else if (type === 'bk_bulanan') {
   await sbUpsert('config', { key: 'sched_bk_bulanan', value: jam }, 'key');
 }
-      const label = { autoalpa:'Auto Alpa', mingguan:'Rekap Mingguan', bulanan:'Rekap Bulanan' }[type];
+      const label = {
+  autoalpa: 'Auto Alpa',
+  mingguan: 'Rekap Mingguan',
+  bulanan: 'Rekap Bulanan',
+  bk_harian: 'BK Harian',
+  bk_mingguan: 'BK Mingguan',
+  bk_bulanan: 'BK Bulanan'
+}[type] || type;
       const hariLabel = type === 'autoalpa'
         ? ` (${[...serverActiveDays].sort().map(d=>['','Sen','Sel','Rab','Kam','Jum','Sab'][d]).join(',')})`
         : '';
@@ -3303,20 +3310,20 @@ async function loadServerConfig() {
         const el = document.getElementById('serverSchedBulanan');
         if (el) el.value = row.value;
       }
+      if (row.key === 'sched_bk_harian') {
+        const el = document.getElementById('serverSchedBKHarian');
+        if (el) el.value = row.value;
+      }
+      if (row.key === 'sched_bk_mingguan') {
+        const el = document.getElementById('serverSchedBKMingguan');
+        if (el) el.value = row.value;
+      }
+      if (row.key === 'sched_bk_bulanan') {
+        const el = document.getElementById('serverSchedBKBulanan');
+        if (el) el.value = row.value;
+      }
       if (row.key === 'sched_autoalpa_hari') {
         try {
-          if (row.key === 'sched_bk_harian') {
-  const el = document.getElementById('serverSchedBKHarian');
-  if (el) el.value = row.value;
-}
-if (row.key === 'sched_bk_mingguan') {
-  const el = document.getElementById('serverSchedBKMingguan');
-  if (el) el.value = row.value;
-}
-if (row.key === 'sched_bk_bulanan') {
-  const el = document.getElementById('serverSchedBKBulanan');
-  if (el) el.value = row.value;
-}
           const days = JSON.parse(row.value);
           serverActiveDays.clear();
           days.forEach(d => serverActiveDays.add(d));
