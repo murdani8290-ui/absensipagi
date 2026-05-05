@@ -2679,6 +2679,44 @@ function buildPesanRekapHarian(guru, tanggal, totalSiswa, stat) {
   return `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${totalSiswa} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n,i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
 }
 
+  function buildPesanRekapHarianBK(guru, tanggal, semuaSiswa, absenMap) {
+  // Kelompokkan per kelas
+  const byKelas = {};
+  semuaSiswa.forEach(s => {
+    if (!byKelas[s.kelas]) byKelas[s.kelas] = { h:[], s:[], iz:[], al:[], bl:[] };
+    const st = absenMap[s.nis] || null;
+    if (st==='H') byKelas[s.kelas].h.push(s.nama);
+    else if (st==='S') byKelas[s.kelas].s.push(s.nama);
+    else if (st==='I') byKelas[s.kelas].iz.push(s.nama);
+    else if (st==='A') byKelas[s.kelas].al.push(s.nama);
+    else byKelas[s.kelas].bl.push(s.nama);
+  });
+
+  let totalH=0, totalS=0, totalIz=0, totalAl=0, totalBl=0;
+  semuaSiswa.forEach(s => {
+    const st = absenMap[s.nis] || null;
+    if (st==='H') totalH++;
+    else if (st==='S') totalS++;
+    else if (st==='I') totalIz++;
+    else if (st==='A') totalAl++;
+    else totalBl++;
+  });
+
+  const barisKelas = Object.entries(byKelas).sort(([a],[b])=>a.localeCompare(b)).map(([kelas, data]) => {
+    const total = data.h.length + data.s.length + data.iz.length + data.al.length + data.bl.length;
+    let baris = `🏫 *${kelas}* — ${total} siswa\n`;
+    baris += `   ✅H:${data.h.length} 🤒S:${data.s.length} 📋I:${data.iz.length} ❌A:${data.al.length} ⏳Blm:${data.bl.length}`;
+    if (data.al.length > 0) {
+      baris += `\n   ⚠️ Alpa: ${data.al.join(', ')}`;
+    }
+    if (data.bl.length > 0) {
+      baris += `\n   ⏳ Belum: ${data.bl.join(', ')}`;
+    }
+    return baris;
+  }).join('\n\n');
+
+  return `📋 *REKAP ABSENSI PAGI HARIAN — SEMUA KELAS*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nGuru Bimbingan Konseling (BK)\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi seluruh siswa:\n\n📅 *Tanggal     :* ${tanggal}\n👥 *Total Siswa  :* ${semuaSiswa.length} orang\n\n📊 *REKAP KESELURUHAN:*\n✅ Hadir        : ${totalH} siswa\n🤒 Sakit        : ${totalS} siswa\n📋 Izin         : ${totalIz} siswa\n❌ Alpa         : ${totalAl} siswa\n⏳ Belum Absen  : ${totalBl} siswa\n\n${'─'.repeat(30)}\n📚 *DETAIL PER KELAS:*\n\n${barisKelas}\n\nDemikian rekap ini kami sampaikan untuk pemantauan BK.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+}
 // ============================================================
 // AUTO ALPA MANUAL
 // ============================================================
@@ -2845,7 +2883,7 @@ async function kirimRekapWaliKelas() {
   const tanggal = document.getElementById('waKirimTanggal').value;
   const resultEl = document.getElementById('waKirimResult');
   if (!tanggal) { alert('Pilih tanggal!'); return; }
-  if (!confirm(`Kirim rekap ke semua wali kelas (${tanggal})?`)) return;
+  if (!confirm(`Kirim rekap ke semua wali kelas + BK (${tanggal})?`)) return;
   setButtonLoading('btnKirimWAWali', true); hideWAProgress();
   resultEl.innerHTML='<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyiapkan rekap...</span>';
   try {
@@ -2853,14 +2891,17 @@ async function kirimRekapWaliKelas() {
     const col = tglCol(tanggal);
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
-    const semuaGuru = await sbSelect(T.guru, '?role=eq.WALI');
+    const semuaGuru = await sbSelect(T.guru, '?');
     const absenMap = {};
     (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-    const waliList = (semuaGuru||[]).filter(g => g.kelas_wali && formatHP(g.hp));
-    let sent=0;
-    updateWAProgress(0, waliList.length, 'Mengirim rekap ke wali...');
+
+    // === KIRIM KE WALI KELAS ===
+    const waliList = (semuaGuru||[]).filter(g => g.role === 'WALI' && g.kelas_wali && formatHP(g.hp));
+    const totalPenerima = waliList.length + (semuaGuru||[]).filter(g => g.role === 'BK' && formatHP(g.hp)).length;
+    let sent = 0;
+    updateWAProgress(0, totalPenerima, 'Mengirim rekap ke wali...');
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
@@ -2868,11 +2909,25 @@ async function kirimRekapWaliKelas() {
       const pesan = buildPesanRekapHarian(guru, tanggal, siswakelas.length, stat);
       const ok = await kirimWA(hp, pesan);
       if (ok) sent++;
-      updateWAProgress(sent, waliList.length, `Kirim ke ${guru.nama}...`);
+      updateWAProgress(sent, totalPenerima, `Kirim ke ${guru.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
+
+    // === KIRIM KE BK — SEMUA SISWA ===
+    const bkList = (semuaGuru||[]).filter(g => g.role === 'BK' && formatHP(g.hp));
+    let bkSent = 0;
+    for (const guru of bkList) {
+      const hp = formatHP(guru.hp);
+      const pesan = buildPesanRekapHarianBK(guru, tanggal, semua, absenMap);
+      const ok = await kirimWA(hp, pesan);
+      if (ok) { sent++; bkSent++; }
+      updateWAProgress(sent, totalPenerima, `Kirim ke BK ${guru.nama}...`);
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
     hideWAProgress();
-    resultEl.innerHTML=`<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${sent} wali kelas.</span>`;
+    resultEl.innerHTML=`<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${waliList.length > 0 ? waliList.filter((_,i)=>i<sent).length : 0} wali kelas` +
+      (bkSent > 0 ? ` + ${bkSent} guru BK` : bkList.length > 0 ? ` (BK: tidak ada HP)` : '') + `.</span>`;
   } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
   setButtonLoading('btnKirimWAWali', false);
 }
