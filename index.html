@@ -1518,8 +1518,18 @@ function startStudentScan() {
 }
   function flipCamera() {
   AppState.facingMode = (AppState.facingMode === 'environment' || !AppState.facingMode) ? 'user' : 'environment';
-  stopStudentScan();
-  setTimeout(() => startStudentScan(), 300);
+  if (AppState.scanner) {
+    AppState.scanner.stop().then(() => {
+      AppState.scanner.clear();
+      AppState.scanner = null;
+      AppState.scanner = new Html5Qrcode('reader');
+      AppState.scanner.start(
+        { facingMode: AppState.facingMode },
+        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+        onStudentScanSuccess, () => {}
+      ).catch(err => { alert('Tidak dapat mengakses kamera.\n' + err); stopStudentScan(); });
+    }).catch(console.error);
+  }
 }
 function stopStudentScan() {
   if (AppState.scanner) {
@@ -3513,6 +3523,12 @@ function validateNisWajah() {
   const nis = document.getElementById('nisWajah').value.trim();
   const btn = document.getElementById('btnMulaiWajah');
   const msg = document.getElementById('msgWajah');
+  const today = todayStr();
+  if (localStorage.getItem('sipagi_scan_date') === today) {
+    btn.disabled = true;
+    msg.innerHTML = '<span class="text-red-600 font-medium">⚠️ Perangkat ini sudah digunakan absen hari ini.</span>';
+    return;
+  }
   const valid = nis.length >= 3 && /^\d+$/.test(nis);
   btn.disabled = !valid;
   msg.textContent = valid ? '✓ NIS valid. Silakan mulai scan wajah.' : 'Masukkan NIS untuk melanjutkan';
@@ -4014,13 +4030,8 @@ function resetPiketScan() {
   document.getElementById('piketFaceResult').classList.add('hidden');
   document.getElementById('piketFaceStatus').innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah siswa berikutnya...';
   if (piketFaceInterval) clearInterval(piketFaceInterval);
-  // Restart deteksi
-  const video = document.getElementById('piketFaceVideo');
-  if (video.srcObject) {
-    startPiketFaceScanLoop();
-  } else {
-    startPiketFaceScan();
-  }
+  if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
+  startPiketFaceScan();
 }
 
 async function startPiketFaceScanLoop() {
