@@ -39,6 +39,26 @@
     .role-btn.active{background:linear-gradient(135deg,#dbeafe 0%,#bfdbfe 100%)}
     .wa-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
     .wa-status-online{background:#22c55e;animation:pulse-green 2s infinite}
+    @keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+@keyframes rainbow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.rainbow-bg {
+  background: linear-gradient(270deg, #ff0000, #ff7700, #ffff00, #00ff00, #0000ff, #8b00ff);
+  background-size: 400% 400%;
+  animation: rainbow 4s ease infinite;
+}
     /* SCHEDULER */
     .scheduler-card{background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border:1px solid #334155;border-radius:16px;overflow:hidden;position:relative}
     .scheduler-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f59e0b,#ef4444,#f59e0b);background-size:200% 100%;animation:shimmer 2s linear infinite}
@@ -104,6 +124,25 @@
   <p class="text-blue-100 text-sm mt-1">Sistem Presensi Pagi Hari</p>
   <p class="text-blue-200 text-xs">SMAN 10 Pinrang</p>
 </header>
+  </header>
+
+<!-- Banner Berjalan -->
+<div class="bg-blue-800 text-white py-2 overflow-hidden">
+  <div class="flex whitespace-nowrap animate-marquee">
+    <span class="text-sm px-4">
+      🏫 Selamat datang di SIPAGI — Sistem Informasi Presensi Pagi SMAN 10 Pinrang &nbsp;|&nbsp; 
+      📅 Pastikan absen sebelum jam 08.00 WITA &nbsp;|&nbsp; 
+      ✅ Tertib hadir, raih prestasi terbaik! &nbsp;|&nbsp;
+      🌟 Semangat belajar untuk masa depan gemilang! &nbsp;&nbsp;&nbsp;&nbsp;
+    </span>
+    <span class="text-sm px-4">
+      🏫 Selamat datang di SIPAGI — Sistem Informasi Presensi Pagi SMAN 10 Pinrang &nbsp;|&nbsp; 
+      📅 Pastikan absen sebelum jam 08.00 WITA &nbsp;|&nbsp; 
+      ✅ Tertib hadir, raih prestasi terbaik! &nbsp;|&nbsp;
+      🌟 Semangat belajar untuk masa depan gemilang! &nbsp;&nbsp;&nbsp;&nbsp;
+    </span>
+  </div>
+</div>
 
 <div class="p-5">
 
