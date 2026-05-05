@@ -1945,7 +1945,10 @@ async function saveEditStatus() {
     const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
     const siswa = siswaList && siswaList.length > 0 ? siswaList[0] : { nis, nama:'', kelas:'' };
     await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, tgl, statusBaru || null);
-    resultEl.innerHTML = `<span class="text-blue-600">✅ Berhasil diperbarui!</span>`;
+    const statusLama = document.getElementById('editStatusLama').textContent;
+const statusBaru = document.getElementById('editStatusBaru');
+const labelBaru = statusBaru.options[statusBaru.selectedIndex].text;
+resultEl.innerHTML = `<span class="text-green-600">✅ Status berhasil diubah dari <b>${sanitizeHTML(statusLama)}</b> → <b>${sanitizeHTML(labelBaru)}</b></span>`;
     setTimeout(() => { loadAdminRekap(); closeEditPanel(); }, 1200);
   } catch (err) { resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
   setButtonLoading('btnSaveEdit', false);
