@@ -9,6 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
@@ -164,6 +165,60 @@
 
 <!-- ===== SISWA ===== -->
 <section id="sectionSiswa" class="section active">
+  <!-- Pilihan Mode Absen -->
+<div class="flex gap-2 mb-4">
+  <button onclick="setAbsenMode('nis')" id="btnModeNis"
+    class="flex-1 py-2 px-3 border-2 border-blue-500 bg-blue-50 text-blue-700 font-semibold rounded-xl text-sm transition-all">
+    <i class="fas fa-qrcode mr-1"></i>QR Code
+  </button>
+  <button onclick="setAbsenMode('wajah')" id="btnModeWajah"
+    class="flex-1 py-2 px-3 border-2 border-gray-200 bg-white text-gray-600 font-semibold rounded-xl text-sm transition-all">
+    <i class="fas fa-camera mr-1"></i>Absen Wajah
+  </button>
+</div>
+
+<!-- Area Absen Wajah -->
+<div id="absenWajahArea" class="hidden">
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+    <h3 class="font-semibold text-blue-800 mb-2"><i class="fas fa-info-circle mr-2"></i>Cara Absen Wajah:</h3>
+    <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+      <li>Masukkan NIS Anda</li>
+      <li>Tekan "Mulai Scan Wajah"</li>
+      <li>Arahkan kamera ke wajah Anda</li>
+      <li>Tahan diam hingga terdeteksi</li>
+    </ol>
+  </div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk Siswa (NIS)</label>
+  <input type="text" id="nisWajah" inputmode="numeric" pattern="[0-9]*" placeholder="Contoh: 12345"
+    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors mb-4"
+    oninput="validateNisWajah()" maxlength="20" autocomplete="off">
+  <button id="btnMulaiWajah" onclick="startFaceScan()"
+    class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+    disabled>
+    <i class="fas fa-camera"></i>Mulai Scan Wajah
+  </button>
+  <p id="msgWajah" class="text-sm text-gray-500 text-center mt-3">Masukkan NIS untuk melanjutkan</p>
+
+  <!-- Kamera Wajah -->
+  <div id="faceArea" class="hidden mt-4">
+    <div class="relative rounded-xl overflow-hidden bg-black">
+      <video id="faceVideo" autoplay muted playsinline
+        class="w-full rounded-xl" style="max-height:300px;object-fit:cover"></video>
+      <canvas id="faceCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+      <!-- Overlay deteksi -->
+      <div class="absolute bottom-0 left-0 right-0 bg-black/50 p-3 text-center">
+        <p id="faceStatus" class="text-white text-sm font-semibold">
+          <i class="fas fa-spinner animate-spin mr-2"></i>Memuat model...
+        </p>
+      </div>
+    </div>
+    <button onclick="stopFaceScan()"
+      class="w-full mt-3 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all">
+      <i class="fas fa-times mr-2"></i>Batal
+    </button>
+  </div>
+  <div id="resultWajah" class="hidden mt-4 p-5 rounded-xl text-center"></div>
+</div>
   <div id="inputNisArea">
     <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
       <h3 class="font-semibold text-blue-800 mb-2"><i class="fas fa-info-circle mr-2"></i>Cara Absen Pagi:</h3>
@@ -484,6 +539,9 @@
       <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('guru')" id="tabBtnGuru"><i class="fas fa-user-tie mr-1"></i>Guru</button>
       <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('rekap')" id="tabBtnRekap"><i class="fas fa-clipboard-list mr-1"></i>Rekap</button>
       <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('autoalpa')" id="tabBtnAutoalpa"><i class="fas fa-clock mr-1"></i>Auto</button>
+      <button class="admin-tab flex-1 py-2 px-2 bg-gray-100 text-gray-600 font-medium rounded-lg text-xs transition-all" onclick="showAdminTab('wajah')" id="tabBtnWajah">
+  <i class="fas fa-camera mr-1"></i>Wajah
+</button>
     </div>
 
     <!-- Tab Siswa -->
@@ -1022,6 +1080,92 @@
         <p id="resetAlpaResult" class="text-sm text-center mt-2 min-h-[20px]"></p>
       </div>
     </div>
+    <!-- Tab Wajah -->
+<div id="admTabWajah" class="admin-panel hidden">
+  <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
+    <h4 class="font-semibold text-gray-800 mb-3">
+      <i class="fas fa-camera text-blue-500 mr-2"></i>Daftarkan Wajah Siswa
+    </h4>
+    <div class="relative mb-3">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Cari Siswa</label>
+      <input type="text" id="wajahSearchInput" placeholder="Ketik nama atau NIS..."
+        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+        oninput="searchStudentWajah(this.value)" autocomplete="off">
+      <input type="hidden" id="wajahNis">
+    </div>
+    <div id="wajahSearchResults" class="hidden mb-3 max-h-40 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg custom-scrollbar"></div>
+    <div id="wajahSiswaInfo" class="hidden mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+      <p class="font-semibold text-blue-700" id="wajahNamaDisplay"></p>
+      <p class="text-sm text-blue-600" id="wajahKelasDisplay"></p>
+      <p id="wajahStatusFoto" class="text-xs mt-1"></p>
+    </div>
+    <div class="mb-3">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Upload Foto</label>
+      <div class="import-drop" onclick="document.getElementById('uploadFotoWajah').click()">
+        <input type="file" id="uploadFotoWajah" accept="image/*" onchange="handleUploadFoto(this)">
+        <i class="fas fa-image text-2xl text-blue-400 mb-2 block"></i>
+        <p class="text-sm text-gray-600">Klik untuk upload foto siswa</p>
+        <p class="text-xs text-gray-400 mt-1">Format: JPG/PNG, max 2MB</p>
+      </div>
+    </div>
+    <div class="mb-3">
+      <p class="text-sm font-medium text-gray-700 mb-2">Atau Foto Langsung dari Kamera</p>
+      <div id="adminFotoArea" class="hidden mb-3">
+        <div class="relative rounded-xl overflow-hidden bg-black mb-2">
+          <video id="adminFotoVideo" autoplay muted playsinline
+            class="w-full rounded-xl" style="max-height:250px;object-fit:cover"></video>
+          <canvas id="adminFotoCanvas" class="hidden"></canvas>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="ambilFotoAdmin()"
+            class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm">
+            <i class="fas fa-camera mr-1"></i>Ambil Foto
+          </button>
+          <button onclick="stopAdminKamera()"
+            class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
+            <i class="fas fa-times mr-1"></i>Batal
+          </button>
+        </div>
+      </div>
+      <button onclick="startAdminKamera()" id="btnAdminKamera"
+        class="w-full py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl text-sm">
+        <i class="fas fa-video mr-1"></i>Buka Kamera
+      </button>
+    </div>
+    <div id="previewFotoWajah" class="hidden mb-3 text-center">
+      <img id="previewFotoImg" src="" alt="Preview"
+        class="w-32 h-32 object-cover rounded-full mx-auto border-4 border-blue-300 shadow">
+      <p class="text-xs text-gray-500 mt-2">Preview foto</p>
+    </div>
+    <button id="btnSimpanWajah" onclick="simpanWajahSiswa()"
+      class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all"
+      disabled>
+      <i class="fas fa-save mr-2"></i>Simpan Data Wajah
+    </button>
+    <p id="resultSimpanWajah" class="text-sm text-center mt-3 min-h-[20px]"></p>
+  </div>
+  <div class="bg-white rounded-xl border border-gray-200">
+    <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+      <h4 class="font-semibold text-gray-800"><i class="fas fa-list text-blue-500 mr-2"></i>Status Pendaftaran Wajah</h4>
+      <button onclick="loadWajahList()" class="text-blue-600 text-sm"><i class="fas fa-sync-alt mr-1"></i>Refresh</button>
+    </div>
+    <div class="max-h-64 overflow-y-auto custom-scrollbar">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-100 sticky top-0">
+          <tr>
+            <th class="text-left p-3">Nama</th>
+            <th class="text-left p-3">Kelas</th>
+            <th class="text-center p-3">Status</th>
+            <th class="text-center p-3">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="tableWajahBody">
+          <tr><td colspan="4" class="text-center py-4 text-gray-500">Memuat...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
     <button class="w-full mt-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all" onclick="logoutAdmin()">
       <i class="fas fa-sign-out-alt mr-2"></i>Keluar
@@ -1845,6 +1989,7 @@ function showAdminTab(tab) {
   else if (tab === 'guru') loadAdminGuru();
   else if (tab === 'rekap') loadAdminRekap();
   else if (tab === 'autoalpa') { loadKelasList(); renderDayButtons(); loadServerConfig(); }
+  else if (tab === 'wajah') { loadWajahList(); }
 }
 async function loadAdminSiswa() {
   const tbody = document.getElementById('tableSiswaBody');
@@ -3250,6 +3395,434 @@ function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
   }).join('\n\n');
 
   return `🎓 *LAPORAN SISWA BERMASALAH — ${modeLabel}*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nGuru Bimbingan Konseling (BK)\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut laporan siswa yang perlu mendapat perhatian BK:\n\n${keteranganMode}\n👥 *Jumlah   :* ${siswaAlpa.length} siswa\n\n📋 *DAFTAR SISWA:*\n\n${barisPerKelas}\n\nMohon Bapak/Ibu guru BK dapat segera menindaklanjuti dengan:\n1️⃣ Memanggil siswa yang bersangkutan\n2️⃣ Berkoordinasi dengan wali kelas masing-masing\n3️⃣ Menghubungi orang tua/wali jika diperlukan\n\nData ini digenerate otomatis oleh sistem SIPAGI.\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+}
+
+  // ============================================================
+// FACE RECOGNITION
+// ============================================================
+let faceStream = null;
+let faceDetectionInterval = null;
+let faceModelsLoaded = false;
+let currentFotoBlob = null;
+let adminKameraStream = null;
+const FACE_MATCH_THRESHOLD = 0.45; // makin kecil makin ketat
+const FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+
+// Load model face-api.js
+async function loadFaceModels() {
+  if (faceModelsLoaded) return true;
+  try {
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL)
+    ]);
+    faceModelsLoaded = true;
+    return true;
+  } catch(err) {
+    console.error('Gagal load model:', err);
+    return false;
+  }
+}
+
+// ============================================================
+// MODE ABSEN
+// ============================================================
+function setAbsenMode(mode) {
+  const nisArea = document.getElementById('inputNisArea');
+  const wajahArea = document.getElementById('absenWajahArea');
+  const btnNis = document.getElementById('btnModeNis');
+  const btnWajah = document.getElementById('btnModeWajah');
+
+  if (mode === 'nis') {
+    nisArea.classList.remove('hidden');
+    wajahArea.classList.add('hidden');
+    btnNis.classList.add('border-blue-500','bg-blue-50','text-blue-700');
+    btnNis.classList.remove('border-gray-200','bg-white','text-gray-600');
+    btnWajah.classList.add('border-gray-200','bg-white','text-gray-600');
+    btnWajah.classList.remove('border-blue-500','bg-blue-50','text-blue-700');
+  } else {
+    nisArea.classList.add('hidden');
+    wajahArea.classList.remove('hidden');
+    btnWajah.classList.add('border-blue-500','bg-blue-50','text-blue-700');
+    btnWajah.classList.remove('border-gray-200','bg-white','text-gray-600');
+    btnNis.classList.add('border-gray-200','bg-white','text-gray-600');
+    btnNis.classList.remove('border-blue-500','bg-blue-50','text-blue-700');
+  }
+}
+
+// ============================================================
+// ABSEN WAJAH SISWA
+// ============================================================
+function validateNisWajah() {
+  const nis = document.getElementById('nisWajah').value.trim();
+  const btn = document.getElementById('btnMulaiWajah');
+  const msg = document.getElementById('msgWajah');
+  const valid = nis.length >= 3 && /^\d+$/.test(nis);
+  btn.disabled = !valid;
+  msg.textContent = valid ? '✓ NIS valid. Silakan mulai scan wajah.' : 'Masukkan NIS untuk melanjutkan';
+  msg.className = valid ? 'text-sm text-blue-600 text-center mt-3' : 'text-sm text-gray-500 text-center mt-3';
+}
+
+async function startFaceScan() {
+  const nis = document.getElementById('nisWajah').value.trim();
+  const faceStatus = document.getElementById('faceStatus');
+
+  document.getElementById('faceArea').classList.remove('hidden');
+  document.getElementById('btnMulaiWajah').disabled = true;
+  faceStatus.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...';
+
+  try {
+    // Load model
+    const loaded = await loadFaceModels();
+    if (!loaded) throw new Error('Gagal memuat model AI. Coba lagi.');
+
+    // Ambil descriptor dari Supabase
+    faceStatus.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Mengambil data wajah...';
+    const data = await sbSelect('wajah_siswa', `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
+    if (!data || !data.length || !data[0].descriptor) {
+      throw new Error('Data wajah belum terdaftar. Hubungi guru piket.');
+    }
+    const descriptor = new Float32Array(Object.values(data[0].descriptor));
+    const labeledDescriptor = new faceapi.LabeledFaceDescriptors(nis, [descriptor]);
+    const faceMatcher = new faceapi.FaceMatcher([labeledDescriptor], FACE_MATCH_THRESHOLD);
+
+    // Buka kamera
+    faceStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    const video = document.getElementById('faceVideo');
+    video.srcObject = faceStream;
+    await new Promise(r => video.onloadedmetadata = r);
+
+    faceStatus.innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah ke kamera...';
+
+    // Mulai deteksi
+    let attemptCount = 0;
+    faceDetectionInterval = setInterval(async () => {
+      attemptCount++;
+      if (attemptCount > 30) { // timeout 15 detik
+        stopFaceScan();
+        showFaceResult(false, 'Waktu habis. Wajah tidak terdeteksi.');
+        return;
+      }
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+          .withFaceLandmarks(true)
+          .withFaceDescriptor();
+
+        if (!detection) {
+          faceStatus.innerHTML = '<i class="fas fa-search mr-2"></i>Mencari wajah...';
+          return;
+        }
+
+        faceStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Wajah terdeteksi! Memverifikasi...';
+        const match = faceMatcher.findBestMatch(detection.descriptor);
+
+        if (match.label === nis && match.distance <= FACE_MATCH_THRESHOLD) {
+          clearInterval(faceDetectionInterval);
+          stopFaceScan();
+          await prosesAbsenWajah(nis, match.distance);
+        } else {
+          faceStatus.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak cocok (${Math.round((1-match.distance)*100)}%). Coba lagi...`;
+        }
+      } catch(e) { console.error(e); }
+    }, 500);
+
+  } catch(err) {
+    stopFaceScan();
+    showFaceResult(false, err.message);
+  }
+}
+
+function stopFaceScan() {
+  if (faceDetectionInterval) { clearInterval(faceDetectionInterval); faceDetectionInterval = null; }
+  if (faceStream) { faceStream.getTracks().forEach(t => t.stop()); faceStream = null; }
+  document.getElementById('faceArea').classList.add('hidden');
+  document.getElementById('btnMulaiWajah').disabled = false;
+}
+
+async function prosesAbsenWajah(nis, distance) {
+  try {
+    const today = todayStr();
+    const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
+    if (!siswaList || !siswaList.length) throw new Error('NIS tidak ditemukan.');
+    const siswa = siswaList[0];
+
+    const existing = await getStatusHarian(nis, today);
+    if (existing) {
+      showFaceResult(false, `Anda sudah tercatat ${STATUS_LABEL[existing]} hari ini.`);
+      return;
+    }
+
+    await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, today, 'H');
+    localStorage.setItem('sipagi_scan_date', today);
+
+    const akurasi = Math.round((1 - distance) * 100);
+    showFaceResult(true, siswa, akurasi);
+  } catch(err) {
+    showFaceResult(false, err.message);
+  }
+}
+
+function showFaceResult(success, data, akurasi=0) {
+  const div = document.getElementById('resultWajah');
+  div.classList.remove('hidden');
+  if (success) {
+    div.className = 'mt-4 p-5 rounded-xl text-center bg-blue-50 border border-blue-200 animate-fade-in';
+    div.innerHTML = `
+      <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-check-circle text-4xl text-blue-500"></i>
+      </div>
+      <h3 class="text-xl font-bold text-blue-700 mb-2">Berhasil!</h3>
+      <p class="text-blue-800 font-semibold">${sanitizeHTML(data.nama)}</p>
+      <p class="text-blue-600">Kelas: ${sanitizeHTML(data.kelas)}</p>
+      <p class="text-blue-600">Waktu: ${nowStr()}</p>
+      <p class="text-xs text-blue-400 mt-1">Akurasi wajah: ${akurasi}%</p>
+      <button class="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
+        onclick="resetAbsenWajah()">
+        <i class="fas fa-check mr-2"></i>Selesai
+      </button>`;
+  } else {
+    div.className = 'mt-4 p-5 rounded-xl text-center bg-red-50 border border-red-200 animate-fade-in';
+    div.innerHTML = `
+      <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-times-circle text-4xl text-red-500"></i>
+      </div>
+      <h3 class="text-xl font-bold text-red-700 mb-2">Gagal</h3>
+      <p class="text-red-600 mb-3">${sanitizeHTML(data)}</p>
+      <button class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg mr-2"
+        onclick="resetAbsenWajah()">
+        <i class="fas fa-redo mr-2"></i>Coba Lagi
+      </button>
+      <button class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg"
+        onclick="setAbsenMode('nis')">
+        <i class="fas fa-keyboard mr-2"></i>Input NIS
+      </button>`;
+  }
+}
+
+function resetAbsenWajah() {
+  document.getElementById('nisWajah').value = '';
+  document.getElementById('resultWajah').classList.add('hidden');
+  document.getElementById('resultWajah').innerHTML = '';
+  document.getElementById('btnMulaiWajah').disabled = true;
+  document.getElementById('msgWajah').textContent = 'Masukkan NIS untuk melanjutkan';
+  document.getElementById('msgWajah').className = 'text-sm text-gray-500 text-center mt-3';
+}
+
+// ============================================================
+// ADMIN — DAFTAR WAJAH SISWA
+// ============================================================
+let adminFotoStream = null;
+
+function searchStudentWajah(keyword) {
+  const res = document.getElementById('wajahSearchResults');
+  if (!keyword || keyword.length < 3) { res.classList.add('hidden'); return; }
+  clearTimeout(AppState.searchTimeout);
+  AppState.searchTimeout = setTimeout(async () => {
+    res.classList.remove('hidden');
+    res.innerHTML = '<div class="p-3 text-gray-500 text-center"><i class="fas fa-spinner animate-spin mr-2"></i>Mencari...</div>';
+    try {
+      const isNum = /^\d+$/.test(keyword);
+      const data = isNum
+        ? await sbSelect(T.siswa, `?nis=ilike.*${encodeURIComponent(keyword)}*&limit=10`)
+        : await sbSelect(T.siswa, `?nama=ilike.*${encodeURIComponent(keyword)}*&limit=10`);
+      if (!data || !data.length) { res.innerHTML = '<div class="p-3 text-red-500 text-center">Tidak ditemukan</div>'; return; }
+      res.innerHTML = data.map(s =>
+        `<div class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50"
+          onclick="selectStudentWajah('${encodeURIComponent(s.nis)}','${encodeURIComponent(s.nama)}','${encodeURIComponent(s.kelas)}')">
+          <p class="font-semibold text-blue-700">${sanitizeHTML(s.nama)}</p>
+          <p class="text-sm text-gray-500">NIS: ${sanitizeHTML(s.nis)} | Kelas: ${sanitizeHTML(s.kelas)}</p>
+        </div>`
+      ).join('');
+    } catch(err) { res.innerHTML = `<div class="p-3 text-red-500">Error: ${sanitizeHTML(err.message)}</div>`; }
+  }, 400);
+}
+
+async function selectStudentWajah(nis, nama, kelas) {
+  nis = decodeURIComponent(nis);
+  nama = decodeURIComponent(nama);
+  kelas = decodeURIComponent(kelas);
+  document.getElementById('wajahNis').value = nis;
+  document.getElementById('wajahSearchInput').value = nama;
+  document.getElementById('wajahSearchResults').classList.add('hidden');
+  document.getElementById('wajahSiswaInfo').classList.remove('hidden');
+  document.getElementById('wajahNamaDisplay').textContent = nama;
+  document.getElementById('wajahKelasDisplay').textContent = `Kelas: ${kelas} | NIS: ${nis}`;
+
+  // Cek apakah sudah ada data wajah
+  try {
+    const data = await sbSelect('wajah_siswa', `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
+    const statusEl = document.getElementById('wajahStatusFoto');
+    if (data && data.length && data[0].descriptor) {
+      statusEl.innerHTML = '<span class="text-green-600">✅ Wajah sudah terdaftar</span>';
+    } else {
+      statusEl.innerHTML = '<span class="text-red-500">❌ Belum ada data wajah</span>';
+    }
+  } catch(e) {}
+}
+
+async function startAdminKamera() {
+  try {
+    adminKameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 } }
+    });
+    const video = document.getElementById('adminFotoVideo');
+    video.srcObject = adminKameraStream;
+    document.getElementById('adminFotoArea').classList.remove('hidden');
+    document.getElementById('btnAdminKamera').classList.add('hidden');
+  } catch(err) { alert('Tidak dapat mengakses kamera: ' + err.message); }
+}
+
+function stopAdminKamera() {
+  if (adminKameraStream) { adminKameraStream.getTracks().forEach(t => t.stop()); adminKameraStream = null; }
+  document.getElementById('adminFotoArea').classList.add('hidden');
+  document.getElementById('btnAdminKamera').classList.remove('hidden');
+}
+
+function ambilFotoAdmin() {
+  const video = document.getElementById('adminFotoVideo');
+  const canvas = document.getElementById('adminFotoCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    currentFotoBlob = blob;
+    tampilkanPreviewFoto(URL.createObjectURL(blob));
+    stopAdminKamera();
+    document.getElementById('btnSimpanWajah').disabled = !document.getElementById('wajahNis').value;
+  }, 'image/jpeg', 0.9);
+}
+
+function handleUploadFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Ukuran file maksimal 2MB!'); return; }
+  currentFotoBlob = file;
+  tampilkanPreviewFoto(URL.createObjectURL(file));
+  document.getElementById('btnSimpanWajah').disabled = !document.getElementById('wajahNis').value;
+}
+
+function tampilkanPreviewFoto(url) {
+  document.getElementById('previewFotoWajah').classList.remove('hidden');
+  document.getElementById('previewFotoImg').src = url;
+}
+
+async function simpanWajahSiswa() {
+  const nis = document.getElementById('wajahNis').value;
+  const resultEl = document.getElementById('resultSimpanWajah');
+  if (!nis) { resultEl.innerHTML = '<span class="text-red-600">Pilih siswa dulu!</span>'; return; }
+  if (!currentFotoBlob) { resultEl.innerHTML = '<span class="text-red-600">Upload atau ambil foto dulu!</span>'; return; }
+
+  setButtonLoading('btnSimpanWajah', true);
+  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Memuat model AI...</span>';
+
+  try {
+    // Load model
+    const loaded = await loadFaceModels();
+    if (!loaded) throw new Error('Gagal memuat model AI.');
+
+    // Buat image element dari blob
+    const img = await faceapi.bufferToImage(currentFotoBlob);
+    resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Mendeteksi wajah...</span>';
+
+    // Deteksi wajah & ambil descriptor
+    const detection = await faceapi
+      .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+      .withFaceLandmarks(true)
+      .withFaceDescriptor();
+
+    if (!detection) throw new Error('Wajah tidak terdeteksi pada foto. Gunakan foto yang lebih jelas.');
+
+    const descriptor = Array.from(detection.descriptor);
+
+    // Upload foto ke Supabase Storage
+    resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan foto...</span>';
+    const fileName = `${nis}_${Date.now()}.jpg`;
+    const uploadRes = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/foto-wajah/${fileName}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'image/jpeg'
+        },
+        body: currentFotoBlob
+      }
+    );
+    const foto_url = uploadRes.ok
+      ? `${SUPABASE_URL}/storage/v1/object/public/foto-wajah/${fileName}`
+      : null;
+
+    // Ambil data siswa
+    const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
+    const siswa = siswaList && siswaList.length ? siswaList[0] : { nis, nama:'', kelas:'' };
+
+    // Simpan descriptor ke tabel wajah_siswa
+    resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan data wajah...</span>';
+    await sbUpsert('wajah_siswa', {
+      nis: siswa.nis,
+      nama: siswa.nama,
+      kelas: siswa.kelas,
+      descriptor,
+      foto_url,
+      updated_at: new Date().toISOString()
+    }, 'nis');
+
+    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Data wajah ${sanitizeHTML(siswa.nama)} berhasil disimpan!</span>`;
+    document.getElementById('wajahStatusFoto').innerHTML = '<span class="text-green-600">✅ Wajah sudah terdaftar</span>';
+    currentFotoBlob = null;
+    document.getElementById('previewFotoWajah').classList.add('hidden');
+    loadWajahList();
+
+  } catch(err) {
+    resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+  }
+  setButtonLoading('btnSimpanWajah', false);
+}
+
+async function loadWajahList() {
+  const tbody = document.getElementById('tableWajahBody');
+  tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500"><i class="fas fa-spinner animate-spin mr-2"></i>Memuat...</td></tr>';
+  try {
+    const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
+    const wajah = await sbSelect('wajah_siswa', '?select=nis,foto_url');
+    const wajahSet = new Set((wajah||[]).filter(w => w.foto_url).map(w => w.nis));
+    if (!semua || !semua.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Tidak ada data</td></tr>';
+      return;
+    }
+    tbody.innerHTML = semua.map(s => {
+      const terdaftar = wajahSet.has(s.nis);
+      return `<tr class="border-b border-gray-100 hover:bg-gray-50">
+        <td class="p-3">${sanitizeHTML(s.nama)}</td>
+        <td class="p-3 text-xs">${sanitizeHTML(s.kelas)}</td>
+        <td class="p-3 text-center">
+          ${terdaftar
+            ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">✅ Terdaftar</span>'
+            : '<span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">❌ Belum</span>'}
+        </td>
+        <td class="p-3 text-center">
+          ${terdaftar
+            ? `<button onclick="hapusWajah('${encodeURIComponent(s.nis)}')" class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded"><i class="fas fa-trash"></i></button>`
+            : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error: ${sanitizeHTML(err.message)}</td></tr>`;
+  }
+}
+
+async function hapusWajah(nis) {
+  nis = decodeURIComponent(nis);
+  if (!confirm(`Hapus data wajah NIS ${nis}?`)) return;
+  try {
+    await sbDelete('wajah_siswa', `?nis=eq.${encodeURIComponent(nis)}`);
+    loadWajahList();
+  } catch(err) { alert('Gagal: ' + err.message); }
 }
 
 </script>
