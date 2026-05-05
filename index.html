@@ -331,15 +331,19 @@
   </div>
   <div id="piketFaceResult" class="hidden mt-3 p-4 rounded-xl text-center"></div>
   <div class="flex gap-2 mt-3">
-    <button onclick="resetPiketScan()"
-      class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm">
-      <i class="fas fa-redo mr-1"></i>Scan Berikutnya
-    </button>
-    <button onclick="stopPiketFaceScan()"
-      class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
-      <i class="fas fa-times mr-1"></i>Stop Kamera
-    </button>
-  </div>
+  <button onclick="resetPiketScan()"
+    class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm">
+    <i class="fas fa-redo mr-1"></i>Scan Berikutnya
+  </button>
+  <button onclick="flipPiketKamera()"
+    class="flex-1 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl text-sm">
+    <i class="fas fa-sync-alt mr-1"></i>Balik Kamera
+  </button>
+  <button onclick="stopPiketFaceScan()"
+    class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
+    <i class="fas fa-times mr-1"></i>Stop Kamera
+  </button>
+</div>
 </div>
   </div>
   <div id="manualInputArea" class="hidden">
@@ -3886,6 +3890,7 @@ async function hapusWajah(nis) {
 let piketFaceStream = null;
 let piketFaceInterval = null;
 let piketScanActive = false;
+let piketFacingMode = 'user';
 
 async function switchToScanWajahPiket() {
   document.getElementById('scanWajahPiketArea').classList.remove('hidden');
@@ -3919,8 +3924,8 @@ async function startPiketFaceScan() {
 
     // Buka kamera
     piketFaceStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 } }
-    });
+  video: { facingMode: piketFacingMode, width: { ideal: 640 } }
+});
     const video = document.getElementById('piketFaceVideo');
     video.srcObject = piketFaceStream;
     await new Promise(r => video.onloadedmetadata = r);
@@ -4055,6 +4060,12 @@ function stopPiketFaceScan() {
   if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
   document.getElementById('scanWajahPiketArea').classList.add('hidden');
   document.getElementById('piketFaceResult').classList.add('hidden');
+}
+  function flipPiketKamera() {
+  piketFacingMode = piketFacingMode === 'user' ? 'environment' : 'user';
+  if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
+  if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
+  setTimeout(() => startPiketFaceScan(), 300);
 }
 </script>
 </body>
