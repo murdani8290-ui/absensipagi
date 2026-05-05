@@ -301,6 +301,41 @@
     <button class="w-full mt-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all" onclick="logoutPiket()">
       <i class="fas fa-sign-out-alt mr-2"></i>Keluar
     </button>
+    <button class="w-full mt-3 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all" onclick="switchToScanWajahPiket()">
+  <i class="fas fa-camera mr-2"></i>Mode Scan Wajah Siswa
+</button>
+
+<!-- Area Scan Wajah Piket -->
+<div id="scanWajahPiketArea" class="hidden mt-4">
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+    <div class="flex items-center justify-between mb-2">
+      <h4 class="font-semibold text-blue-800"><i class="fas fa-camera text-blue-600 mr-2"></i>Scan Wajah Siswa</h4>
+      <span class="text-sm text-gray-500">Petugas: <b id="namaGuruScanWajah" class="text-blue-600"></b></span>
+    </div>
+    <p class="text-sm text-blue-600">Siswa berdiri di depan kamera, wajah akan dikenali otomatis</p>
+  </div>
+  <div class="relative rounded-xl overflow-hidden bg-black">
+    <video id="piketFaceVideo" autoplay muted playsinline
+      class="w-full rounded-xl" style="max-height:300px;object-fit:cover"></video>
+    <canvas id="piketFaceCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+    <div class="absolute bottom-0 left-0 right-0 bg-black/50 p-3 text-center">
+      <p id="piketFaceStatus" class="text-white text-sm font-semibold">
+        <i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...
+      </p>
+    </div>
+  </div>
+  <div id="piketFaceResult" class="hidden mt-3 p-4 rounded-xl text-center"></div>
+  <div class="flex gap-2 mt-3">
+    <button onclick="resetPiketScan()"
+      class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm">
+      <i class="fas fa-redo mr-1"></i>Scan Berikutnya
+    </button>
+    <button onclick="stopPiketFaceScan()"
+      class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl text-sm">
+      <i class="fas fa-times mr-1"></i>Stop Kamera
+    </button>
+  </div>
+</div>
   </div>
   <div id="manualInputArea" class="hidden">
     <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
@@ -3825,6 +3860,182 @@ async function hapusWajah(nis) {
   } catch(err) { alert('Gagal: ' + err.message); }
 }
 
+  // ============================================================
+// SCAN WAJAH PIKET
+// ============================================================
+let piketFaceStream = null;
+let piketFaceInterval = null;
+let piketScanActive = false;
+
+async function switchToScanWajahPiket() {
+  document.getElementById('scanWajahPiketArea').classList.remove('hidden');
+  document.getElementById('namaGuruScanWajah').textContent = AppState.activeTeacher;
+  await startPiketFaceScan();
+}
+
+async function startPiketFaceScan() {
+  const status = document.getElementById('piketFaceStatus');
+  status.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...';
+
+  try {
+    const loaded = await loadFaceModels();
+    if (!loaded) throw new Error('Gagal memuat model AI.');
+
+    // Ambil semua descriptor dari Supabase
+    status.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Mengambil data wajah siswa...';
+    const semuaWajah = await sbSelect('wajah_siswa', '?select=nis,nama,kelas,descriptor');
+    if (!semuaWajah || !semuaWajah.length) throw new Error('Belum ada data wajah terdaftar!');
+
+    // Buat labeled descriptors
+    const labeled = semuaWajah
+      .filter(w => w.descriptor)
+      .map(w => {
+        const desc = new Float32Array(Object.values(w.descriptor));
+        return new faceapi.LabeledFaceDescriptors(w.nis, [desc]);
+      });
+
+    if (!labeled.length) throw new Error('Tidak ada descriptor valid!');
+    const faceMatcher = new faceapi.FaceMatcher(labeled, FACE_MATCH_THRESHOLD);
+
+    // Buka kamera
+    piketFaceStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 } }
+    });
+    const video = document.getElementById('piketFaceVideo');
+    video.srcObject = piketFaceStream;
+    await new Promise(r => video.onloadedmetadata = r);
+
+    piketScanActive = true;
+    status.innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah siswa ke kamera...';
+
+    // Deteksi loop
+    piketFaceInterval = setInterval(async () => {
+      if (!piketScanActive) return;
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+          .withFaceLandmarks(true)
+          .withFaceDescriptor();
+
+        if (!detection) {
+          status.innerHTML = '<i class="fas fa-search mr-2"></i>Mencari wajah siswa...';
+          return;
+        }
+
+        status.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Wajah terdeteksi! Memverifikasi...';
+        const match = faceMatcher.findBestMatch(detection.descriptor);
+
+        if (match.label !== 'unknown' && match.distance <= FACE_MATCH_THRESHOLD) {
+          piketScanActive = false;
+          clearInterval(piketFaceInterval);
+
+          // Ambil data siswa
+          const siswaData = semuaWajah.find(w => w.nis === match.label);
+          await prosesAbsenPiketWajah(siswaData, match.distance);
+        } else {
+          const persen = Math.round((1 - match.distance) * 100);
+          status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak dikenali (${persen}%). Coba lagi...`;
+        }
+      } catch(e) { console.error(e); }
+    }, 500);
+
+  } catch(err) {
+    status.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>${sanitizeHTML(err.message)}`;
+  }
+}
+
+async function prosesAbsenPiketWajah(siswa, distance) {
+  const resultDiv = document.getElementById('piketFaceResult');
+  resultDiv.classList.remove('hidden');
+  resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-blue-50 border border-blue-200';
+  resultDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Menyimpan absensi...';
+
+  try {
+    const today = todayStr();
+    const existing = await getStatusHarian(siswa.nis, today);
+
+    if (existing) {
+      resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-amber-50 border border-amber-200';
+      resultDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle text-3xl text-amber-500 mb-2 block"></i>
+        <p class="font-bold text-amber-700">${sanitizeHTML(siswa.nama)}</p>
+        <p class="text-amber-600 text-sm">Sudah tercatat ${STATUS_LABEL[existing]} hari ini</p>`;
+      return;
+    }
+
+    const siswaFull = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
+    const dataSiswa = siswaFull && siswaFull.length ? siswaFull[0] : siswa;
+    await setStatusHarian(dataSiswa.nis, dataSiswa.nama, dataSiswa.kelas, today, 'H');
+
+    const akurasi = Math.round((1 - distance) * 100);
+    resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-green-50 border border-green-200';
+    resultDiv.innerHTML = `
+      <i class="fas fa-check-circle text-3xl text-green-500 mb-2 block"></i>
+      <p class="font-bold text-green-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
+      <p class="text-green-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
+      <p class="text-green-500 text-xs mt-1">Akurasi: ${akurasi}% • ${nowStr()}</p>`;
+
+    // Auto reset setelah 3 detik
+    setTimeout(() => resetPiketScan(), 3000);
+
+  } catch(err) {
+    resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-red-50 border border-red-200';
+    resultDiv.innerHTML = `<i class="fas fa-times-circle text-red-500 mr-2"></i><span class="text-red-600">${sanitizeHTML(err.message)}</span>`;
+  }
+}
+
+function resetPiketScan() {
+  piketScanActive = true;
+  document.getElementById('piketFaceResult').classList.add('hidden');
+  document.getElementById('piketFaceStatus').innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah siswa berikutnya...';
+  if (piketFaceInterval) clearInterval(piketFaceInterval);
+  // Restart deteksi
+  const video = document.getElementById('piketFaceVideo');
+  if (video.srcObject) {
+    startPiketFaceScanLoop();
+  } else {
+    startPiketFaceScan();
+  }
+}
+
+async function startPiketFaceScanLoop() {
+  const video = document.getElementById('piketFaceVideo');
+  const semuaWajah = await sbSelect('wajah_siswa', '?select=nis,nama,kelas,descriptor');
+  const labeled = (semuaWajah||[])
+    .filter(w => w.descriptor)
+    .map(w => new faceapi.LabeledFaceDescriptors(w.nis, [new Float32Array(Object.values(w.descriptor))]));
+  const faceMatcher = new faceapi.FaceMatcher(labeled, FACE_MATCH_THRESHOLD);
+  const status = document.getElementById('piketFaceStatus');
+
+  piketFaceInterval = setInterval(async () => {
+    if (!piketScanActive) return;
+    try {
+      const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+        .withFaceLandmarks(true)
+        .withFaceDescriptor();
+      if (!detection) { status.innerHTML = '<i class="fas fa-search mr-2"></i>Mencari wajah siswa...'; return; }
+      status.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Wajah terdeteksi! Memverifikasi...';
+      const match = faceMatcher.findBestMatch(detection.descriptor);
+      if (match.label !== 'unknown' && match.distance <= FACE_MATCH_THRESHOLD) {
+        piketScanActive = false;
+        clearInterval(piketFaceInterval);
+        const siswaData = semuaWajah.find(w => w.nis === match.label);
+        await prosesAbsenPiketWajah(siswaData, match.distance);
+      } else {
+        status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Tidak dikenali. Coba lagi...`;
+      }
+    } catch(e) { console.error(e); }
+  }, 500);
+}
+
+function stopPiketFaceScan() {
+  piketScanActive = false;
+  if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
+  if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
+  document.getElementById('scanWajahPiketArea').classList.add('hidden');
+  document.getElementById('piketFaceResult').classList.add('hidden');
+}
 </script>
 </body>
 </html>
