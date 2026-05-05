@@ -1429,11 +1429,11 @@ async function saveManualAttendance() {
     const siswaList = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
     if (!siswaList || !siswaList.length) throw new Error('Siswa tidak ditemukan!');
     const siswa = siswaList[0];
-    await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, todayStr(), status);
-    document.getElementById('manualNis').value = '';
-    document.getElementById('manualSearchInput').value = '';
-    document.getElementById('selectedSiswaInfo').classList.add('hidden');
     const statusLama = await getStatusHarian(siswa.nis, todayStr());
+await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, todayStr(), status);
+document.getElementById('manualNis').value = '';
+document.getElementById('manualSearchInput').value = '';
+document.getElementById('selectedSiswaInfo').classList.add('hidden');
 const pesanLama = statusLama ? ` (diubah dari <b>${STATUS_LABEL[statusLama]}</b>)` : '';
 resultDiv.innerHTML = `<span class="text-blue-600">✓ Berhasil! ${sanitizeHTML(siswa.nama)} tercatat <b>${STATUS_LABEL[status]}</b>${pesanLama}</span>`;
   } catch (err) { resultDiv.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; }
