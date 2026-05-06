@@ -3870,9 +3870,6 @@ function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
         const jmlIzin  = list.filter(sw => (sw.iz||0) > 0).length;
         return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa | Total Alpa: ${totalAlpa}x\n${detail}`;
       }).join('\n\n');
-        const totalAlpa = list.reduce((sum, sw) => sum + (sw.al || 1), 0);
-        return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa | Total Alpa: ${totalAlpa}x\n${detail}`;
-      }).join('\n\n');
   }
 
   // Ringkasan total
