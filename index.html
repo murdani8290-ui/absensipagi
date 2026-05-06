@@ -1539,15 +1539,31 @@ function validateNis() {
   const today = todayStr();
   if (localStorage.getItem('sipagi_scan_date') === today) {
     btn.disabled = true;
-    msg.innerHTML = '<span class="text-red-600 font-medium">⚠️ Perangkat ini sudah digunakan absen hari ini.</span>'; return;
+    msg.innerHTML = '<span class="text-red-600 font-medium">⚠️ Perangkat ini sudah digunakan absen hari ini.</span>';
+    return;
+  }
+  // FIX: jangan enable tombol jika scanner masih aktif
+  if (AppState.scanner) {
+    btn.disabled = true;
+    msg.textContent = 'Scanner sedang aktif...';
+    return;
   }
   const valid = nis.length >= 3 && /^\d+$/.test(nis);
   btn.disabled = !valid;
-  if (valid) { msg.textContent = '✓ NIS valid. Silakan buka kamera.'; msg.className = 'text-sm text-blue-600 text-center mt-3'; }
-  else if (nis.length > 0) { msg.textContent = 'NIS harus angka minimal 3 digit'; msg.className = 'text-sm text-amber-600 text-center mt-3'; }
-  else { msg.textContent = 'Masukkan NIS untuk melanjutkan'; msg.className = 'text-sm text-gray-500 text-center mt-3'; }
+  if (valid) {
+    msg.textContent = '✓ NIS valid. Silakan buka kamera.';
+    msg.className = 'text-sm text-blue-600 text-center mt-3';
+  } else if (nis.length > 0) {
+    msg.textContent = 'NIS harus angka minimal 3 digit';
+    msg.className = 'text-sm text-amber-600 text-center mt-3';
+  } else {
+    msg.textContent = 'Masukkan NIS untuk melanjutkan';
+    msg.className = 'text-sm text-gray-500 text-center mt-3';
+  }
 }
+ 
 function startStudentScan() {
+  if (AppState.scanner) return; // FIX: guard double instance
   document.getElementById('inputNisArea').classList.add('hidden');
   document.getElementById('scanArea').classList.remove('hidden');
   AppState.scanner = new Html5Qrcode('reader');
@@ -1557,24 +1573,19 @@ function startStudentScan() {
     onStudentScanSuccess, () => {}
   ).catch(err => { alert('Tidak dapat mengakses kamera.\n' + err); stopStudentScan(); });
 }
-  function flipCamera() {
-  AppState.facingMode = (AppState.facingMode === 'environment' || !AppState.facingMode) ? 'user' : 'environment';
-  if (AppState.scanner) {
-    AppState.scanner.stop().then(() => {
-      AppState.scanner.clear();
-      AppState.scanner = null;
-      AppState.scanner = new Html5Qrcode('reader');
-      AppState.scanner.start(
-        { facingMode: AppState.facingMode },
-        { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
-        onStudentScanSuccess, () => {}
-      ).catch(err => { alert('Tidak dapat mengakses kamera.\n' + err); stopStudentScan(); });
-    }).catch(console.error);
-  }
 }
 function stopStudentScan() {
   if (AppState.scanner) {
-    AppState.scanner.stop().then(() => { AppState.scanner.clear(); AppState.scanner = null; }).catch(console.error);
+    AppState.scanner.stop()
+      .then(() => {
+        AppState.scanner.clear();
+        AppState.scanner = null;
+      })
+      .catch(() => {
+        // FIX: paksa null meski stop() gagal — cegah instance zombie
+        try { AppState.scanner.clear(); } catch(e) {}
+        AppState.scanner = null;
+      });
   }
   document.getElementById('scanArea').classList.add('hidden');
   document.getElementById('inputNisArea').classList.remove('hidden');
@@ -2915,39 +2926,42 @@ async function kirimRekapWaliKelas() {
     (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
-
-    // === KIRIM KE WALI KELAS ===
+ 
     const waliList = (semuaGuru||[]).filter(g => g.role === 'WALI' && g.kelas_wali && formatHP(g.hp));
-    const totalPenerima = waliList.length + (semuaGuru||[]).filter(g => g.role === 'BK' && formatHP(g.hp)).length;
-    let sent = 0;
+    const bkList   = (semuaGuru||[]).filter(g => g.role === 'BK'   && formatHP(g.hp));
+    const totalPenerima = waliList.length + bkList.length;
+ 
+    let waliSent = 0, bkSent = 0;
     updateWAProgress(0, totalPenerima, 'Mengirim rekap ke wali...');
+ 
     for (const guru of waliList) {
       const hp = formatHP(guru.hp);
       const siswakelas = byKelas[guru.kelas_wali] || [];
       const stat = hitungStat(siswakelas, absenMap);
       const pesan = buildPesanRekapHarian(guru, tanggal, siswakelas.length, stat);
       const ok = await kirimWA(hp, pesan);
-      if (ok) sent++;
-      updateWAProgress(sent, totalPenerima, `Kirim ke ${guru.nama}...`);
+      if (ok) waliSent++;
+      updateWAProgress(waliSent + bkSent, totalPenerima, `Kirim ke ${guru.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
-
-    // === KIRIM KE BK — SEMUA SISWA ===
-    const bkList = (semuaGuru||[]).filter(g => g.role === 'BK' && formatHP(g.hp));
-    let bkSent = 0;
+ 
     for (const guru of bkList) {
       const hp = formatHP(guru.hp);
       const pesan = buildPesanRekapHarianBK(guru, tanggal, semua, absenMap);
       const ok = await kirimWA(hp, pesan);
-      if (ok) { sent++; bkSent++; }
-      updateWAProgress(sent, totalPenerima, `Kirim ke BK ${guru.nama}...`);
+      if (ok) bkSent++;
+      updateWAProgress(waliSent + bkSent, totalPenerima, `Kirim ke BK ${guru.nama}...`);
       await new Promise(r => setTimeout(r, 1200));
     }
-
+ 
     hideWAProgress();
-    resultEl.innerHTML=`<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${waliList.length > 0 ? waliList.filter((_,i)=>i<sent).length : 0} wali kelas` +
+    // FIX: gunakan waliSent & bkSent langsung, bukan ekspresi filter yang salah
+    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Rekap terkirim ke ${waliSent} wali kelas` +
       (bkSent > 0 ? ` + ${bkSent} guru BK` : bkList.length > 0 ? ` (BK: tidak ada HP)` : '') + `.</span>`;
-  } catch(err) { resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`; hideWAProgress(); }
+  } catch(err) {
+    resultEl.innerHTML=`<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+    hideWAProgress();
+  }
   setButtonLoading('btnKirimWAWali', false);
 }
 async function updateServerSchedule(type) {
@@ -3277,9 +3291,8 @@ async function fetchAbsensiMultiBulan(bulanBulan) {
  * DIPERBARUI: Hitung statistik mingguan dengan detail per siswa
  */
 function hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu) {
-  let h=0, s=0, iz=0, al=0, bl=0;
   const detailSiswa = [];
-
+ 
   siswakelas.forEach(sw => {
     const nisCacheData = absensiCache[sw.nis] || {};
     let sh=0, ss=0, siz=0, sal=0, sbl=0;
@@ -3288,15 +3301,25 @@ function hitungStatMingguan(siswakelas, absensiCache, tanggalMinggu) {
       const col = tglCol(tgl);
       const rowBulan = nisCacheData[bulan] || {};
       const st = rowBulan[col] || null;
-      if (st==='H') { h++; sh++; }
-      else if (st==='S') { s++; ss++; }
-      else if (st==='I') { iz++; siz++; }
-      else if (st==='A') { al++; sal++; }
-      else { bl++; sbl++; }
+      if (st==='H') sh++;
+      else if (st==='S') ss++;
+      else if (st==='I') siz++;
+      else if (st==='A') sal++;
+      else sbl++;
     });
-    detailSiswa.push({ nis: sw.nis, kelas: sw.kelas, nama: sw.nama, h: sh, s: ss, iz: siz, al: sal, bl: sbl });
+    detailSiswa.push({
+      nis: sw.nis, kelas: sw.kelas, nama: sw.nama,
+      h: sh, s: ss, iz: siz, al: sal, bl: sbl
+    });
   });
-
+ 
+  // FIX: Hitung total dari detail — bukan counter ganda
+  const h  = detailSiswa.reduce((a, sw) => a + sw.h,  0);
+  const s  = detailSiswa.reduce((a, sw) => a + sw.s,  0);
+  const iz = detailSiswa.reduce((a, sw) => a + sw.iz, 0);
+  const al = detailSiswa.reduce((a, sw) => a + sw.al, 0);
+  const bl = detailSiswa.reduce((a, sw) => a + sw.bl, 0);
+ 
   return { h, s, iz, al, bl, detailSiswa };
 }
 
@@ -3401,28 +3424,35 @@ function applyFiturWajahSiswa(aktif) {
 }
 
 async function toggleFiturWajahSiswa() {
+async function toggleFiturWajahSiswa() {
   const statusEl = document.getElementById('statusFiturWajah');
+  const wrapEl   = document.getElementById('wrapToggleWajahSiswa');
   const nilaiBaru = !fiturWajahSiswaAktif;
-  fiturWajahSiswaAktif = nilaiBaru;
-  applyFiturWajahSiswa(nilaiBaru);
-
-  if (statusEl) statusEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
-
+ 
+  // FIX: Disable toggle saat proses — cegah double-click
+  if (wrapEl) wrapEl.style.pointerEvents = 'none';
+  if (statusEl) statusEl.innerHTML =
+    '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
+ 
   try {
     await sbUpsert('config', { key: 'fitur_absen_wajah_siswa', value: String(nilaiBaru) }, 'key');
-    applyFiturWajahSiswa(nilaiBaru); // refresh tampilan
+    // FIX: Update state HANYA setelah server berhasil
+    fiturWajahSiswaAktif = nilaiBaru;
+    applyFiturWajahSiswa(nilaiBaru);
   } catch(err) {
-    // Rollback jika gagal
-    fiturWajahSiswaAktif = !nilaiBaru;
-    applyFiturWajahSiswa(!nilaiBaru);
-    if (statusEl) statusEl.innerHTML = `<span class="text-red-600">❌ Gagal menyimpan: ${sanitizeHTML(err.message)}</span>`;
+    // FIX: Tidak perlu rollback karena state belum diubah
+    if (statusEl) statusEl.innerHTML =
+      `<span class="text-red-600">❌ Gagal menyimpan: ${sanitizeHTML(err.message)}</span>`;
+  } finally {
+    // Selalu re-enable toggle
+    if (wrapEl) wrapEl.style.pointerEvents = '';
   }
 }
 // INIT
 // ============================================================
 async function loadServerConfig() {
   try {
-    const data = await sbSelect('config', '');
+    const data = await sbSelect('config', '?select=*'); // FIX: was ''
     if (!data || !data.length) return;
     data.forEach(row => {
       if (row.key === 'sched_autoalpa') {
@@ -3669,15 +3699,24 @@ const FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.j
 async function loadFaceModels() {
   if (faceModelsLoaded) return true;
   try {
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
-      faceapi.nets.faceLandmark68TinyNet.loadFromUri(FACE_MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL)
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(
+        'Timeout: Model AI gagal dimuat dalam 30 detik. Periksa koneksi internet.'
+      )), 30000)
+    );
+    await Promise.race([
+      Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+        faceapi.nets.faceLandmark68TinyNet.loadFromUri(FACE_MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL)
+      ]),
+      timeout
     ]);
     faceModelsLoaded = true;
     return true;
   } catch(err) {
     console.error('Gagal load model:', err);
+    faceModelsLoaded = false; // FIX: reset agar bisa retry
     return false;
   }
 }
@@ -4182,40 +4221,40 @@ async function prosesAbsenPiketWajah(siswa, distance) {
   resultDiv.classList.remove('hidden');
   resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-blue-50 border border-blue-200';
   resultDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Menyimpan absensi...';
-
+ 
   try {
     const today = todayStr();
-    const existing = await getStatusHarian(siswa.nis, today);
-
-    if (existing) {
-  const siswaFull2 = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
-  const dataSiswa2 = siswaFull2 && siswaFull2.length ? siswaFull2[0] : siswa;
-  resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-amber-50 border border-amber-200';
-  resultDiv.innerHTML = `
-    <i class="fas fa-exclamation-triangle text-3xl text-amber-500 mb-2 block"></i>
-    <p class="font-bold text-amber-700 text-lg">${sanitizeHTML(dataSiswa2.nama)}</p>
-    <p class="text-amber-600 text-sm">NIS: ${sanitizeHTML(dataSiswa2.nis)}</p>
-    <p class="text-amber-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa2.kelas)}</p>
-    <p class="text-amber-500 text-sm mt-1 font-semibold">Sudah tercatat ${STATUS_LABEL[existing]} hari ini</p>`;
-  return;
-}
-
+ 
+    // FIX: Fetch data siswa SEKALI di awal, gunakan untuk semua kondisi
     const siswaFull = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
     const dataSiswa = siswaFull && siswaFull.length ? siswaFull[0] : siswa;
+ 
+    const existing = await getStatusHarian(dataSiswa.nis, today);
+ 
+    if (existing) {
+      resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-amber-50 border border-amber-200';
+      resultDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle text-3xl text-amber-500 mb-2 block"></i>
+        <p class="font-bold text-amber-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
+        <p class="text-amber-600 text-sm">NIS: ${sanitizeHTML(dataSiswa.nis)}</p>
+        <p class="text-amber-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
+        <p class="text-amber-500 text-sm mt-1 font-semibold">Sudah tercatat ${STATUS_LABEL[existing]} hari ini</p>`;
+      return;
+    }
+ 
     await setStatusHarian(dataSiswa.nis, dataSiswa.nama, dataSiswa.kelas, today, 'H');
-
+ 
     const akurasi = Math.round((1 - distance) * 100);
     resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-green-50 border border-green-200';
-resultDiv.innerHTML = `
-  <i class="fas fa-check-circle text-3xl text-green-500 mb-2 block"></i>
-  <p class="font-bold text-green-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
-  <p class="text-green-600 text-sm">NIS: ${sanitizeHTML(dataSiswa.nis)}</p>
-  <p class="text-green-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
-  <p class="text-green-500 text-xs mt-1">Akurasi: ${akurasi}% • ${nowStr()}</p>`;
-
-    // Auto reset setelah 3 detik
+    resultDiv.innerHTML = `
+      <i class="fas fa-check-circle text-3xl text-green-500 mb-2 block"></i>
+      <p class="font-bold text-green-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
+      <p class="text-green-600 text-sm">NIS: ${sanitizeHTML(dataSiswa.nis)}</p>
+      <p class="text-green-600 text-sm">Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
+      <p class="text-green-500 text-xs mt-1">Akurasi: ${akurasi}% • ${nowStr()}</p>`;
+ 
     setTimeout(() => resetPiketScan(), 3000);
-
+ 
   } catch(err) {
     resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-red-50 border border-red-200';
     resultDiv.innerHTML = `<i class="fas fa-times-circle text-red-500 mr-2"></i><span class="text-red-600">${sanitizeHTML(err.message)}</span>`;
@@ -4223,12 +4262,20 @@ resultDiv.innerHTML = `
 }
 
 function resetPiketScan() {
-  piketScanActive = true;
+  piketScanActive = false; // FIX: set false dulu, bukan true
   document.getElementById('piketFaceResult').classList.add('hidden');
-  document.getElementById('piketFaceStatus').innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah siswa berikutnya...';
-  if (piketFaceInterval) clearInterval(piketFaceInterval);
-  if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
-  startPiketFaceScan();
+  document.getElementById('piketFaceStatus').innerHTML =
+    '<i class="fas fa-spinner animate-spin mr-2"></i>Menyiapkan ulang kamera...';
+  if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
+  if (piketFaceStream) {
+    piketFaceStream.getTracks().forEach(t => t.stop());
+    piketFaceStream = null;
+  }
+  // FIX: delay 600ms agar hardware kamera benar-benar lepas
+  setTimeout(() => {
+    piketScanActive = true;
+    startPiketFaceScan();
+  }, 600);
 }
 
 async function startPiketFaceScanLoop() {
@@ -4271,9 +4318,17 @@ function stopPiketFaceScan() {
 }
   function flipPiketKamera() {
   piketFacingMode = piketFacingMode === 'user' ? 'environment' : 'user';
+  piketScanActive = false; // FIX: hentikan loop dulu
   if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
-  if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
-  setTimeout(() => startPiketFaceScan(), 300);
+  if (piketFaceStream) {
+    piketFaceStream.getTracks().forEach(t => t.stop());
+    piketFaceStream = null;
+  }
+  // FIX: delay 700ms agar hardware benar-benar lepas sebelum ganti kamera
+  setTimeout(() => {
+    piketScanActive = true;
+    startPiketFaceScan();
+  }, 700);
 }
 </script>
 </body>
