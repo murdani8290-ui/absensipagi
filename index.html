@@ -2711,8 +2711,8 @@ function buildPesanRekapHarian(guru, tanggal, totalSiswa, stat) {
   const namaAlpa   = stat.namaAlpa   || [];
   const namaBelum  = stat.namaBelum  || [];
 
-  const formatDaftar = (arr) => arr.length
-    ? arr.map((n, i) => `  ${i + 1}. ${n}`).join('\n')
+  const formatDaftar = (icon, arr) => arr.length
+    ? arr.map((n, i) => `  ${String(i+1).padStart(2,'0')}. ${n}\n      ${icon}`).join('\n')
     : '  —';
 
   return `📋 *REKAP ABSENSI PAGI HARIAN*
@@ -2730,19 +2730,19 @@ Assalamu'alaikum Warahmatullahi Wabarakatuh,
 
 ${'─'.repeat(30)}
 ✅ *HADIR (${h} siswa):*
-${formatDaftar(namaHadir)}
+${formatDaftar('🟩 Hadir', namaHadir)}
 
 🤒 *SAKIT (${s} siswa):*
-${formatDaftar(namaSakit)}
+${formatDaftar('🟨 Sakit', namaSakit)}
 
 📋 *IZIN (${iz} siswa):*
-${formatDaftar(namaIzin)}
+${formatDaftar('🟦 Izin', namaIzin)}
 
 ❌ *ALPA (${al} siswa):*
-${formatDaftar(namaAlpa)}
+${formatDaftar('🟥 Alpa hari ini', namaAlpa)}
 
 ⏳ *BELUM ABSEN (${bl} siswa):*
-${formatDaftar(namaBelum)}
+${formatDaftar('⬜ Belum tercatat', namaBelum)}
 
 ${'─'.repeat(30)}
 ${al > 0 || bl > 0
@@ -3820,8 +3820,8 @@ function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
       else                       byKelas[s.kelas].bl.push(s.nama);
     });
 
-    const fmt = (arr) => arr.length
-      ? arr.map((n, i) => `  ${i+1}. ${n}`).join('\n')
+    const fmtList = (icon, arr) => arr.length
+      ? arr.map((n, i) => `  ${String(i+1).padStart(2,'0')}. ${n}\n      ${icon}`).join('\n')
       : '  —';
 
     barisPerKelas = Object.entries(byKelas)
@@ -3830,15 +3830,20 @@ function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
         const total = data.H.length + data.S.length + data.I.length + data.A.length + data.bl.length;
         return [
           `${'─'.repeat(28)}`,
-          `🏫 *${kelas}* (${total} siswa)`,
-          `✅ Hadir (${data.H.length}):`,    fmt(data.H),
-          `🤒 Sakit (${data.S.length}):`,    fmt(data.S),
-          `📋 Izin (${data.I.length}):`,     fmt(data.I),
-          `❌ Alpa (${data.A.length}):`,     fmt(data.A),
-          `⏳ Belum (${data.bl.length}):`,   fmt(data.bl),
+          `🏫 *${kelas}* — ${total} siswa | Alpa: ${data.A.length}x`,
+          `\n✅ *Hadir (${data.H.length} siswa):*`,
+          fmtList('🟩 Hadir', data.H),
+          `\n🤒 *Sakit (${data.S.length} siswa):*`,
+          fmtList('🟨 Sakit', data.S),
+          `\n📋 *Izin (${data.I.length} siswa):*`,
+          fmtList('🟦 Izin', data.I),
+          `\n❌ *Alpa (${data.A.length} siswa):*`,
+          fmtList('🟥 Alpa hari ini', data.A),
+          `\n⏳ *Belum Absen (${data.bl.length} siswa):*`,
+          fmtList('⬜ Belum tercatat', data.bl),
         ].join('\n');
       }).join('\n\n');
-
+    
   } else {
     // Mingguan / Bulanan
     const byKelas = {};
