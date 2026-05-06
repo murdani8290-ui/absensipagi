@@ -1410,8 +1410,8 @@ async function getRekapHarian(kelas, tanggal) {
   const semua = await sbSelect(T.siswa, `?kelas=eq.${encodeURIComponent(kelas)}&order=nama.asc`);
   const absensi = await sbSelect(T.absensi, `?kelas=eq.${encodeURIComponent(kelas)}&bulan=eq.${bulan}&select=nis,${col}`);
   const absenMap = {};
-  (absensi || []).forEach(a => { absenMap[a.nis] = a[col] || null; });
-  return (semua || []).map(s => ({ ...s, status: absenMap[s.nis] || null }));
+  (absensi || []).forEach(a => { absenMap[String(a.nis)] = a[col] || null; });
+return (semua || []).map(s => ({ ...s, status: absenMap[String(s.nis)] || null }));
 }
   async function getRekapHarianSemua(tanggal) {
   const bulan = toBulan(tanggal);
@@ -1419,8 +1419,8 @@ async function getRekapHarian(kelas, tanggal) {
   const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
   const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
   const absenMap = {};
-  (absensi || []).forEach(a => { absenMap[a.nis] = a[col] || null; });
-  return (semua || []).map(s => ({ ...s, status: absenMap[s.nis] || null }));
+  (absensi || []).forEach(a => { absenMap[String(a.nis)] = a[col] || null; });
+return (semua || []).map(s => ({ ...s, status: absenMap[String(s.nis)] || null }));
 }
 
 async function getDataBulanan(kelas, bulan) {
@@ -2075,9 +2075,19 @@ async function loadAdminDashboard() {
   try {
     const bulan = toBulan(today);
     const col = tglCol(today);
-    const absen = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
-    document.getElementById('admHadir').textContent = (absen||[]).filter(a => a[col]==='H').length;
-    document.getElementById('admAlfa').textContent = (absen||[]).filter(a => a[col]==='A').length;
+    const [semua, absen] = await Promise.all([
+      sbSelect(T.siswa, '?select=nis'),
+      sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`)
+    ]);
+    const absenMap = {};
+    (absen||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
+    const totalSiswa = (semua||[]).length;
+    const hadir  = (semua||[]).filter(s => absenMap[s.nis] === 'H').length;
+    const alpa   = (semua||[]).filter(s => absenMap[s.nis] === 'A').length;
+    const belum  = (semua||[]).filter(s => !absenMap[s.nis]).length;
+    document.getElementById('admHadir').textContent = hadir;
+    document.getElementById('admAlfa').textContent  = alpa;
+    // Jika ingin tampilkan belum absen, bisa tambah elemen di HTML
   } catch (err) { console.error(err); }
   showAdminTab('siswa');
 }
@@ -2155,10 +2165,11 @@ async function loadAdminRekap() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
-    let h=0, s=0, iz=0, al=0, bl=0;
-    const list = (semua||[]).map(siswa => {
-      const status = absenMap[siswa.nis] || null;
+    const absenMap = {};
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col] || null; });
+let h=0, s=0, iz=0, al=0, bl=0;
+const list = (semua||[]).map(siswa => {
+  const status = absenMap[String(siswa.nis)] || null;
       if (status==='H') h++;
       else if (status==='S') s++;
       else if (status==='I') iz++;
@@ -2571,8 +2582,8 @@ async function runScheduledAutoAlpa(tanggal) {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
-    const belum = (semua||[]).filter(s => !absenMap[s.nis]);
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col] || null; });
+const belum = (semua||[]).filter(s => !absenMap[String(s.nis)]);
     setStepState(1,'done'); setLineState(1,'done');
     setStepState(2,'running');
     if (belum.length > 0) {
@@ -2683,7 +2694,7 @@ function hitungStat(siswakelas, absenMap) {
   let h=0, s=0, iz=0, al=0, bl=0;
   const namaAlpa = [];
   siswakelas.forEach(sw => {
-    const st = absenMap[sw.nis] || null;
+    const st = absenMap[String(sw.nis)] || null;
     if (st==='H') h++;
     else if (st==='S') s++;
     else if (st==='I') iz++;
@@ -2764,8 +2775,8 @@ async function simulasiAutoAlpa() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-    const belum = (semua||[]).filter(s => !absenMap[s.nis]);
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col]||null; });
+const belum = (semua||[]).filter(s => !absenMap[String(s.nis)]);
     rt.textContent = '📋 Preview Auto Alpa - ' + today;
     let html = `<div class="grid grid-cols-2 gap-2 mb-3"><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs text-red-600">Akan Alpa</p><p class="text-lg font-bold text-red-700">${belum.length}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs text-blue-600">Sudah Absen</p><p class="text-lg font-bold text-blue-700">${semua.length-belum.length}</p></div></div>`;
     if (!belum.length) html += '<p class="text-blue-600 text-center py-2">✅ Semua siswa sudah absen!</p>';
@@ -2794,8 +2805,8 @@ async function jalankanAutoAlpaSekarang() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-    const belum = (semua||[]).filter(s => !absenMap[s.nis]);
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col]||null; });
+const belum = (semua||[]).filter(s => !absenMap[String(s.nis)]);
     if (belum.length > 0) {
       const colToday = tglCol(today);
       const bulanToday = toBulan(today);
@@ -2850,8 +2861,8 @@ async function previewWAKirim() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-    const alpa = (semua||[]).filter(s => absenMap[s.nis]==='A');
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col]||null; });
+const alpa = (semua||[]).filter(s => absenMap[String(s.nis)]==='A');
     if (!alpa.length) { previewDiv.innerHTML='<p class="text-blue-600 text-center py-2">✅ Tidak ada siswa Alpa!</p>'; setButtonLoading('btnPreviewWA',false); return; }
     const byKelas = {};
     alpa.forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
@@ -2881,8 +2892,8 @@ async function kirimWAOrangTua() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-    const alpa = (semua||[]).filter(s => absenMap[s.nis]==='A');
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col]||null; });
+const alpa = (semua||[]).filter(s => absenMap[String(s.nis)]==='A');
     const withHP = alpa.map(s => ({...s, hpF: formatHP(s.hp_ortu)})).filter(s => s.hpF);
     if (!alpa.length) { resultEl.innerHTML='<span class="text-blue-600">✅ Tidak ada siswa Alpa.</span>'; setButtonLoading('btnKirimWAOrtu',false); return; }
     let sent=0;
@@ -2912,7 +2923,7 @@ async function kirimRekapWaliKelas() {
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const semuaGuru = await sbSelect(T.guru, '?');
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col] || null; });
+(absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col] || null; });
     const byKelas = {};
     (semua||[]).forEach(s => { if(!byKelas[s.kelas]) byKelas[s.kelas]=[]; byKelas[s.kelas].push(s); });
 
