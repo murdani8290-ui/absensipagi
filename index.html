@@ -1487,7 +1487,12 @@ function setButtonLoading(id, loading) {
   if (loading) { b.dataset.orig = b.innerHTML; b.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memproses...'; }
   else if (b.dataset.orig) { b.innerHTML = b.dataset.orig; }
 }
-function todayStr() { return new Date().toISOString().split('T')[0]; }
+function todayStr() {
+  const now = new Date();
+  const offset = 8 * 60; // WITA = UTC+8
+  const local = new Date(now.getTime() + (offset - now.getTimezoneOffset()) * 60000);
+  return local.toISOString().split('T')[0];
+}
 function nowStr() { return new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', second:'2-digit' }); }
 function updateWAProgress(current, total, label='') {
   const c = document.getElementById('waProgressContainer');
