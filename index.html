@@ -2165,7 +2165,6 @@ async function loadAdminRekap() {
     const semua = await sbSelect(T.siswa, '?order=kelas.asc,nama.asc');
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    const absenMap = {};
 (absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col] || null; });
 let h=0, s=0, iz=0, al=0, bl=0;
 const list = (semua||[]).map(siswa => {
