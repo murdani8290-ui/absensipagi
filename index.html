@@ -2704,15 +2704,14 @@ function hitungStat(siswakelas, absenMap) {
 }
 
 function buildPesanRekapHarian(guru, tanggal, totalSiswa, stat) {
-  const { h, s, iz, al, bl } = stat;
-  const namaHadir  = stat.namaHadir  || [];
-  const namaSakit  = stat.namaSakit  || [];
-  const namaIzin   = stat.namaIzin   || [];
-  const namaAlpa   = stat.namaAlpa   || [];
-  const namaBelum  = stat.namaBelum  || [];
+  const { h, s, iz, al } = stat;
+  const namaHadir = stat.namaHadir || [];
+  const namaSakit = stat.namaSakit || [];
+  const namaIzin  = stat.namaIzin  || [];
+  const namaAlpa  = stat.namaAlpa  || [];
 
-  const formatDaftar = (icon, arr) => arr.length
-    ? arr.map((n, i) => `  ${String(i+1).padStart(2,'0')}. ${n}\n      ${icon}`).join('\n')
+  const formatDaftar = (arr) => arr.length
+    ? arr.map((n, i) => `  ${i + 1}. ${n}`).join('\n')
     : '  —';
 
   return `📋 *REKAP ABSENSI PAGI HARIAN*
@@ -2724,29 +2723,34 @@ Wali Kelas *${guru.kelas_wali}*
 
 Assalamu'alaikum Warahmatullahi Wabarakatuh,
 
-📅 *Tanggal    :* ${tanggal}
-🏫 *Kelas      :* ${guru.kelas_wali}
-👥 *Total Siswa:* ${totalSiswa} orang
+Berikut rekap kehadiran pagi siswa kelas Bapak/Ibu:
+
+📅 *Tanggal     :* ${tanggal}
+🏫 *Kelas       :* ${guru.kelas_wali}
+👥 *Total Siswa :* ${totalSiswa} orang
+
+📊 *REKAP KEHADIRAN:*
+✅ Hadir : ${h} siswa
+🤒 Sakit : ${s} siswa
+📋 Izin  : ${iz} siswa
+❌ Alpa  : ${al} siswa
 
 ${'─'.repeat(30)}
-✅ *HADIR (${h} siswa):*
-${formatDaftar('🟩 Hadir', namaHadir)}
+✅ *DAFTAR SISWA HADIR (${h} siswa):*
+${formatDaftar(namaHadir)}
 
-🤒 *SAKIT (${s} siswa):*
-${formatDaftar('🟨 Sakit', namaSakit)}
+🤒 *DAFTAR SISWA SAKIT (${s} siswa):*
+${formatDaftar(namaSakit)}
 
-📋 *IZIN (${iz} siswa):*
-${formatDaftar('🟦 Izin', namaIzin)}
+📋 *DAFTAR SISWA IZIN (${iz} siswa):*
+${formatDaftar(namaIzin)}
 
-❌ *ALPA (${al} siswa):*
-${formatDaftar('🟥 Alpa hari ini', namaAlpa)}
-
-⏳ *BELUM ABSEN (${bl} siswa):*
-${formatDaftar('⬜ Belum tercatat', namaBelum)}
+❌ *DAFTAR SISWA ALPA (${al} siswa):*
+${formatDaftar(namaAlpa)}
 
 ${'─'.repeat(30)}
-${al > 0 || bl > 0
-  ? '⚠️ Mohon ditindaklanjuti siswa yang alpa/belum absen.'
+${al > 0
+  ? '⚠️ Mohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat alpa.'
   : '✅ Alhamdulillah, semua siswa hadir!'}
 
 Wassalamu'alaikum Warahmatullahi Wabarakatuh
@@ -3386,29 +3390,19 @@ function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
  * DIPERBARUI: Pesan rekap mingguan dengan detail per siswa
  */
 function buildPesanRekapMingguan(guru, seninStr, mingguStr, totalSiswa, stat) {
-  const { h, s, iz, al, bl, detailSiswa } = stat;
+  const { h, s, iz, al, detailSiswa } = stat;
 
   const sorted = [...detailSiswa].sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
 
-  const kategori = (label, icon, arr) => {
-    if (!arr.length) return `${icon} *${label} (0 siswa):*\n  —`;
-    return `${icon} *${label} (${arr.length} siswa):*\n` + arr.map((n, i) => `  ${i+1}. ${n}`).join('\n');
-  };
-
-  // Kumpulkan nama per kategori dari detailSiswa (akumulasi mingguan)
-  // Untuk mingguan, tampilkan siswa yang punya al>0, s>0, iz>0, dll
-  const siswaAlpa   = sorted.filter(sw => sw.al > 0).map(sw => `${sw.nama} (${sw.al}x)`);
-  const siswaSakit  = sorted.filter(sw => sw.s > 0).map(sw => `${sw.nama} (${sw.s}x)`);
-  const siswaIzin   = sorted.filter(sw => sw.iz > 0).map(sw => `${sw.nama} (${sw.iz}x)`);
-  const siswaPerfect= sorted.filter(sw => sw.al === 0 && sw.s === 0 && sw.iz === 0);
-
-  const formatDaftar = (arr) => arr.length
-    ? arr.map((n, i) => `  ${i+1}. ${n}`).join('\n')
-    : '  —';
+  const siswaHadir   = sorted.filter(sw => sw.h > 0);
+  const siswaSakit   = sorted.filter(sw => sw.s > 0);
+  const siswaIzin    = sorted.filter(sw => sw.iz > 0);
+  const siswaAlpa    = sorted.filter(sw => sw.al > 0);
+  const siswaPerfect = sorted.filter(sw => sw.al === 0 && sw.s === 0 && sw.iz === 0);
 
   const barisDetail = sorted.map((sw, i) => {
     const icon = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
-    return `  ${String(i+1).padStart(2,'0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+    return `  ${String(i + 1).padStart(2, '0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
   }).join('\n');
 
   return `📅 *REKAP ABSENSI PAGI MINGGUAN*
@@ -3432,16 +3426,20 @@ ${'─'.repeat(30)}
   ❌ Total Alpa  : ${al}x
 
 ${'─'.repeat(30)}
-❌ *SISWA YANG ALPA (${siswaAlpa.length} siswa):*
-${formatDaftar(siswaAlpa)}
+✅ *DAFTAR SISWA HADIR (${siswaHadir.length} siswa):*
+${siswaHadir.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.h}x)`).join('\n') || '  —'}
 
-🤒 *SISWA YANG SAKIT (${siswaSakit.length} siswa):*
-${formatDaftar(siswaSakit)}
+🤒 *DAFTAR SISWA SAKIT (${siswaSakit.length} siswa):*
+${siswaSakit.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.s}x)`).join('\n') || '  —'}
 
-📋 *SISWA YANG IZIN (${siswaIzin.length} siswa):*
-${formatDaftar(siswaIzin)}
+📋 *DAFTAR SISWA IZIN (${siswaIzin.length} siswa):*
+${siswaIzin.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.iz}x)`).join('\n') || '  —'}
 
-${siswaPerfect.length > 0 ? `🌟 *SISWA KEHADIRAN SEMPURNA (${siswaPerfect.length} siswa):*\n${siswaPerfect.map((sw, i) => `  ${i+1}. ${sw.nama}`).join('\n')}` : ''}
+❌ *DAFTAR SISWA ALPA (${siswaAlpa.length} siswa):*
+${siswaAlpa.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.al}x)`).join('\n') || '  —'}
+
+🌟 *KEHADIRAN SEMPURNA (${siswaPerfect.length} siswa):*
+${siswaPerfect.map((sw, i) => `  ${i + 1}. ${sw.nama}`).join('\n') || '  —'}
 
 ${'─'.repeat(30)}
 📋 *DETAIL LENGKAP PER SISWA:*
@@ -3450,7 +3448,11 @@ _(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_
 ${barisDetail}
 
 ${'─'.repeat(30)}
-${siswaAlpa.length > 0 ? `⚠️ Mohon perhatian khusus untuk ${siswaAlpa.length} siswa yang alpa.` : '✅ Tidak ada siswa yang alpa minggu ini!'}
+${siswaAlpa.filter(sw => sw.al >= 3).length > 0
+  ? `⚠️ Mohon perhatian khusus untuk ${siswaAlpa.filter(sw => sw.al >= 3).length} siswa yang alpa ≥ 3 kali.`
+  : siswaAlpa.length > 0
+    ? `⚠️ Mohon perhatian untuk ${siswaAlpa.length} siswa yang alpa minggu ini.`
+    : '✅ Tidak ada siswa yang alpa minggu ini!'}
 
 Wassalamu'alaikum Warahmatullahi Wabarakatuh
 
@@ -3467,22 +3469,17 @@ function buildPesanRekapBulanan(guru, bulan, namaBulan, totalSiswa, stat) {
 
   const sorted = [...detailSiswa].sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
 
-  const siswaAlpaTinggi = sorted.filter(sw => sw.al >= 3);
-  const siswaAlpaBiasa  = sorted.filter(sw => sw.al > 0 && sw.al < 3);
+  const siswaHadir      = sorted.filter(sw => sw.h > 0);
   const siswaSakit      = sorted.filter(sw => sw.s > 0);
   const siswaIzin       = sorted.filter(sw => sw.iz > 0);
+  const siswaAlpaTinggi = sorted.filter(sw => sw.al >= 3);
+  const siswaAlpaBiasa  = sorted.filter(sw => sw.al > 0 && sw.al < 3);
+  const siswaAlpaSemua  = sorted.filter(sw => sw.al > 0);
   const siswaPerfect    = sorted.filter(sw => sw.al === 0 && sw.s === 0 && sw.iz === 0);
-
-  const formatDaftar = (arr, showDetail=false) => arr.length
-    ? arr.map((sw, i) => showDetail
-        ? `  ${String(i+1).padStart(2,'0')}. ${sw.nama} — A:${sw.al}x | S:${sw.s}x | I:${sw.iz}x | H:${sw.h}x`
-        : `  ${i+1}. ${typeof sw === 'string' ? sw : sw.nama}`)
-      .join('\n')
-    : '  —';
 
   const barisDetail = sorted.map((sw, i) => {
     const icon = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
-    return `  ${String(i+1).padStart(2,'0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+    return `  ${String(i + 1).padStart(2, '0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
   }).join('\n');
 
   return `📆 *REKAP ABSENSI PAGI BULANAN*
@@ -3506,20 +3503,23 @@ ${'─'.repeat(30)}
   ❌ Total Alpa  : ${al}x
 
 ${'─'.repeat(30)}
+✅ *DAFTAR SISWA HADIR (${siswaHadir.length} siswa):*
+${siswaHadir.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.h}x)`).join('\n') || '  —'}
+
+🤒 *DAFTAR SISWA SAKIT (${siswaSakit.length} siswa):*
+${siswaSakit.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.s}x)`).join('\n') || '  —'}
+
+📋 *DAFTAR SISWA IZIN (${siswaIzin.length} siswa):*
+${siswaIzin.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw.iz}x)`).join('\n') || '  —'}
+
 ⚠️ *ALPA ≥ 3 — PERLU TINDAK LANJUT (${siswaAlpaTinggi.length} siswa):*
-${formatDaftar(siswaAlpaTinggi, true)}
+${siswaAlpaTinggi.map((sw, i) => `  ${String(i + 1).padStart(2, '0')}. ${sw.nama} — A:${sw.al}x | S:${sw.s}x | I:${sw.iz}x | H:${sw.h}x`).join('\n') || '  —'}
 
 ❌ *ALPA 1–2 KALI (${siswaAlpaBiasa.length} siswa):*
-${formatDaftar(siswaAlpaBiasa, true)}
-
-🤒 *PERNAH SAKIT (${siswaSakit.length} siswa):*
-${formatDaftar(siswaSakit.map(sw => `${sw.nama} (${sw.s}x)`))}
-
-📋 *PERNAH IZIN (${siswaIzin.length} siswa):*
-${formatDaftar(siswaIzin.map(sw => `${sw.nama} (${sw.iz}x)`))}
+${siswaAlpaBiasa.map((sw, i) => `  ${String(i + 1).padStart(2, '0')}. ${sw.nama} — A:${sw.al}x | S:${sw.s}x | I:${sw.iz}x | H:${sw.h}x`).join('\n') || '  —'}
 
 🌟 *KEHADIRAN SEMPURNA (${siswaPerfect.length} siswa):*
-${formatDaftar(siswaPerfect.map(sw => sw.nama))}
+${siswaPerfect.map((sw, i) => `  ${i + 1}. ${sw.nama}`).join('\n') || '  —'}
 
 ${'─'.repeat(30)}
 📋 *DETAIL LENGKAP PER SISWA:*
@@ -3530,7 +3530,9 @@ ${barisDetail}
 ${'─'.repeat(30)}
 ${siswaAlpaTinggi.length > 0
   ? `⚠️ Mohon tindak lanjut serius untuk ${siswaAlpaTinggi.length} siswa alpa ≥ 3 kali.`
-  : '✅ Tidak ada siswa dengan alpa berlebihan bulan ini!'}
+  : siswaAlpaSemua.length > 0
+    ? `⚠️ Mohon perhatian untuk ${siswaAlpaSemua.length} siswa yang alpa bulan ini.`
+    : '✅ Tidak ada siswa dengan alpa berlebihan bulan ini!'}
 
 Wassalamu'alaikum Warahmatullahi Wabarakatuh
 
@@ -3756,10 +3758,8 @@ async function getSiswaAlpaBK(mode) {
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
     (absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col]||null; });
-    // Rekap semua siswa dengan statusnya
     const rekapSemua = (semua||[]).map(s => ({ ...s, status: absenMap[String(s.nis)] || null }));
     extra = { tanggal, rekapSemua };
-    // Untuk BK: semua siswa yang Alpa hari ini
     siswaAlpa = rekapSemua
       .filter(s => s.status === 'A')
       .map(s => ({ ...s, al: 1, s: 0, iz: 0, h: 0 }));
@@ -3767,13 +3767,16 @@ async function getSiswaAlpaBK(mode) {
   } else if (mode === 'mingguan') {
     const { seninStr, mingguStr, tanggalMinggu, bulanBulan } = getRentangMinggu();
     label = `${seninStr} – ${mingguStr}`;
-    extra = { seninStr, mingguStr };
     const absensiCache = await fetchAbsensiMultiBulan(bulanBulan);
     const stats = hitungStatMingguan(semua||[], absensiCache, tanggalMinggu);
-    siswaAlpa = stats.detailSiswa
+    const semuaSiswa = stats.detailSiswa.map(sw => ({
+      ...(semua.find(s => s.nis === sw.nis) || {}),
+      ...sw
+    }));
+    extra = { seninStr, mingguStr, semuaSiswa };
+    siswaAlpa = semuaSiswa
       .filter(sw => sw.al >= MIN_ALPA_BK)
-      .map(sw => ({ ...semua.find(s=>s.nis===sw.nis)||{}, ...sw }))
-      .sort((a,b) => b.al-a.al || a.nama.localeCompare(b.nama));
+      .sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
 
   } else if (mode === 'bulanan') {
     const bulan = document.getElementById('pilihanBulanBK').value || new Date().toISOString().slice(0,7);
@@ -3781,15 +3784,18 @@ async function getSiswaAlpaBK(mode) {
     const jumlahHari = new Date(tahun, bln, 0).getDate();
     const namaBulan = new Date(tahun, bln-1, 1).toLocaleDateString('id-ID', { month:'long', year:'numeric' });
     label = namaBulan;
-    extra = { bulan, namaBulan };
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=*`);
     const absenByNis = {};
     (absensi||[]).forEach(a => { absenByNis[a.nis] = a; });
     const stats = hitungStatBulanan(semua||[], absenByNis, jumlahHari);
-    siswaAlpa = stats.detailSiswa
+    const semuaSiswa = stats.detailSiswa.map(sw => ({
+      ...(semua.find(s => s.nis === sw.nis) || {}),
+      ...sw
+    }));
+    extra = { bulan, namaBulan, semuaSiswa };
+    siswaAlpa = semuaSiswa
       .filter(sw => sw.al >= MIN_ALPA_BK)
-      .map(sw => ({ ...semua.find(s=>s.nis===sw.nis)||{}, ...sw }))
-      .sort((a,b) => b.al-a.al || a.nama.localeCompare(b.nama));
+      .sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
   }
 
   return { siswaAlpa, label, extra };
@@ -3802,79 +3808,142 @@ function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
   if (mode === 'harian') {
     keteranganMode = `📅 *Tanggal :* ${label}`;
   } else if (mode === 'mingguan') {
-    keteranganMode = `📅 *Periode  :* ${label}\n📌 Siswa Alpa ≥ ${MIN_ALPA_BK}x`;
+    keteranganMode = `📅 *Periode  :* ${label}`;
   } else if (mode === 'bulanan') {
-    keteranganMode = `📅 *Bulan    :* ${label}\n📌 Siswa Alpa ≥ ${MIN_ALPA_BK}x`;
+    keteranganMode = `📅 *Bulan    :* ${label}`;
   }
 
+  let ringkasan = '';
   let barisPerKelas = '';
 
-  if (mode === 'harian' && extra.rekapSemua) {
-    const byKelas = {};
-    extra.rekapSemua.forEach(s => {
-      if (!byKelas[s.kelas]) byKelas[s.kelas] = { H:[], S:[], I:[], A:[], bl:[] };
-      if (s.status === 'H')      byKelas[s.kelas].H.push(s.nama);
-      else if (s.status === 'S') byKelas[s.kelas].S.push(s.nama);
-      else if (s.status === 'I') byKelas[s.kelas].I.push(s.nama);
-      else if (s.status === 'A') byKelas[s.kelas].A.push(s.nama);
-      else                       byKelas[s.kelas].bl.push(s.nama);
-    });
-
-    const fmtList = (icon, arr) => arr.length
-      ? arr.map((n, i) => `  ${String(i+1).padStart(2,'0')}. ${n}\n      ${icon}`).join('\n')
-      : '  —';
-
-    barisPerKelas = Object.entries(byKelas)
-      .sort(([a],[b]) => a.localeCompare(b))
-      .map(([kelas, data]) => {
-        const total = data.H.length + data.S.length + data.I.length + data.A.length + data.bl.length;
-        return [
-          `${'─'.repeat(28)}`,
-          `🏫 *${kelas}* — ${total} siswa | Alpa: ${data.A.length}x`,
-          `\n✅ *Hadir (${data.H.length} siswa):*`,
-          fmtList('🟩 Hadir', data.H),
-          `\n🤒 *Sakit (${data.S.length} siswa):*`,
-          fmtList('🟨 Sakit', data.S),
-          `\n📋 *Izin (${data.I.length} siswa):*`,
-          fmtList('🟦 Izin', data.I),
-          `\n❌ *Alpa (${data.A.length} siswa):*`,
-          fmtList('🟥 Alpa hari ini', data.A),
-          `\n⏳ *Belum Absen (${data.bl.length} siswa):*`,
-          fmtList('⬜ Belum tercatat', data.bl),
-        ].join('\n');
-      }).join('\n\n');
-    
-  } else {
-    // Mingguan / Bulanan
-    const byKelas = {};
-    siswaAlpa.forEach(s => {
-      if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
-      byKelas[s.kelas].push(s);
-    });
-
-    barisPerKelas = Object.entries(byKelas)
-      .sort(([a],[b]) => a.localeCompare(b))
-      .map(([kelas, list]) => {
-        const detail = list.map((sw, i) => {
-          const icon = (sw.al||1) >= 3 ? '⚠️' : '❗';
-          return `  ${String(i+1).padStart(2,'0')}. ${icon} ${sw.nama}\n      A:${sw.al||1}x | S:${sw.s||0}x | I:${sw.iz||0}x | H:${sw.h||0}x`;
-        }).join('\n');
-        return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa\n${detail}`;
-      }).join('\n\n');
-  }
-
-  // Ringkasan total (harian)
-  let ringkasan = '';
+  // ── HARIAN ──────────────────────────────────────────────
   if (mode === 'harian' && extra.rekapSemua) {
     const totalH  = extra.rekapSemua.filter(s => s.status === 'H').length;
     const totalS  = extra.rekapSemua.filter(s => s.status === 'S').length;
     const totalI  = extra.rekapSemua.filter(s => s.status === 'I').length;
     const totalA  = extra.rekapSemua.filter(s => s.status === 'A').length;
-    const totalBl = extra.rekapSemua.filter(s => !s.status).length;
-    ringkasan = `📊 *RINGKASAN KESELURUHAN:*\n✅ Hadir : ${totalH} siswa\n🤒 Sakit : ${totalS} siswa\n📋 Izin  : ${totalI} siswa\n❌ Alpa  : ${totalA} siswa\n⏳ Belum : ${totalBl} siswa\n👥 Total : ${extra.rekapSemua.length} siswa\n\n`;
+
+    ringkasan = `📊 *RINGKASAN KESELURUHAN:*
+✅ Hadir : ${totalH} siswa
+🤒 Sakit : ${totalS} siswa
+📋 Izin  : ${totalI} siswa
+❌ Alpa  : ${totalA} siswa
+👥 Total : ${extra.rekapSemua.length} siswa\n\n`;
+
+    const byKelas = {};
+    extra.rekapSemua.forEach(s => {
+      if (!byKelas[s.kelas]) byKelas[s.kelas] = { H:[], S:[], I:[], A:[] };
+      if (s.status === 'H')      byKelas[s.kelas].H.push(s.nama);
+      else if (s.status === 'S') byKelas[s.kelas].S.push(s.nama);
+      else if (s.status === 'I') byKelas[s.kelas].I.push(s.nama);
+      else if (s.status === 'A') byKelas[s.kelas].A.push(s.nama);
+    });
+
+    const fmtList = (arr) => arr.length
+      ? arr.map((n, i) => `  ${i + 1}. ${n}`).join('\n')
+      : '  —';
+
+    barisPerKelas = Object.entries(byKelas)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .map(([kelas, data]) => {
+        const total = data.H.length + data.S.length + data.I.length + data.A.length;
+        return [
+          `${'─'.repeat(28)}`,
+          `🏫 *${kelas}* — ${total} siswa`,
+          `\n✅ *Hadir (${data.H.length} siswa):*`,
+          fmtList(data.H),
+          `\n🤒 *Sakit (${data.S.length} siswa):*`,
+          fmtList(data.S),
+          `\n📋 *Izin (${data.I.length} siswa):*`,
+          fmtList(data.I),
+          `\n❌ *Alpa (${data.A.length} siswa):*`,
+          fmtList(data.A),
+        ].join('\n');
+      }).join('\n\n');
+
+  // ── MINGGUAN & BULANAN ───────────────────────────────────
+  } else if ((mode === 'mingguan' || mode === 'bulanan') && extra.semuaSiswa) {
+    const semuaSiswa = extra.semuaSiswa || [];
+
+    const totalH = semuaSiswa.reduce((a, s) => a + (s.h  || 0), 0);
+    const totalS = semuaSiswa.reduce((a, s) => a + (s.s  || 0), 0);
+    const totalI = semuaSiswa.reduce((a, s) => a + (s.iz || 0), 0);
+    const totalA = semuaSiswa.reduce((a, s) => a + (s.al || 0), 0);
+
+    ringkasan = `📊 *RINGKASAN KESELURUHAN:*
+✅ Total Hadir : ${totalH}x
+🤒 Total Sakit : ${totalS}x
+📋 Total Izin  : ${totalI}x
+❌ Total Alpa  : ${totalA}x
+👥 Total Siswa : ${semuaSiswa.length} orang\n\n`;
+
+    const byKelas = {};
+    semuaSiswa.forEach(sw => {
+      if (!byKelas[sw.kelas]) byKelas[sw.kelas] = { H:[], S:[], I:[], A:[] };
+      if (sw.al === 0 && sw.s === 0 && sw.iz === 0) byKelas[sw.kelas].H.push(sw);
+      if (sw.s  > 0) byKelas[sw.kelas].S.push(sw);
+      if (sw.iz > 0) byKelas[sw.kelas].I.push(sw);
+      if (sw.al > 0) byKelas[sw.kelas].A.push(sw);
+    });
+
+    const fmtNama = (arr) => arr.length
+      ? arr.map((sw, i) => `  ${i + 1}. ${sw.nama}`).join('\n')
+      : '  —';
+
+    const fmtDetail = (arr, key) => arr.length
+      ? arr.map((sw, i) => `  ${i + 1}. ${sw.nama} (${sw[key]}x)`).join('\n')
+      : '  —';
+
+    barisPerKelas = Object.entries(byKelas)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .map(([kelas, data]) => {
+        const totalSiswaKelas = semuaSiswa.filter(sw => sw.kelas === kelas).length;
+        const detailKelas = semuaSiswa
+          .filter(sw => sw.kelas === kelas)
+          .sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
+
+        const barisDetail = detailKelas.map((sw, i) => {
+          const icon = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
+          return `  ${String(i + 1).padStart(2, '0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+        }).join('\n');
+
+        return [
+          `${'─'.repeat(28)}`,
+          `🏫 *${kelas}* — ${totalSiswaKelas} siswa`,
+          `\n✅ *Hadir Sempurna (${data.H.length} siswa):*`,
+          fmtNama(data.H),
+          `\n🤒 *Sakit (${data.S.length} siswa):*`,
+          fmtDetail(data.S, 's'),
+          `\n📋 *Izin (${data.I.length} siswa):*`,
+          fmtDetail(data.I, 'iz'),
+          `\n❌ *Alpa (${data.A.length} siswa):*`,
+          fmtDetail(data.A, 'al'),
+          `\n📋 *Detail Per Siswa:*`,
+          barisDetail,
+        ].join('\n');
+      }).join('\n\n');
   }
 
-  return `🎓 *REKAP ABSENSI PAGI — ${modeLabel}*\n*SMA Negeri 10 Pinrang*\n${'═'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nGuru Bimbingan Konseling (BK)\n\n${keteranganMode}\n\n${ringkasan}📋 *DETAIL PER KELAS:*\n\n${barisPerKelas}\n\n${'═'.repeat(30)}\nMohon segera ditindaklanjuti siswa yang Alpa/Belum Absen.\n\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+  return `🎓 *REKAP ABSENSI PAGI — ${modeLabel}*
+*SMA Negeri 10 Pinrang*
+${'═'.repeat(30)}
+
+Yth. Bapak/Ibu *${guru.nama}*
+Guru Bimbingan Konseling (BK)
+
+${keteranganMode}
+
+${ringkasan}📋 *DETAIL PER KELAS:*
+
+${barisPerKelas}
+
+${'═'.repeat(30)}
+Mohon segera ditindaklanjuti siswa yang tercatat Alpa.
+
+Wassalamu'alaikum Warahmatullahi Wabarakatuh
+
+_Sistem Informasi Presensi Pagi (SIPAGI)_
+_SMA Negeri 10 Pinrang_`;
 }
 
   // ============================================================
