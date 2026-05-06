@@ -2691,21 +2691,74 @@ function buildPesanOrtu(nama, kelas, tanggal) {
 // ============================================================
 function hitungStat(siswakelas, absenMap) {
   let h=0, s=0, iz=0, al=0, bl=0;
-  const namaAlpa = [];
+  const namaHadir=[], namaSakit=[], namaIzin=[], namaAlpa=[], namaBelum=[];
   siswakelas.forEach(sw => {
     const st = absenMap[String(sw.nis)] || null;
-    if (st==='H') h++;
-    else if (st==='S') s++;
-    else if (st==='I') iz++;
+    if (st==='H')      { h++;  namaHadir.push(sw.nama); }
+    else if (st==='S') { s++;  namaSakit.push(sw.nama); }
+    else if (st==='I') { iz++; namaIzin.push(sw.nama); }
     else if (st==='A') { al++; namaAlpa.push(sw.nama); }
-    else bl++;
+    else               { bl++; namaBelum.push(sw.nama); }
   });
-  return { h, s, iz, al, bl, namaAlpa };
+  return { h, s, iz, al, bl, namaHadir, namaSakit, namaIzin, namaAlpa, namaBelum };
 }
 
 function buildPesanRekapHarian(guru, tanggal, totalSiswa, stat) {
   const { h, s, iz, al, bl, namaAlpa } = stat;
-  return `📋 *REKAP ABSENSI PAGI HARIAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi siswa kelas Bapak/Ibu:\n\n📅 *Tanggal     :* ${tanggal}\n🏫 *Kelas        :* ${guru.kelas_wali}\n👥 *Total Siswa  :* ${totalSiswa} orang\n\n📊 *REKAP KEHADIRAN:*\n✅ Hadir        : ${h} siswa\n🤒 Sakit        : ${s} siswa\n📋 Izin         : ${iz} siswa\n❌ Alpa         : ${al} siswa\n⏳ Belum Absen  : ${bl} siswa\n${namaAlpa.length > 0 ? '\n⚠️ *DAFTAR SISWA ALPA:*\n' + namaAlpa.map((n,i) => (i+1)+'. '+n).join('\n') : '\n✅ Alhamdulillah, tidak ada siswa yang alpa.'}\n\nMohon Bapak/Ibu dapat menindaklanjuti siswa yang tercatat belum hadir atau tidak ada keterangan.\n\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+
+  // Ambil nama per kategori dari detail (jika tersedia)
+  // stat dari hitungStat() sudah punya namaAlpa
+  // Kita butuh namaHadir, namaSakit, namaIzin, namaBelum juga
+  // Tapi hitungStat() hanya simpan namaAlpa — kita perlu extend
+  // Solusi: gunakan namaLengkap dari stat jika ada, fallback ke angka saja
+  const namaHadir   = stat.namaHadir   || [];
+  const namaSakit   = stat.namaSakit   || [];
+  const namaIzin    = stat.namaIzin    || [];
+  const namaBelum   = stat.namaBelum   || [];
+
+  const formatDaftar = (arr) => arr.length
+    ? arr.map((n, i) => `  ${i + 1}. ${n}`).join('\n')
+    : '  —';
+
+  return `📋 *REKAP ABSENSI PAGI HARIAN*
+*SMA Negeri 10 Pinrang*
+${'─'.repeat(30)}
+
+Yth. Bapak/Ibu *${guru.nama}*
+Wali Kelas *${guru.kelas_wali}*
+
+Assalamu'alaikum Warahmatullahi Wabarakatuh,
+
+📅 *Tanggal    :* ${tanggal}
+🏫 *Kelas      :* ${guru.kelas_wali}
+👥 *Total Siswa:* ${totalSiswa} orang
+
+${'─'.repeat(30)}
+✅ *HADIR (${h} siswa):*
+${formatDaftar(namaHadir)}
+
+🤒 *SAKIT (${s} siswa):*
+${formatDaftar(namaSakit)}
+
+📋 *IZIN (${iz} siswa):*
+${formatDaftar(namaIzin)}
+
+❌ *ALPA (${al} siswa):*
+${formatDaftar(namaAlpa)}
+
+⏳ *BELUM ABSEN (${bl} siswa):*
+${formatDaftar(namaBelum)}
+
+${'─'.repeat(30)}
+${al > 0 || bl > 0
+  ? '⚠️ Mohon ditindaklanjuti siswa yang alpa/belum absen.'
+  : '✅ Alhamdulillah, semua siswa hadir!'}
+
+Wassalamu'alaikum Warahmatullahi Wabarakatuh
+
+_Hormat kami,_
+_Sistem Informasi Presensi Pagi (SIPAGI)_
+_SMA Negeri 10 Pinrang_`;
 }
 
   function buildPesanRekapHarianBK(guru, tanggal, semuaSiswa, absenMap) {
@@ -3340,17 +3393,75 @@ function hitungStatBulanan(siswakelas, absenByNis, jumlahHari) {
 function buildPesanRekapMingguan(guru, seninStr, mingguStr, totalSiswa, stat) {
   const { h, s, iz, al, bl, detailSiswa } = stat;
 
-  // Urutkan: alpa terbanyak di atas, lalu nama
   const sorted = [...detailSiswa].sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
 
+  const kategori = (label, icon, arr) => {
+    if (!arr.length) return `${icon} *${label} (0 siswa):*\n  —`;
+    return `${icon} *${label} (${arr.length} siswa):*\n` + arr.map((n, i) => `  ${i+1}. ${n}`).join('\n');
+  };
+
+  // Kumpulkan nama per kategori dari detailSiswa (akumulasi mingguan)
+  // Untuk mingguan, tampilkan siswa yang punya al>0, s>0, iz>0, dll
+  const siswaAlpa   = sorted.filter(sw => sw.al > 0).map(sw => `${sw.nama} (${sw.al}x)`);
+  const siswaSakit  = sorted.filter(sw => sw.s > 0).map(sw => `${sw.nama} (${sw.s}x)`);
+  const siswaIzin   = sorted.filter(sw => sw.iz > 0).map(sw => `${sw.nama} (${sw.iz}x)`);
+  const siswaPerfect= sorted.filter(sw => sw.al === 0 && sw.s === 0 && sw.iz === 0);
+
+  const formatDaftar = (arr) => arr.length
+    ? arr.map((n, i) => `  ${i+1}. ${n}`).join('\n')
+    : '  —';
+
   const barisDetail = sorted.map((sw, i) => {
-    const indikator = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
-    return `${String(i+1).padStart(2,'0')}. ${indikator} ${sw.nama}\n    H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+    const icon = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
+    return `  ${String(i+1).padStart(2,'0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
   }).join('\n');
 
-  const adaAlpa = detailSiswa.filter(sw => sw.al > 0).sort((a, b) => b.al - a.al);
+  return `📅 *REKAP ABSENSI PAGI MINGGUAN*
+*SMA Negeri 10 Pinrang*
+${'─'.repeat(30)}
 
-  return `📅 *REKAP ABSENSI PAGI MINGGUAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi mingguan siswa kelas Bapak/Ibu:\n\n📅 *Periode  :* ${seninStr} – ${mingguStr}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP TOTAL MINGGU INI:*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n\n📋 *DETAIL PER SISWA:*\n_(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_\n\n${barisDetail}\n${adaAlpa.length > 0 ? '\n⚠️ *SISWA PERLU PERHATIAN:*\n' + adaAlpa.map((sw,i)=>`${i+1}. ${sw.nama} — Alpa ${sw.al}x, Sakit ${sw.s}x, Izin ${sw.iz}x`).join('\n') : '\n✅ Tidak ada siswa yang alpa minggu ini.'}\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+Yth. Bapak/Ibu *${guru.nama}*
+Wali Kelas *${guru.kelas_wali}*
+
+Assalamu'alaikum Warahmatullahi Wabarakatuh,
+
+📅 *Periode  :* ${seninStr} – ${mingguStr}
+🏫 *Kelas    :* ${guru.kelas_wali}
+👥 *Siswa    :* ${totalSiswa} orang
+
+${'─'.repeat(30)}
+📊 *RINGKASAN MINGGU INI:*
+  ✅ Total Hadir : ${h}x
+  🤒 Total Sakit : ${s}x
+  📋 Total Izin  : ${iz}x
+  ❌ Total Alpa  : ${al}x
+
+${'─'.repeat(30)}
+❌ *SISWA YANG ALPA (${siswaAlpa.length} siswa):*
+${formatDaftar(siswaAlpa)}
+
+🤒 *SISWA YANG SAKIT (${siswaSakit.length} siswa):*
+${formatDaftar(siswaSakit)}
+
+📋 *SISWA YANG IZIN (${siswaIzin.length} siswa):*
+${formatDaftar(siswaIzin)}
+
+${siswaPerfect.length > 0 ? `🌟 *SISWA KEHADIRAN SEMPURNA (${siswaPerfect.length} siswa):*\n${siswaPerfect.map((sw, i) => `  ${i+1}. ${sw.nama}`).join('\n')}` : ''}
+
+${'─'.repeat(30)}
+📋 *DETAIL LENGKAP PER SISWA:*
+_(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_
+
+${barisDetail}
+
+${'─'.repeat(30)}
+${siswaAlpa.length > 0 ? `⚠️ Mohon perhatian khusus untuk ${siswaAlpa.length} siswa yang alpa.` : '✅ Tidak ada siswa yang alpa minggu ini!'}
+
+Wassalamu'alaikum Warahmatullahi Wabarakatuh
+
+_Hormat kami,_
+_Sistem Informasi Presensi Pagi (SIPAGI)_
+_SMA Negeri 10 Pinrang_`;
 }
 
 /**
@@ -3359,19 +3470,78 @@ function buildPesanRekapMingguan(guru, seninStr, mingguStr, totalSiswa, stat) {
 function buildPesanRekapBulanan(guru, bulan, namaBulan, totalSiswa, stat) {
   const { h, s, iz, al, detailSiswa } = stat;
 
-  // Urutkan: alpa terbanyak di atas
   const sorted = [...detailSiswa].sort((a, b) => b.al - a.al || a.nama.localeCompare(b.nama));
 
+  const siswaAlpaTinggi = sorted.filter(sw => sw.al >= 3);
+  const siswaAlpaBiasa  = sorted.filter(sw => sw.al > 0 && sw.al < 3);
+  const siswaSakit      = sorted.filter(sw => sw.s > 0);
+  const siswaIzin       = sorted.filter(sw => sw.iz > 0);
+  const siswaPerfect    = sorted.filter(sw => sw.al === 0 && sw.s === 0 && sw.iz === 0);
+
+  const formatDaftar = (arr, showDetail=false) => arr.length
+    ? arr.map((sw, i) => showDetail
+        ? `  ${String(i+1).padStart(2,'0')}. ${sw.nama} — A:${sw.al}x | S:${sw.s}x | I:${sw.iz}x | H:${sw.h}x`
+        : `  ${i+1}. ${typeof sw === 'string' ? sw : sw.nama}`)
+      .join('\n')
+    : '  —';
+
   const barisDetail = sorted.map((sw, i) => {
-    const indikator = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
-    return `${String(i+1).padStart(2,'0')}. ${indikator} ${sw.nama}\n    H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
+    const icon = sw.al >= 3 ? '⚠️' : sw.al > 0 ? '❗' : '✅';
+    return `  ${String(i+1).padStart(2,'0')}. ${icon} ${sw.nama} — H:${sw.h} | S:${sw.s} | I:${sw.iz} | A:${sw.al}`;
   }).join('\n');
 
-  const siswaAlpaTinggi = detailSiswa
-    .filter(sw => sw.al >= 3)
-    .sort((a, b) => b.al - a.al);
+  return `📆 *REKAP ABSENSI PAGI BULANAN*
+*SMA Negeri 10 Pinrang*
+${'─'.repeat(30)}
 
-  return `📆 *REKAP ABSENSI PAGI BULANAN*\n*SMA Negeri 10 Pinrang*\n${'─'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nWali Kelas *${guru.kelas_wali}*\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut rekap kehadiran pagi bulan ini:\n\n📆 *Bulan    :* ${namaBulan}\n🏫 *Kelas    :* ${guru.kelas_wali}\n👥 *Siswa    :* ${totalSiswa} orang\n\n📊 *REKAP TOTAL BULAN INI:*\n✅ Total Hadir  : ${h}x\n🤒 Total Sakit  : ${s}x\n📋 Total Izin   : ${iz}x\n❌ Total Alpa   : ${al}x\n\n📋 *DETAIL PER SISWA:*\n_(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_\n\n${barisDetail}\n${siswaAlpaTinggi.length > 0 ? '\n⚠️ *SISWA ALPA ≥ 3 (PERLU TINDAK LANJUT):*\n' + siswaAlpaTinggi.map((sw,i)=>`${i+1}. ${sw.nama} — Alpa ${sw.al}x, Sakit ${sw.s}x, Izin ${sw.iz}x`).join('\n') : '\n✅ Tidak ada siswa dengan alpa berlebihan bulan ini.'}\n\nMohon Bapak/Ibu dapat memberikan perhatian kepada siswa yang memiliki catatan alpa tinggi.\n\nDemikian rekap ini kami sampaikan. Terima kasih.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+Yth. Bapak/Ibu *${guru.nama}*
+Wali Kelas *${guru.kelas_wali}*
+
+Assalamu'alaikum Warahmatullahi Wabarakatuh,
+
+📆 *Bulan   :* ${namaBulan}
+🏫 *Kelas   :* ${guru.kelas_wali}
+👥 *Siswa   :* ${totalSiswa} orang
+
+${'─'.repeat(30)}
+📊 *RINGKASAN BULAN INI:*
+  ✅ Total Hadir : ${h}x
+  🤒 Total Sakit : ${s}x
+  📋 Total Izin  : ${iz}x
+  ❌ Total Alpa  : ${al}x
+
+${'─'.repeat(30)}
+⚠️ *ALPA ≥ 3 — PERLU TINDAK LANJUT (${siswaAlpaTinggi.length} siswa):*
+${formatDaftar(siswaAlpaTinggi, true)}
+
+❌ *ALPA 1–2 KALI (${siswaAlpaBiasa.length} siswa):*
+${formatDaftar(siswaAlpaBiasa, true)}
+
+🤒 *PERNAH SAKIT (${siswaSakit.length} siswa):*
+${formatDaftar(siswaSakit.map(sw => `${sw.nama} (${sw.s}x)`))}
+
+📋 *PERNAH IZIN (${siswaIzin.length} siswa):*
+${formatDaftar(siswaIzin.map(sw => `${sw.nama} (${sw.iz}x)`))}
+
+🌟 *KEHADIRAN SEMPURNA (${siswaPerfect.length} siswa):*
+${formatDaftar(siswaPerfect.map(sw => sw.nama))}
+
+${'─'.repeat(30)}
+📋 *DETAIL LENGKAP PER SISWA:*
+_(✅ tidak alpa | ❗ ada alpa | ⚠️ alpa ≥ 3)_
+
+${barisDetail}
+
+${'─'.repeat(30)}
+${siswaAlpaTinggi.length > 0
+  ? `⚠️ Mohon tindak lanjut serius untuk ${siswaAlpaTinggi.length} siswa alpa ≥ 3 kali.`
+  : '✅ Tidak ada siswa dengan alpa berlebihan bulan ini!'}
+
+Wassalamu'alaikum Warahmatullahi Wabarakatuh
+
+_Hormat kami,_
+_Sistem Informasi Presensi Pagi (SIPAGI)_
+_SMA Negeri 10 Pinrang_`;
 }
 
 // ============================================================
@@ -3690,10 +3860,16 @@ function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
     barisPerKelas = Object.entries(byKelas)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([kelas, list]) => {
+        const totalAlpa = list.reduce((sum, sw) => sum + (sw.al || 1), 0);
         const detail = list.map((sw, i) => {
           const no = String(i + 1).padStart(2, '0');
-          return `  ${no}. ${sw.nama} — A:${sw.al}x | S:${sw.s||0}x | I:${sw.iz||0}x | H:${sw.h||0}x`;
+          const icon = (sw.al||1) >= 3 ? '⚠️' : '❗';
+          return `  ${no}. ${icon} ${sw.nama}\n      A:${sw.al||1}x | S:${sw.s||0}x | I:${sw.iz||0}x | H:${sw.h||0}x`;
         }).join('\n');
+        const jmlSakit = list.filter(sw => (sw.s||0) > 0).length;
+        const jmlIzin  = list.filter(sw => (sw.iz||0) > 0).length;
+        return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa | Total Alpa: ${totalAlpa}x\n${detail}`;
+      }).join('\n\n');
         const totalAlpa = list.reduce((sum, sw) => sum + (sw.al || 1), 0);
         return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa | Total Alpa: ${totalAlpa}x\n${detail}`;
       }).join('\n\n');
