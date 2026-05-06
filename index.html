@@ -3586,15 +3586,17 @@ async function getSiswaAlpaBK(mode) {
   if (mode === 'harian') {
     const tanggal = todayStr();
     label = tanggal;
-    extra = { tanggal };
     const bulan = toBulan(tanggal);
     const col = tglCol(tanggal);
     const absensi = await sbSelect(T.absensi, `?bulan=eq.${bulan}&select=nis,${col}`);
     const absenMap = {};
-    (absensi||[]).forEach(a => { absenMap[a.nis] = a[col]||null; });
-    // Harian: siswa yang hari ini Alpa (langsung lapor BK)
-    siswaAlpa = (semua||[])
-      .filter(s => absenMap[s.nis] === 'A')
+    (absensi||[]).forEach(a => { absenMap[String(a.nis)] = a[col]||null; });
+    // Rekap semua siswa dengan statusnya
+    const rekapSemua = (semua||[]).map(s => ({ ...s, status: absenMap[String(s.nis)] || null }));
+    extra = { tanggal, rekapSemua };
+    // Untuk BK: semua siswa yang Alpa hari ini
+    siswaAlpa = rekapSemua
+      .filter(s => s.status === 'A')
       .map(s => ({ ...s, al: 1, s: 0, iz: 0, h: 0 }));
 
   } else if (mode === 'mingguan') {
@@ -3630,37 +3632,85 @@ async function getSiswaAlpaBK(mode) {
 
 function buildPesanRekapBK(guru, mode, label, siswaAlpa, extra) {
   const modeLabel = { harian:'HARIAN', mingguan:'MINGGUAN', bulanan:'BULANAN' }[mode] || mode.toUpperCase();
-  const byKelas = {};
-  siswaAlpa.forEach(s => {
-    if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
-    byKelas[s.kelas].push(s);
-  });
 
   let keteranganMode = '';
   if (mode === 'harian') {
-    keteranganMode = `📅 *Tanggal :* ${label}\n📌 *Kategori:* Siswa tidak hadir (Alpa) hari ini`;
+    keteranganMode = `📅 *Tanggal :* ${label}`;
   } else if (mode === 'mingguan') {
-    keteranganMode = `📅 *Periode  :* ${label}\n📌 *Kategori:* Siswa Alpa ≥ ${MIN_ALPA_BK}x dalam minggu ini`;
+    keteranganMode = `📅 *Periode  :* ${label}\n📌 Siswa Alpa ≥ ${MIN_ALPA_BK}x`;
   } else if (mode === 'bulanan') {
-    keteranganMode = `📅 *Bulan    :* ${label}\n📌 *Kategori:* Siswa Alpa ≥ ${MIN_ALPA_BK}x dalam bulan ini`;
+    keteranganMode = `📅 *Bulan    :* ${label}\n📌 Siswa Alpa ≥ ${MIN_ALPA_BK}x`;
   }
 
-  const barisPerKelas = Object.entries(byKelas)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([kelas, list]) => {
-      const detail = list.map((sw, i) => {
-        const no = String(i + 1).padStart(2, '0');
-        const bar = '🟥'.repeat(Math.min(sw.al || 1, 5));
-        if (mode === 'harian') {
-          return `  ${no}. ${sw.nama}\n      ${bar} Alpa hari ini`;
-        }
-        return `  ${no}. ${sw.nama}\n      ${bar} A:${sw.al}x | S:${sw.s||0}x | I:${sw.iz||0}x`;
-      }).join('\n');
-      const totalAlpa = list.reduce((sum, sw) => sum + (sw.al || 1), 0);
-      return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa | Alpa: ${totalAlpa}x\n${detail}`;
-    }).join('\n\n');
+  // Ambil data lengkap per kelas dari extra.rekapSemua (harian)
+  // atau dari siswaAlpa (mingguan/bulanan)
+  let barisPerKelas = '';
 
-  return `🎓 *LAPORAN SISWA BERMASALAH — ${modeLabel}*\n*SMA Negeri 10 Pinrang*\n${'═'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nGuru Bimbingan Konseling (BK)\n\nAssalamu'alaikum Warahmatullahi Wabarakatuh,\n\nBerikut laporan siswa yang perlu mendapat perhatian BK:\n\n${keteranganMode}\n👥 *Jumlah   :* ${siswaAlpa.length} siswa\n\n📋 *DAFTAR SISWA PER KELAS:*\n\n${barisPerKelas}\n\n${'═'.repeat(30)}\nMohon Bapak/Ibu guru BK dapat segera menindaklanjuti dengan:\n1️⃣ Memanggil siswa yang bersangkutan\n2️⃣ Berkoordinasi dengan wali kelas masing-masing\n3️⃣ Menghubungi orang tua/wali jika diperlukan\n\nData ini digenerate otomatis oleh sistem SIPAGI.\nTerima kasih atas perhatian dan kerja sama Bapak/Ibu.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh\n\n_Hormat kami,_\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
+  if (mode === 'harian' && extra.rekapSemua) {
+    // Kelompokkan SEMUA siswa per kelas dengan status lengkap
+    const byKelas = {};
+    extra.rekapSemua.forEach(s => {
+      if (!byKelas[s.kelas]) byKelas[s.kelas] = { H:[], S:[], I:[], A:[], bl:[] };
+      if (s.status === 'H') byKelas[s.kelas].H.push(s.nama);
+      else if (s.status === 'S') byKelas[s.kelas].S.push(s.nama);
+      else if (s.status === 'I') byKelas[s.kelas].I.push(s.nama);
+      else if (s.status === 'A') byKelas[s.kelas].A.push(s.nama);
+      else byKelas[s.kelas].bl.push(s.nama);
+    });
+
+    barisPerKelas = Object.entries(byKelas)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([kelas, data]) => {
+        const total = data.H.length + data.S.length + data.I.length + data.A.length + data.bl.length;
+        let baris = `${'─'.repeat(28)}\n🏫 *${kelas}* — ${total} siswa\n`;
+        baris += `✅ Hadir : ${data.H.length} | 🤒 Sakit: ${data.S.length} | 📋 Izin: ${data.I.length} | ❌ Alpa: ${data.A.length} | ⏳ Blm: ${data.bl.length}`;
+        if (data.A.length > 0) {
+          baris += `\n❌ *Alpa:*\n${data.A.map((n,i)=>`  ${i+1}. ${n}`).join('\n')}`;
+        }
+        if (data.S.length > 0) {
+          baris += `\n🤒 *Sakit:*\n${data.S.map((n,i)=>`  ${i+1}. ${n}`).join('\n')}`;
+        }
+        if (data.I.length > 0) {
+          baris += `\n📋 *Izin:*\n${data.I.map((n,i)=>`  ${i+1}. ${n}`).join('\n')}`;
+        }
+        if (data.bl.length > 0) {
+          baris += `\n⏳ *Belum Absen:*\n${data.bl.map((n,i)=>`  ${i+1}. ${n}`).join('\n')}`;
+        }
+        return baris;
+      }).join('\n\n');
+
+  } else {
+    // Mingguan / Bulanan: tampilkan siswa bermasalah per kelas
+    const byKelas = {};
+    siswaAlpa.forEach(s => {
+      if (!byKelas[s.kelas]) byKelas[s.kelas] = [];
+      byKelas[s.kelas].push(s);
+    });
+
+    barisPerKelas = Object.entries(byKelas)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([kelas, list]) => {
+        const detail = list.map((sw, i) => {
+          const no = String(i + 1).padStart(2, '0');
+          return `  ${no}. ${sw.nama} — A:${sw.al}x | S:${sw.s||0}x | I:${sw.iz||0}x | H:${sw.h||0}x`;
+        }).join('\n');
+        const totalAlpa = list.reduce((sum, sw) => sum + (sw.al || 1), 0);
+        return `${'─'.repeat(28)}\n🏫 *${kelas}* — ${list.length} siswa | Total Alpa: ${totalAlpa}x\n${detail}`;
+      }).join('\n\n');
+  }
+
+  // Ringkasan total
+  let ringkasan = '';
+  if (mode === 'harian' && extra.rekapSemua) {
+    const totalH = extra.rekapSemua.filter(s => s.status === 'H').length;
+    const totalS = extra.rekapSemua.filter(s => s.status === 'S').length;
+    const totalI = extra.rekapSemua.filter(s => s.status === 'I').length;
+    const totalA = extra.rekapSemua.filter(s => s.status === 'A').length;
+    const totalBl = extra.rekapSemua.filter(s => !s.status).length;
+    ringkasan = `📊 *RINGKASAN:*\n✅ Hadir : ${totalH} siswa\n🤒 Sakit : ${totalS} siswa\n📋 Izin  : ${totalI} siswa\n❌ Alpa  : ${totalA} siswa\n⏳ Belum : ${totalBl} siswa\n👥 Total : ${extra.rekapSemua.length} siswa\n\n`;
+  }
+
+  return `🎓 *REKAP ABSENSI PAGI — ${modeLabel}*\n*SMA Negeri 10 Pinrang*\n${'═'.repeat(30)}\n\nYth. Bapak/Ibu *${guru.nama}*\nGuru Bimbingan Konseling (BK)\n\n${keteranganMode}\n\n${ringkasan}📋 *DETAIL PER KELAS:*\n\n${barisPerKelas}\n\n${'═'.repeat(30)}\nMohon segera ditindaklanjuti siswa yang Alpa/Belum Absen.\n\n_Sistem Informasi Presensi Pagi (SIPAGI)_\n_SMA Negeri 10 Pinrang_`;
 }
 
   // ============================================================
