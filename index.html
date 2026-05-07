@@ -178,25 +178,68 @@
 
 <!-- Area Absen Wajah -->
 <div id="absenWajahArea" class="hidden">
-  <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-    <h3 class="font-semibold text-blue-800 mb-2"><i class="fas fa-info-circle mr-2"></i>Cara Absen Wajah:</h3>
-    <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-      <li>Masukkan NIS Anda</li>
-      <li>Tekan "Mulai Scan Wajah"</li>
-      <li>Arahkan kamera ke wajah Anda</li>
-      <li>Tahan diam hingga terdeteksi</li>
-    </ol>
+
+  <!-- STEP 1: CEK LOKASI -->
+  <div id="stepLokasi">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-center">
+      <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-map-marker-alt text-3xl text-blue-500"></i>
+      </div>
+      <h3 class="font-semibold text-blue-800 mb-1">Verifikasi Lokasi</h3>
+      <p class="text-sm text-blue-600 mb-4">Pastikan Anda berada di lingkungan sekolah sebelum absen</p>
+      <div id="lokasiStatus" class="hidden mb-4 p-3 rounded-xl text-sm font-medium"></div>
+      <button onclick="mulaiCekLokasi()" id="btnCekLokasi"
+        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2">
+        <i class="fas fa-crosshairs"></i>Aktifkan & Cek Lokasi Saya
+      </button>
+      <p class="text-xs text-gray-400 mt-2">
+        <i class="fas fa-info-circle mr-1"></i>Izinkan akses lokasi saat browser meminta
+      </p>
+    </div>
   </div>
-  <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk Siswa (NIS)</label>
-  <input type="text" id="nisWajah" inputmode="numeric" pattern="[0-9]*" placeholder="Contoh: 12345"
-    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors mb-4"
-    oninput="validateNisWajah()" maxlength="20" autocomplete="off">
-  <button id="btnMulaiWajah" onclick="startFaceScan()"
-    class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
-    disabled>
-    <i class="fas fa-camera"></i>Mulai Scan Wajah
-  </button>
-  <p id="msgWajah" class="text-sm text-gray-500 text-center mt-3">Masukkan NIS untuk melanjutkan</p>
+
+  <!-- STEP 2: INPUT NIS (muncul setelah lokasi valid) -->
+  <div id="stepNisWajah" class="hidden">
+    <!-- Badge lokasi valid -->
+    <div class="flex items-center gap-2 mb-4 p-3 bg-green-50 border border-green-200 rounded-xl">
+      <i class="fas fa-check-circle text-green-500"></i>
+      <div>
+        <p class="text-sm font-semibold text-green-700">Lokasi Terverifikasi</p>
+        <p class="text-xs text-green-600" id="infoJarakLokasi"></p>
+      </div>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+      <h3 class="font-semibold text-blue-800 mb-2">
+        <i class="fas fa-info-circle mr-2"></i>Cara Absen Wajah:
+      </h3>
+      <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+        <li>Masukkan NIS Anda di bawah</li>
+        <li>Tekan "Mulai Scan Wajah"</li>
+        <li>Arahkan kamera ke wajah Anda</li>
+        <li>Tahan diam hingga terdeteksi</li>
+      </ol>
+    </div>
+
+    <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Induk Siswa (NIS)</label>
+    <input type="text" id="nisWajah" inputmode="numeric" pattern="[0-9]*"
+      placeholder="Contoh: 12345"
+      class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors mb-4"
+      oninput="validateNisWajah()" maxlength="20" autocomplete="off">
+
+    <button id="btnMulaiWajah" onclick="startFaceScan()"
+      class="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+      disabled>
+      <i class="fas fa-camera"></i>Mulai Scan Wajah
+    </button>
+    <p id="msgWajah" class="text-sm text-gray-500 text-center mt-3">Masukkan NIS untuk melanjutkan</p>
+
+    <!-- Tombol ulangi cek lokasi -->
+    <button onclick="resetCekLokasi()"
+      class="w-full mt-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-sm font-medium rounded-xl transition-all">
+      <i class="fas fa-redo mr-2"></i>Ulangi Cek Lokasi
+    </button>
+  </div>
 
   <!-- Kamera Wajah -->
   <div id="faceArea" class="hidden mt-4">
@@ -204,7 +247,6 @@
       <video id="faceVideo" autoplay muted playsinline
         class="w-full rounded-xl" style="max-height:300px;object-fit:cover"></video>
       <canvas id="faceCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
-      <!-- Overlay deteksi -->
       <div class="absolute bottom-0 left-0 right-0 bg-black/50 p-3 text-center">
         <p id="faceStatus" class="text-white text-sm font-semibold">
           <i class="fas fa-spinner animate-spin mr-2"></i>Memuat model...
@@ -216,6 +258,7 @@
       <i class="fas fa-times mr-2"></i>Batal
     </button>
   </div>
+
   <div id="resultWajah" class="hidden mt-4 p-5 rounded-xl text-center"></div>
 </div>
   <div id="inputNisArea">
@@ -4373,10 +4416,139 @@ function validateNisWajah() {
   }
   const valid = nis.length >= 3 && /^\d+$/.test(nis);
   btn.disabled = !valid;
-  msg.textContent = valid ? '✓ NIS valid. Silakan mulai scan wajah.' : 'Masukkan NIS untuk melanjutkan';
-  msg.className = valid ? 'text-sm text-blue-600 text-center mt-3' : 'text-sm text-gray-500 text-center mt-3';
+  if (valid) {
+    msg.textContent = '✓ NIS valid. Silakan mulai scan wajah.';
+    msg.className = 'text-sm text-green-600 text-center mt-3';
+  } else if (nis.length > 0) {
+    msg.textContent = 'NIS harus angka minimal 3 digit';
+    msg.className = 'text-sm text-amber-600 text-center mt-3';
+  } else {
+    msg.textContent = 'Masukkan NIS untuk melanjutkan';
+    msg.className = 'text-sm text-gray-500 text-center mt-3';
+  }
+}
+// ============================================================
+// ALUR LOKASI DULU → BARU NIS
+// ============================================================
+function mulaiCekLokasi() {
+  const btn       = document.getElementById('btnCekLokasi');
+  const statusDiv = document.getElementById('lokasiStatus');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Mengecek lokasi...';
+  statusDiv.classList.remove('hidden');
+  statusDiv.className = 'mb-4 p-3 rounded-xl text-sm font-medium bg-blue-50 border border-blue-200 text-blue-700';
+  statusDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Mengambil koordinat GPS...';
+
+  if (!navigator.geolocation) {
+    tampilHasilLokasi(false, 'Browser tidak mendukung GPS. Gunakan browser lain.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Aktifkan & Cek Lokasi Saya';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      statusDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memverifikasi jarak ke sekolah...';
+      try {
+        // Ambil config lokasi dari Supabase
+        const data = await sbSelect('config', '?key=in.(lokasi_aktif,lokasi_lat,lokasi_lng,lokasi_radius)');
+        const cfg = {};
+        (data||[]).forEach(r => { cfg[r.key] = r.value; });
+
+        // Jika fitur lokasi nonaktif → langsung lolos
+        if (cfg.lokasi_aktif !== 'true') {
+          tampilHasilLokasi(true, 'Verifikasi lokasi tidak diperlukan.', 0, 0);
+          return;
+        }
+
+        const sekolahLat = parseFloat(cfg.lokasi_lat);
+        const sekolahLng = parseFloat(cfg.lokasi_lng);
+        const radius     = parseInt(cfg.lokasi_radius) || 100;
+
+        // Koordinat belum diatur admin → langsung lolos
+        if (isNaN(sekolahLat) || isNaN(sekolahLng)) {
+          tampilHasilLokasi(true, 'Lokasi sekolah belum dikonfigurasi.', 0, 0);
+          return;
+        }
+
+        const jarak = Math.round(hitungJarakMeter(
+          pos.coords.latitude, pos.coords.longitude,
+          sekolahLat, sekolahLng
+        ));
+
+        if (jarak <= radius) {
+          tampilHasilLokasi(true, `Anda berada ${jarak}m dari sekolah (maks. ${radius}m)`, jarak, radius);
+        } else {
+          tampilHasilLokasi(false, `Anda terlalu jauh dari sekolah: ${jarak}m (maks. ${radius}m). Pastikan Anda berada di area sekolah.`, jarak, radius);
+        }
+      } catch(err) {
+        // Gagal load config → tetap loloskan
+        tampilHasilLokasi(true, 'Verifikasi lokasi dilewati (gagal load konfigurasi).', 0, 0);
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Cek Ulang Lokasi';
+    },
+    err => {
+      const pesanErr = {
+        1: 'Izin lokasi ditolak. Ketuk ikon kunci di address bar browser dan izinkan akses lokasi.',
+        2: 'Sinyal GPS lemah. Coba di area terbuka.',
+        3: 'Waktu habis. Pastikan GPS aktif lalu coba lagi.'
+      };
+      tampilHasilLokasi(false, pesanErr[err.code] || 'Gagal GPS: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Coba Lagi';
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
 }
 
+function tampilHasilLokasi(valid, pesan, jarak=0, radius=0) {
+  const statusDiv = document.getElementById('lokasiStatus');
+  const btn       = document.getElementById('btnCekLokasi');
+
+  if (valid) {
+    // Tampilkan status hijau
+    statusDiv.className = 'mb-4 p-3 rounded-xl text-sm font-medium bg-green-50 border border-green-200 text-green-700';
+    statusDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${pesan}`;
+
+    // Setelah 1.5 detik → sembunyikan step lokasi, tampilkan step NIS
+    setTimeout(() => {
+      document.getElementById('stepLokasi').classList.add('hidden');
+      document.getElementById('stepNisWajah').classList.remove('hidden');
+      // Isi info jarak
+      const infoEl = document.getElementById('infoJarakLokasi');
+      if (infoEl) {
+        infoEl.textContent = jarak > 0
+          ? `Jarak Anda: ${jarak}m dari sekolah (maks. ${radius}m)`
+          : pesan;
+      }
+      // Fokus ke input NIS
+      setTimeout(() => document.getElementById('nisWajah').focus(), 300);
+    }, 1500);
+
+  } else {
+    // Tampilkan status merah
+    statusDiv.className = 'mb-4 p-3 rounded-xl text-sm font-medium bg-red-50 border border-red-200 text-red-700';
+    statusDiv.innerHTML = `<i class="fas fa-times-circle mr-2"></i>${pesan}`;
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Coba Lagi';
+  }
+}
+
+function resetCekLokasi() {
+  // Kembali ke step lokasi
+  document.getElementById('stepNisWajah').classList.add('hidden');
+  document.getElementById('stepLokasi').classList.remove('hidden');
+  document.getElementById('lokasiStatus').classList.add('hidden');
+  document.getElementById('nisWajah').value = '';
+  document.getElementById('btnMulaiWajah').disabled = true;
+  document.getElementById('msgWajah').textContent = 'Masukkan NIS untuk melanjutkan';
+  document.getElementById('msgWajah').className = 'text-sm text-gray-500 text-center mt-3';
+  const btn = document.getElementById('btnCekLokasi');
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Aktifkan & Cek Lokasi Saya';
+}
 async function startFaceScan() {
   const nis      = document.getElementById('nisWajah').value.trim();
   const faceStatus = document.getElementById('faceStatus');
@@ -4385,18 +4557,6 @@ async function startFaceScan() {
   document.getElementById('faceArea').classList.remove('hidden');
   document.getElementById('btnMulaiWajah').disabled = true;
 
-  // CEK LOKASI DULU
-  faceStatus.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Memeriksa lokasi GPS...';
-  msgWajah.innerHTML = '<span class="text-blue-600"><i class="fas fa-map-marker-alt mr-1"></i>Mengecek GPS...</span>';
-
-  const cekLokasi = await cekLokasiSiswa();
-  if (!cekLokasi.boleh) {
-    document.getElementById('faceArea').classList.add('hidden');
-    document.getElementById('btnMulaiWajah').disabled = false;
-    showFaceResult(false, '📍 ' + cekLokasi.pesan);
-    msgWajah.textContent = 'Masukkan NIS untuk melanjutkan';
-    return;
-  }
   if (cekLokasi.jarak !== undefined) {
     msgWajah.innerHTML = `<span class="text-green-600">✅ Lokasi valid (${cekLokasi.jarak}m dari sekolah)</span>`;
   }
@@ -4521,6 +4681,13 @@ function showFaceResult(success, data, akurasi=0) {
 }
 
 function resetAbsenWajah() {
+  // Reset ke step lokasi
+  document.getElementById('stepLokasi').classList.remove('hidden');
+  document.getElementById('stepNisWajah').classList.add('hidden');
+  document.getElementById('lokasiStatus').classList.add('hidden');
+  const btn = document.getElementById('btnCekLokasi');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Aktifkan & Cek Lokasi Saya'; }
+  // Reset NIS dan result
   document.getElementById('nisWajah').value = '';
   document.getElementById('resultWajah').classList.add('hidden');
   document.getElementById('resultWajah').innerHTML = '';
