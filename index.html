@@ -280,12 +280,15 @@
         </div>
       </div>
     </div>
-    <div class="flex gap-3 mt-6">
-      <button class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all" id="btnLoginGuruQR" onclick="loginPiket('qr')">
-        <i class="fas fa-qrcode mr-2"></i>Buat QR
+   <div class="grid grid-cols-3 gap-2 mt-6">
+      <button class="py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all flex flex-col items-center gap-1" id="btnLoginGuruQR" onclick="loginPiket('qr')">
+        <i class="fas fa-qrcode text-xl"></i><span class="text-xs">Buat QR</span>
       </button>
-      <button class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all" id="btnLoginGuruManual" onclick="loginPiket('manual')">
-        <i class="fas fa-edit mr-2"></i>Manual
+      <button class="py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all flex flex-col items-center gap-1" id="btnLoginGuruManual" onclick="loginPiket('manual')">
+        <i class="fas fa-edit text-xl"></i><span class="text-xs">Manual</span>
+      </button>
+      <button class="py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all flex flex-col items-center gap-1" id="btnLoginGuruWajah" onclick="loginPiket('wajah')">
+        <i class="fas fa-camera text-xl"></i><span class="text-xs">Scan Wajah</span>
       </button>
     </div>
     <p id="msgGuru" class="text-sm text-center mt-4 min-h-[20px]"></p>
@@ -305,11 +308,7 @@
     <button class="w-full mt-4 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all" onclick="logoutPiket()">
       <i class="fas fa-sign-out-alt mr-2"></i>Keluar
     </button>
-    <button class="w-full mt-3 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all" onclick="switchToScanWajahPiket()">
-  <i class="fas fa-camera mr-2"></i>Mode Scan Wajah Siswa
-</button>
-
-<!-- Area Scan Wajah Piket -->
+    <!-- Area Scan Wajah Piket (dari QR mode) -->
 <div id="scanWajahPiketArea" class="hidden mt-4">
   <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
     <div class="flex items-center justify-between mb-2">
@@ -344,6 +343,43 @@
   </button>
 </div>
 </div>
+  </div>
+  <!-- Standalone Scan Wajah Piket -->
+  <div id="scanWajahStandaloneArea" class="hidden">
+    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200 mb-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h4 class="font-semibold text-green-800"><i class="fas fa-camera text-green-600 mr-2"></i>Scan Wajah Siswa</h4>
+          <p class="text-xs text-green-600 mt-1">Petugas: <b id="namaGuruScanWajahStandalone" class="text-green-700"></b></p>
+        </div>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">PIKET AKTIF</span>
+      </div>
+    </div>
+    <div class="relative rounded-xl overflow-hidden bg-black mb-3">
+      <video id="piketFaceVideoStandalone" autoplay muted playsinline
+        class="w-full rounded-xl" style="max-height:320px;object-fit:cover"></video>
+      <canvas id="piketFaceCanvasStandalone" class="absolute top-0 left-0 w-full h-full"></canvas>
+      <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-3 text-center">
+        <p id="piketFaceStatusStandalone" class="text-white text-sm font-semibold">
+          <i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...
+        </p>
+      </div>
+    </div>
+    <div id="piketFaceResultStandalone" class="hidden mb-3 p-4 rounded-xl text-center"></div>
+    <div class="grid grid-cols-3 gap-2">
+      <button onclick="resetPiketScanStandalone()"
+        class="py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm">
+        <i class="fas fa-redo mr-1"></i>Scan Lagi
+      </button>
+      <button onclick="flipPiketKameraStandalone()"
+        class="py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl text-sm">
+        <i class="fas fa-sync-alt mr-1"></i>Balik
+      </button>
+      <button onclick="logoutPiket()"
+        class="py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl text-sm">
+        <i class="fas fa-sign-out-alt mr-1"></i>Keluar
+      </button>
+    </div>
   </div>
   <div id="manualInputArea" class="hidden">
     <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
@@ -1650,7 +1686,7 @@ async function loginPiket(mode) {
   const user = document.getElementById('userGuru').value.trim();
   const pass = document.getElementById('passGuru').value;
   if (!user || !pass) { showMessage('msgGuru', 'Username dan password harus diisi!', 'error'); return; }
-  setButtonLoading('btnLoginGuruQR', true); setButtonLoading('btnLoginGuruManual', true);
+  ['btnLoginGuruQR','btnLoginGuruManual','btnLoginGuruWajah'].forEach(id => setButtonLoading(id, true));
   showMessage('msgGuru', 'Memverifikasi...', 'info');
   try {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
@@ -1662,13 +1698,17 @@ async function loginPiket(mode) {
     if (mode === 'manual') {
       document.getElementById('namaGuruManual').textContent = AppState.activeTeacher;
       document.getElementById('manualInputArea').classList.remove('hidden');
+    } else if (mode === 'wajah') {
+      document.getElementById('namaGuruScanWajahStandalone').textContent = AppState.activeTeacher;
+      document.getElementById('scanWajahStandaloneArea').classList.remove('hidden');
+      startPiketFaceScanStandalone();
     } else {
       document.getElementById('namaGuruDisplay').textContent = AppState.activeTeacher;
       document.getElementById('qrGeneratorArea').classList.remove('hidden');
       startDynamicQR();
     }
   } catch (err) { showMessage('msgGuru', err.message, 'error'); }
-  setButtonLoading('btnLoginGuruQR', false); setButtonLoading('btnLoginGuruManual', false);
+  ['btnLoginGuruQR','btnLoginGuruManual','btnLoginGuruWajah'].forEach(id => setButtonLoading(id, false));
 }
 function startDynamicQR() {
   generateQR(); AppState.countdown = 20;
@@ -1688,11 +1728,26 @@ function generateQR() {
 }
 function logoutPiket() {
   if (AppState.qrInterval) { clearInterval(AppState.qrInterval); AppState.qrInterval = null; }
+  // Hentikan standalone stream jika aktif
+  if (window._piketStandaloneStream) {
+    window._piketStandaloneStream.getTracks().forEach(t => t.stop());
+    window._piketStandaloneStream = null;
+  }
+  if (window._piketStandaloneInterval) {
+    clearInterval(window._piketStandaloneInterval);
+    window._piketStandaloneInterval = null;
+  }
+  window._piketStandaloneScanActive = false;
+  // Hentikan stream piket dari QR area jika aktif
+  if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
+  if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
   AppState.activeTeacher = '';
   ['userGuru','passGuru'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginGuruArea').classList.remove('hidden');
   document.getElementById('qrGeneratorArea').classList.add('hidden');
   document.getElementById('manualInputArea').classList.add('hidden');
+  document.getElementById('scanWajahStandaloneArea').classList.add('hidden');
+  document.getElementById('scanWajahPiketArea').classList.add('hidden');
   document.getElementById('msgGuru').textContent = '';
   document.getElementById('qrcode').innerHTML = '';
   document.getElementById('selectedSiswaInfo').classList.add('hidden');
@@ -1700,6 +1755,8 @@ function logoutPiket() {
   document.getElementById('manualSearchInput').value = '';
   document.getElementById('manualNis').value = '';
   document.getElementById('manualResult').innerHTML = '';
+  document.getElementById('piketFaceResultStandalone').classList.add('hidden');
+  document.getElementById('piketFaceResultStandalone').innerHTML = '';
   switchRole('siswa');
 }
 function searchStudent(keyword) {
@@ -4689,6 +4746,131 @@ function stopPiketFaceScan() {
   if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
   if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
   setTimeout(() => startPiketFaceScan(), 300);
+}
+  // ============================================================
+// SCAN WAJAH PIKET STANDALONE
+// ============================================================
+let _piketStandaloneFacingMode = 'user';
+
+async function startPiketFaceScanStandalone() {
+  const status = document.getElementById('piketFaceStatusStandalone');
+  status.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...';
+  try {
+    const loaded = await loadFaceModels();
+    if (!loaded) throw new Error('Gagal memuat model AI.');
+
+    status.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Mengambil data wajah siswa...';
+    if (!descriptorCache) {
+      descriptorCache = await sbSelect('wajah_siswa', '?select=nis,nama,kelas,descriptor');
+    }
+    const semuaWajah = descriptorCache;
+    if (!semuaWajah || !semuaWajah.length) throw new Error('Belum ada data wajah terdaftar!');
+
+    const labeled = semuaWajah
+      .filter(w => w.descriptor)
+      .map(w => new faceapi.LabeledFaceDescriptors(w.nis, [new Float32Array(Object.values(w.descriptor))]));
+    if (!labeled.length) throw new Error('Tidak ada descriptor valid!');
+    const faceMatcher = new faceapi.FaceMatcher(labeled, FACE_MATCH_THRESHOLD);
+
+    window._piketStandaloneStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _piketStandaloneFacingMode, width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } }
+    });
+    const video = document.getElementById('piketFaceVideoStandalone');
+    video.srcObject = window._piketStandaloneStream;
+    await new Promise(r => video.onloadedmetadata = r);
+
+    window._piketStandaloneScanActive = true;
+    status.innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah siswa ke kamera...';
+
+    let isDetecting = false;
+    window._piketStandaloneInterval = setInterval(async () => {
+      if (!window._piketStandaloneScanActive || isDetecting) return;
+      isDetecting = true;
+      try {
+        const detection = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5, inputSize: 224 }))
+          .withFaceLandmarks(true)
+          .withFaceDescriptor();
+
+        if (!detection) { status.innerHTML = '<i class="fas fa-search mr-2"></i>Mencari wajah siswa...'; return; }
+
+        status.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Wajah terdeteksi! Memverifikasi...';
+        const match = faceMatcher.findBestMatch(detection.descriptor);
+
+        if (match.label !== 'unknown' && match.distance <= FACE_MATCH_THRESHOLD) {
+          window._piketStandaloneScanActive = false;
+          clearInterval(window._piketStandaloneInterval);
+          window._piketStandaloneInterval = null;
+          const siswaData = semuaWajah.find(w => w.nis === match.label);
+          await prosesAbsenPiketWajahStandalone(siswaData, match.distance);
+        } else {
+          const persen = Math.round((1 - match.distance) * 100);
+          status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak dikenali (${persen}%). Coba lagi...`;
+        }
+      } catch(e) { console.error(e); }
+      finally { isDetecting = false; }
+    }, 800);
+
+  } catch(err) {
+    status.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i>${sanitizeHTML(err.message)}`;
+  }
+}
+
+async function prosesAbsenPiketWajahStandalone(siswa, distance) {
+  const resultDiv = document.getElementById('piketFaceResultStandalone');
+  resultDiv.classList.remove('hidden');
+  resultDiv.className = 'mb-3 p-4 rounded-xl text-center bg-blue-50 border border-blue-200';
+  resultDiv.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Menyimpan absensi...';
+  try {
+    const today = todayStr();
+    const existing = await getStatusHarian(siswa.nis, today);
+    const siswaFull = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
+    const dataSiswa = siswaFull && siswaFull.length ? siswaFull[0] : siswa;
+
+    if (existing) {
+      resultDiv.className = 'mb-3 p-4 rounded-xl text-center bg-amber-50 border border-amber-200 animate-fade-in';
+      resultDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle text-3xl text-amber-500 mb-2 block"></i>
+        <p class="font-bold text-amber-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
+        <p class="text-amber-600 text-sm">NIS: ${sanitizeHTML(dataSiswa.nis)} • Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
+        <p class="text-amber-500 text-sm mt-1 font-semibold">Sudah tercatat ${STATUS_LABEL[existing]} hari ini</p>`;
+      setTimeout(() => resetPiketScanStandalone(), 3000);
+      return;
+    }
+
+    await setStatusHarian(dataSiswa.nis, dataSiswa.nama, dataSiswa.kelas, today, 'H');
+    const akurasi = Math.round((1 - distance) * 100);
+    resultDiv.className = 'mb-3 p-4 rounded-xl text-center bg-green-50 border border-green-200 animate-fade-in';
+    resultDiv.innerHTML = `
+      <i class="fas fa-check-circle text-3xl text-green-500 mb-2 block"></i>
+      <p class="font-bold text-green-700 text-lg">${sanitizeHTML(dataSiswa.nama)}</p>
+      <p class="text-green-600 text-sm">NIS: ${sanitizeHTML(dataSiswa.nis)} • Kelas: ${sanitizeHTML(dataSiswa.kelas)}</p>
+      <p class="text-green-500 text-xs mt-1">Akurasi: ${akurasi}% • ${nowStr()}</p>`;
+    setTimeout(() => resetPiketScanStandalone(), 3000);
+
+  } catch(err) {
+    resultDiv.className = 'mb-3 p-4 rounded-xl text-center bg-red-50 border border-red-200';
+    resultDiv.innerHTML = `<i class="fas fa-times-circle text-red-500 mr-2"></i><span class="text-red-600">${sanitizeHTML(err.message)}</span>`;
+    setTimeout(() => resetPiketScanStandalone(), 3000);
+  }
+}
+
+async function resetPiketScanStandalone() {
+  window._piketStandaloneScanActive = false;
+  if (window._piketStandaloneInterval) { clearInterval(window._piketStandaloneInterval); window._piketStandaloneInterval = null; }
+  if (window._piketStandaloneStream) { window._piketStandaloneStream.getTracks().forEach(t => t.stop()); window._piketStandaloneStream = null; }
+  document.getElementById('piketFaceResultStandalone').classList.add('hidden');
+  document.getElementById('piketFaceResultStandalone').innerHTML = '';
+  document.getElementById('piketFaceStatusStandalone').innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat ulang...';
+  await startPiketFaceScanStandalone();
+}
+
+function flipPiketKameraStandalone() {
+  _piketStandaloneFacingMode = _piketStandaloneFacingMode === 'user' ? 'environment' : 'user';
+  window._piketStandaloneScanActive = false;
+  if (window._piketStandaloneInterval) { clearInterval(window._piketStandaloneInterval); window._piketStandaloneInterval = null; }
+  if (window._piketStandaloneStream) { window._piketStandaloneStream.getTracks().forEach(t => t.stop()); window._piketStandaloneStream = null; }
+  setTimeout(() => startPiketFaceScanStandalone(), 300);
 }
 </script>
 </body>
