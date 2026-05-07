@@ -1191,6 +1191,69 @@
     <!-- Tab Wajah -->
 <div id="admTabWajah" class="admin-panel hidden">
   <!-- Toggle Absen Wajah Siswa -->
+ <!-- Pengaturan Lokasi Absen -->
+<div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
+  <h4 class="font-semibold text-gray-800 mb-1">
+    <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>Lokasi Absen GPS
+  </h4>
+  <p class="text-xs text-gray-500 mb-3">Siswa hanya bisa absen dalam radius yang ditentukan</p>
+
+  <div class="bg-blue-50 rounded-xl p-3 border border-blue-200 mb-3">
+    <div class="flex items-center justify-between mb-2">
+      <p class="text-xs font-semibold text-blue-800">Koordinat Sekolah Saat Ini</p>
+      <button onclick="ambilLokasiSekolah()" id="btnAmbilLokasi"
+        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg">
+        <i class="fas fa-crosshairs mr-1"></i>Ambil Lokasi Sini
+      </button>
+    </div>
+    <p class="text-xs text-blue-600">Lat: <b id="dispLat">-</b> | Lng: <b id="dispLng">-</b></p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mb-3">
+    <div>
+      <label class="block text-xs font-medium text-gray-700 mb-1">Latitude</label>
+      <input type="number" step="0.000001" id="inputLat" placeholder="-3.987654"
+        class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-700 mb-1">Longitude</label>
+      <input type="number" step="0.000001" id="inputLng" placeholder="119.123456"
+        class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="block text-xs font-medium text-gray-700 mb-1">
+      Radius Maksimal: <b id="dispRadius">100</b> meter
+    </label>
+    <div class="flex gap-2 items-center">
+      <input type="range" id="inputRadius" min="10" max="1000" value="100" step="10"
+        class="flex-1" oninput="document.getElementById('dispRadius').textContent=this.value; document.getElementById('inputRadiusNum').value=this.value">
+      <input type="number" id="inputRadiusNum" min="10" max="1000" value="100"
+        class="w-20 px-2 py-2 border-2 border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:border-blue-500"
+        oninput="document.getElementById('inputRadius').value=this.value; document.getElementById('dispRadius').textContent=this.value">
+      <span class="text-xs text-gray-500">m</span>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between mb-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+    <div>
+      <p class="text-xs font-semibold text-gray-800">
+        <i class="fas fa-toggle-on text-blue-500 mr-1"></i>Aktifkan Validasi Lokasi
+      </p>
+      <p class="text-xs text-gray-500 mt-0.5">Nonaktif = tidak ada pengecekan GPS</p>
+    </div>
+    <div class="toggle-wrap" onclick="toggleLokasiAktif()" id="wrapToggleLokasi">
+      <div class="toggle-track" id="toggleLokasiTrack"><div class="toggle-thumb"></div></div>
+    </div>
+  </div>
+
+  <button onclick="simpanKonfigLokasi()" id="btnSimpanLokasi"
+    class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm">
+    <i class="fas fa-save mr-2"></i>Simpan Konfigurasi Lokasi
+  </button>
+  <p id="resultKonfigLokasi" class="text-xs text-center mt-2 min-h-[16px]"></p>
+</div> 
   <!-- Toggle Fitur QR Code -->
 <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
   <div class="flex items-center justify-between">
@@ -2189,6 +2252,7 @@ function showAdminTab(tab) {
   loadWajahList();
   loadFiturWajahStatus();
   loadFiturQRStatus();
+  loadKonfigLokasi(); // ← tambahan
 }
 }
 async function loadAdminSiswa() {
@@ -3625,6 +3689,155 @@ _SMA Negeri 10 Pinrang_`;
 
 // ============================================================
   // ============================================================
+  // ============================================================
+// KONFIGURASI LOKASI GPS (ADMIN)
+// ============================================================
+let lokasiAktif = false;
+
+async function loadKonfigLokasi() {
+  try {
+    const data = await sbSelect('config', '');
+    if (!data) return;
+    data.forEach(row => {
+      if (row.key === 'lokasi_lat') {
+        document.getElementById('inputLat').value = row.value;
+        document.getElementById('dispLat').textContent = row.value;
+      }
+      if (row.key === 'lokasi_lng') {
+        document.getElementById('inputLng').value = row.value;
+        document.getElementById('dispLng').textContent = row.value;
+      }
+      if (row.key === 'lokasi_radius') {
+        document.getElementById('inputRadius').value = row.value;
+        document.getElementById('inputRadiusNum').value = row.value;
+        document.getElementById('dispRadius').textContent = row.value;
+      }
+      if (row.key === 'lokasi_aktif') {
+        lokasiAktif = row.value === 'true';
+        applyToggleLokasi(lokasiAktif);
+      }
+    });
+  } catch(err) { console.error('loadKonfigLokasi:', err); }
+}
+
+function applyToggleLokasi(aktif) {
+  const track = document.getElementById('toggleLokasiTrack');
+  if (track) track.classList.toggle('on', aktif);
+}
+
+function toggleLokasiAktif() {
+  lokasiAktif = !lokasiAktif;
+  applyToggleLokasi(lokasiAktif);
+}
+
+function ambilLokasiSekolah() {
+  const btn = document.getElementById('btnAmbilLokasi');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner animate-spin mr-1"></i>Mengambil...';
+  if (!navigator.geolocation) {
+    alert('Browser tidak mendukung GPS!');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-crosshairs mr-1"></i>Ambil Lokasi Sini';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      document.getElementById('inputLat').value = lat;
+      document.getElementById('inputLng').value = lng;
+      document.getElementById('dispLat').textContent = lat;
+      document.getElementById('dispLng').textContent = lng;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs mr-1"></i>Ambil Lokasi Sini';
+    },
+    err => {
+      alert('Gagal ambil GPS: ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-crosshairs mr-1"></i>Ambil Lokasi Sini';
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+async function simpanKonfigLokasi() {
+  const lat    = document.getElementById('inputLat').value.trim();
+  const lng    = document.getElementById('inputLng').value.trim();
+  const radius = document.getElementById('inputRadiusNum').value || document.getElementById('inputRadius').value;
+  const resultEl = document.getElementById('resultKonfigLokasi');
+  if (!lat || !lng) {
+    resultEl.innerHTML = '<span class="text-red-600">Isi atau ambil koordinat dulu!</span>';
+    return;
+  }
+  setButtonLoading('btnSimpanLokasi', true);
+  resultEl.innerHTML = '<span class="text-blue-600"><i class="fas fa-spinner animate-spin mr-1"></i>Menyimpan...</span>';
+  try {
+    await sbUpsert('config', { key: 'lokasi_lat',    value: lat },              'key');
+    await sbUpsert('config', { key: 'lokasi_lng',    value: lng },              'key');
+    await sbUpsert('config', { key: 'lokasi_radius', value: String(radius) },   'key');
+    await sbUpsert('config', { key: 'lokasi_aktif',  value: String(lokasiAktif) }, 'key');
+    resultEl.innerHTML = `<span class="text-green-600 font-semibold">✅ Tersimpan! Radius ${radius}m dari (${lat}, ${lng})</span>`;
+  } catch(err) {
+    resultEl.innerHTML = `<span class="text-red-600">❌ Gagal: ${sanitizeHTML(err.message)}</span>`;
+  }
+  setButtonLoading('btnSimpanLokasi', false);
+}
+
+// ============================================================
+// VALIDASI LOKASI SISWA
+// ============================================================
+function hitungJarakMeter(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function cekLokasiSiswa() {
+  try {
+    const data = await sbSelect('config', '?key=in.(lokasi_aktif,lokasi_lat,lokasi_lng,lokasi_radius)');
+    const cfg = {};
+    (data||[]).forEach(r => { cfg[r.key] = r.value; });
+    if (cfg.lokasi_aktif !== 'true') return { boleh: true };
+    const sekolahLat = parseFloat(cfg.lokasi_lat);
+    const sekolahLng = parseFloat(cfg.lokasi_lng);
+    const radius     = parseInt(cfg.lokasi_radius) || 100;
+    if (isNaN(sekolahLat) || isNaN(sekolahLng)) return { boleh: true };
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve({ boleh: false, pesan: 'Browser tidak mendukung GPS. Hubungi guru piket.' });
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const jarak = Math.round(hitungJarakMeter(
+            pos.coords.latitude, pos.coords.longitude,
+            sekolahLat, sekolahLng
+          ));
+          if (jarak <= radius) {
+            resolve({ boleh: true, jarak });
+          } else {
+            resolve({ boleh: false, jarak, radius,
+              pesan: `Anda terlalu jauh dari sekolah (${jarak}m). Maksimal ${radius}m.` });
+          }
+        },
+        err => {
+          const pesanErr = {
+            1: 'Izin lokasi ditolak. Aktifkan izin GPS di browser.',
+            2: 'Lokasi tidak tersedia. Aktifkan GPS perangkat.',
+            3: 'Timeout GPS. Coba di tempat lebih terbuka.'
+          };
+          resolve({ boleh: false, pesan: pesanErr[err.code] || 'Gagal ambil GPS: ' + err.message });
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  } catch(err) {
+    return { boleh: true }; // gagal load config → jangan blokir
+  }
+}
 // TOGGLE FITUR ABSEN WAJAH SISWA (oleh Admin)
 // ============================================================
 let fiturWajahSiswaAktif = false;
@@ -4165,48 +4378,52 @@ function validateNisWajah() {
 }
 
 async function startFaceScan() {
-  const nis = document.getElementById('nisWajah').value.trim();
+  const nis      = document.getElementById('nisWajah').value.trim();
   const faceStatus = document.getElementById('faceStatus');
+  const msgWajah   = document.getElementById('msgWajah');
 
   document.getElementById('faceArea').classList.remove('hidden');
   document.getElementById('btnMulaiWajah').disabled = true;
-  faceStatus.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...';
 
+  // CEK LOKASI DULU
+  faceStatus.innerHTML = '<i class="fas fa-map-marker-alt mr-2"></i>Memeriksa lokasi GPS...';
+  msgWajah.innerHTML = '<span class="text-blue-600"><i class="fas fa-map-marker-alt mr-1"></i>Mengecek GPS...</span>';
+
+  const cekLokasi = await cekLokasiSiswa();
+  if (!cekLokasi.boleh) {
+    document.getElementById('faceArea').classList.add('hidden');
+    document.getElementById('btnMulaiWajah').disabled = false;
+    showFaceResult(false, '📍 ' + cekLokasi.pesan);
+    msgWajah.textContent = 'Masukkan NIS untuk melanjutkan';
+    return;
+  }
+  if (cekLokasi.jarak !== undefined) {
+    msgWajah.innerHTML = `<span class="text-green-600">✅ Lokasi valid (${cekLokasi.jarak}m dari sekolah)</span>`;
+  }
+
+  // LANJUT PROSES WAJAH
+  faceStatus.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...';
   try {
-    // Load model
     const loaded = await loadFaceModels();
     if (!loaded) throw new Error('Gagal memuat model AI. Coba lagi.');
-
-    // Ambil descriptor dari Supabase
     faceStatus.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Mengambil data wajah...';
     const data = await sbSelect('wajah_siswa', `?nis=eq.${encodeURIComponent(nis)}&limit=1`);
-    if (!data || !data.length || !data[0].descriptor) {
+    if (!data || !data.length || !data[0].descriptor)
       throw new Error('Data wajah belum terdaftar. Hubungi guru piket.');
-    }
     const descriptor = new Float32Array(Object.values(data[0].descriptor));
     const labeledDescriptor = new faceapi.LabeledFaceDescriptors(nis, [descriptor]);
     const faceMatcher = new faceapi.FaceMatcher([labeledDescriptor], FACE_MATCH_THRESHOLD);
-
-    // Buka kamera
     faceStream = await navigator.mediaDevices.getUserMedia({
-  video: { 
-    facingMode: 'user', 
-    width: { ideal: 320 },
-    height: { ideal: 240 },
-    frameRate: { ideal: 15 }
-  }
-});
+      video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 15 } }
+    });
     const video = document.getElementById('faceVideo');
     video.srcObject = faceStream;
     await new Promise(r => video.onloadedmetadata = r);
-
     faceStatus.innerHTML = '<i class="fas fa-camera mr-2"></i>Arahkan wajah ke kamera...';
-
-    // Mulai deteksi
     let attemptCount = 0;
     faceDetectionInterval = setInterval(async () => {
       attemptCount++;
-      if (attemptCount > 30) { // timeout 15 detik
+      if (attemptCount > 30) {
         stopFaceScan();
         showFaceResult(false, 'Waktu habis. Wajah tidak terdeteksi.');
         return;
@@ -4214,17 +4431,13 @@ async function startFaceScan() {
       try {
         const detection = await faceapi
           .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
-          .withFaceLandmarks(true)
-          .withFaceDescriptor();
-
+          .withFaceLandmarks(true).withFaceDescriptor();
         if (!detection) {
           faceStatus.innerHTML = '<i class="fas fa-search mr-2"></i>Mencari wajah...';
           return;
         }
-
         faceStatus.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Wajah terdeteksi! Memverifikasi...';
         const match = faceMatcher.findBestMatch(detection.descriptor);
-
         if (match.label === nis && match.distance <= FACE_MATCH_THRESHOLD) {
           clearInterval(faceDetectionInterval);
           stopFaceScan();
@@ -4234,7 +4447,6 @@ async function startFaceScan() {
         }
       } catch(e) { console.error(e); }
     }, 500);
-
   } catch(err) {
     stopFaceScan();
     showFaceResult(false, err.message);
