@@ -4678,6 +4678,7 @@ const semuaWajah = descriptorCache;
 
 function stopPiketFaceScan() {
   piketScanActive = false;
+  descriptorCache = null; // ← reset cache saat stop
   if (piketFaceInterval) { clearInterval(piketFaceInterval); piketFaceInterval = null; }
   if (piketFaceStream) { piketFaceStream.getTracks().forEach(t => t.stop()); piketFaceStream = null; }
   document.getElementById('scanWajahPiketArea').classList.add('hidden');
