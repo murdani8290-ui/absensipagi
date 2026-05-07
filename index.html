@@ -5051,6 +5051,7 @@ async function startPiketFaceScan() {
           const siswaData = semuaWajah.find(w => w.nis === match.label);
           await prosesAbsenPiketWajah(siswaData, match.distance);
         } else {
+          suaraGagal('Wajah tidak dikenali, silakan coba lagi');
           const persen = Math.round((1 - match.distance) * 100);
           status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak dikenali (${persen}%). Coba lagi...`;
         }
@@ -5237,6 +5238,7 @@ async function startPiketFaceScanStandalone() {
           const siswaData = semuaWajah.find(w => w.nis === match.label);
           await prosesAbsenPiketWajahStandalone(siswaData, match.distance);
         } else {
+          suaraGagal('Wajah tidak dikenali, silakan coba lagi');
           const persen = Math.round((1 - match.distance) * 100);
           status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak dikenali (${persen}%). Coba lagi...`;
         }
