@@ -4557,10 +4557,6 @@ async function startFaceScan() {
   document.getElementById('faceArea').classList.remove('hidden');
   document.getElementById('btnMulaiWajah').disabled = true;
 
-  if (cekLokasi.jarak !== undefined) {
-    msgWajah.innerHTML = `<span class="text-green-600">✅ Lokasi valid (${cekLokasi.jarak}m dari sekolah)</span>`;
-  }
-
   // LANJUT PROSES WAJAH
   faceStatus.innerHTML = '<i class="fas fa-spinner animate-spin mr-2"></i>Memuat model AI...';
   try {
