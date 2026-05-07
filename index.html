@@ -1622,6 +1622,35 @@ lastBKBulananTriggered: null
 };
 
 // ============================================================
+// FUNGSI SUARA
+// ============================================================
+function bicarakan(teks) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const ucapan = new SpeechSynthesisUtterance(teks);
+  ucapan.lang = 'id-ID';
+  ucapan.rate = 1.0;
+  ucapan.pitch = 1.0;
+  ucapan.volume = 1.0;
+  window.speechSynthesis.speak(ucapan);
+}
+
+function suaraGagal(pesan = 'Wajah tidak dikenali, coba lagi') {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const ucapan = new SpeechSynthesisUtterance(pesan);
+  ucapan.lang = 'id-ID';
+  ucapan.rate = 1.0;
+  ucapan.pitch = 0.8;
+  ucapan.volume = 1.0;
+  window.speechSynthesis.speak(ucapan);
+}
+
+// ============================================================
+// UTILITY         ← baris 1624 aslinya mulai dari sini
+// ============================================================
+function sanitizeHTML(str) {   ← baris 1627 tetap di sini
+  // ============================================================
 // UTILITY
 // ============================================================
 function sanitizeHTML(str) {
@@ -1764,9 +1793,13 @@ async function onStudentScanSuccess(decodedText) {
     const siswa = siswaList[0];
     const today = todayStr();
     const existing = await getStatusHarian(nis, today);
-    if (existing) throw new Error(`Anda sudah tercatat ${STATUS_LABEL[existing]} hari ini.`);
+    if (existing) {
+  bicarakan(`${siswa.nama} sudah tercatat ${STATUS_LABEL[existing]} hari ini`);
+  throw new Error(`Anda sudah tercatat ${STATUS_LABEL[existing]} hari ini.`);
+}
     await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, today, 'H');
     localStorage.setItem('sipagi_scan_date', today);
+    bicarakan(`Selamat datang ${siswa.nama}, kelas ${siswa.kelas}, hadir tercatat`);
     resDiv.className = 'mt-4 p-5 rounded-xl text-center bg-blue-50 border border-blue-200 animate-fade-in';
     resDiv.innerHTML = `<div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-check-circle text-4xl text-blue-500"></i></div><h3 class="text-xl font-bold text-blue-700 mb-2">Berhasil!</h3><p class="text-blue-800 font-semibold">${sanitizeHTML(siswa.nama)}</p><p class="text-blue-600">Kelas: ${sanitizeHTML(siswa.kelas)}</p><p class="text-blue-600">Waktu: ${nowStr()}</p><p class="text-xs text-blue-400 mt-1">Dicatat oleh: ${sanitizeHTML(namaGuru)}</p><button class="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg" onclick="backToHomeAfterSuccess()"><i class="fas fa-check mr-2"></i>Selesai</button>`;
   } catch (err) {
@@ -1906,6 +1939,13 @@ async function saveManualAttendance() {
     const siswa = siswaList[0];
     const statusLama = await getStatusHarian(siswa.nis, todayStr());
 await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, todayStr(), status);
+const pesanStatus = {
+  H: 'hadir tercatat',
+  S: 'tercatat sakit',
+  I: 'tercatat izin',
+  A: 'tercatat alpa'
+};
+bicarakan(`${siswa.nama}, ${pesanStatus[status] || ''}`);
 document.getElementById('manualNis').value = '';
 document.getElementById('manualSearchInput').value = '';
 document.getElementById('selectedSiswaInfo').classList.add('hidden');
@@ -4631,6 +4671,7 @@ async function prosesAbsenWajah(nis, distance) {
 
     await setStatusHarian(siswa.nis, siswa.nama, siswa.kelas, today, 'H');
     localStorage.setItem('sipagi_scan_date', today);
+    bicarakan(`Selamat datang ${siswa.nama}, kelas ${siswa.kelas}, hadir tercatat`);
 
     const akurasi = Math.round((1 - distance) * 100);
     showFaceResult(true, siswa, akurasi);
@@ -5033,6 +5074,7 @@ async function prosesAbsenPiketWajah(siswa, distance) {
     const siswaFull = await sbSelect(T.siswa, `?nis=eq.${encodeURIComponent(siswa.nis)}&limit=1`);
     const dataSiswa = siswaFull && siswaFull.length ? siswaFull[0] : siswa;
     await setStatusHarian(dataSiswa.nis, dataSiswa.nama, dataSiswa.kelas, today, 'H');
+    bicarakan(`Selamat datang ${dataSiswa.nama}, kelas ${dataSiswa.kelas}, hadir tercatat`);
 
     const akurasi = Math.round((1 - distance) * 100);
     resultDiv.className = 'mt-3 p-4 rounded-xl text-center bg-green-50 border border-green-200';
@@ -5100,6 +5142,7 @@ const semuaWajah = descriptorCache;
           const siswaData = semuaWajah.find(w => w.nis === match.label);
           await prosesAbsenPiketWajah(siswaData, match.distance);
         } else {
+          suaraGagal('Wajah tidak dikenali, silakan coba lagi');
           const persen = Math.round((1 - match.distance) * 100);
           status.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak dikenali (${persen}%). Coba lagi...`;
         }
@@ -5214,6 +5257,7 @@ async function prosesAbsenPiketWajahStandalone(siswa, distance) {
     }
 
     await setStatusHarian(dataSiswa.nis, dataSiswa.nama, dataSiswa.kelas, today, 'H');
+    bicarakan(`Selamat datang ${dataSiswa.nama}, kelas ${dataSiswa.kelas}, hadir tercatat`);
     const akurasi = Math.round((1 - distance) * 100);
     resultDiv.className = 'mb-3 p-4 rounded-xl text-center bg-green-50 border border-green-200 animate-fade-in';
     resultDiv.innerHTML = `
