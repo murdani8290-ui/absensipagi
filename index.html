@@ -1625,14 +1625,30 @@ lastBKBulananTriggered: null
 // FUNGSI SUARA
 // ============================================================
 function bicarakan(teks) {
-  if (!window.speechSynthesis) return;
+  if (!window.speechSynthesis) {
+    console.warn('Browser tidak support Text-to-Speech');
+    return;
+  }
   window.speechSynthesis.cancel();
-  const ucapan = new SpeechSynthesisUtterance(teks);
-  ucapan.lang = 'id-ID';
-  ucapan.rate = 1.0;
-  ucapan.pitch = 1.0;
-  ucapan.volume = 1.0;
-  window.speechSynthesis.speak(ucapan);
+  setTimeout(() => {
+    const ucapan = new SpeechSynthesisUtterance(teks);
+    const voices = window.speechSynthesis.getVoices();
+    const suaraID = voices.find(v => 
+      v.lang === 'id-ID' || 
+      v.lang === 'id' || 
+      v.name.toLowerCase().includes('indonesia')
+    );
+    if (suaraID) ucapan.voice = suaraID;
+    ucapan.lang   = 'id-ID';
+    ucapan.rate   = 0.9;
+    ucapan.pitch  = 1.0;
+    ucapan.volume = 1.0;
+    console.log('🔊 Bicara:', teks);
+    ucapan.onstart = () => console.log('✅ Suara mulai');
+    ucapan.onerror = (e) => console.error('❌ Suara error:', e.error);
+    ucapan.onend   = () => console.log('✅ Suara selesai');
+    window.speechSynthesis.speak(ucapan);
+  }, 100);
 }
 
 function suaraGagal(pesan = 'Wajah tidak dikenali, coba lagi') {
