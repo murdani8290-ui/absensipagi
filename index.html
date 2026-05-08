@@ -4654,6 +4654,7 @@ async function startFaceScan() {
           stopFaceScan();
           await prosesAbsenWajah(nis, match.distance);
         } else {
+          suaraGagal('Wajah tidak cocok, coba lagi');
           faceStatus.innerHTML = `<i class="fas fa-times-circle mr-2"></i>Wajah tidak cocok (${Math.round((1-match.distance)*100)}%). Coba lagi...`;
         }
       } catch(e) { console.error(e); }
