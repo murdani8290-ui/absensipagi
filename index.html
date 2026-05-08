@@ -1758,6 +1758,7 @@ function validateNis() {
   else { msg.textContent = 'Masukkan NIS untuk melanjutkan'; msg.className = 'text-sm text-gray-500 text-center mt-3'; }
 }
 function startStudentScan() {
+  document.querySelector('nav').classList.add('hidden');
   document.getElementById('inputNisArea').classList.add('hidden');
   document.getElementById('scanArea').classList.remove('hidden');
   AppState.scanner = new Html5Qrcode('reader');
@@ -1824,6 +1825,7 @@ async function onStudentScanSuccess(decodedText) {
   }
 }
 function backToHomeAfterSuccess() {
+  document.querySelector('nav').classList.remove('hidden');
   document.getElementById('nisSiswa').value = '';
   document.getElementById('inputNisArea').classList.remove('hidden');
   document.getElementById('scanArea').classList.add('hidden');
@@ -1849,6 +1851,7 @@ async function loginPiket(mode) {
     const guru = data[0];
     if (!['GURU','WALI','ADMIN','BK'].includes(guru.role)) throw new Error('Akun ini tidak memiliki akses piket!');
     AppState.activeTeacher = guru.nama;
+    document.querySelector('nav').classList.add('hidden');
     document.getElementById('loginGuruArea').classList.add('hidden');
     if (mode === 'manual') {
       document.getElementById('namaGuruManual').textContent = AppState.activeTeacher;
@@ -1882,6 +1885,7 @@ function generateQR() {
   });
 }
 function logoutPiket() {
+  document.querySelector('nav').classList.remove('hidden');
   if (AppState.qrInterval) { clearInterval(AppState.qrInterval); AppState.qrInterval = null; }
   // Hentikan standalone stream jika aktif
   if (window._piketStandaloneStream) {
@@ -1989,6 +1993,7 @@ AppState.activeClass = guru.role === 'BK' ? '__ALL__' : guru.kelas_wali;
     document.getElementById('waliKelas').textContent = guru.role === 'BK' ? 'Semua Kelas (BK)' : guru.kelas_wali;
     const today = todayStr();
     document.getElementById('waliRekapDate').value = today;
+    document.querySelector('nav').classList.add('hidden');
     document.getElementById('loginWaliArea').classList.add('hidden');
     document.getElementById('dashboardWali').classList.remove('hidden');
     loadWaliData(AppState.activeClass, today);
@@ -2208,6 +2213,7 @@ function showWaliList(type) {
 }
 function closeWaliList() { document.getElementById('listWaliContainer').classList.add('hidden'); }
 function logoutWali() {
+  document.querySelector('nav').classList.remove('hidden');
   AppState.activeClass = ''; AppState.waliData = null;
   ['userWali','passWali'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('loginWaliArea').classList.remove('hidden');
@@ -2305,6 +2311,7 @@ async function loginAdmin() {
     const data = await sbSelect(T.guru, `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}&limit=1`);
     if (!data || !data.length) throw new Error('Username atau password salah!');
     if (data[0].role !== 'ADMIN') throw new Error('Akun ini bukan admin!');
+    document.querySelector('nav').classList.add('hidden');
     document.getElementById('loginAdminArea').classList.add('hidden');
     document.getElementById('dashboardAdmin').classList.remove('hidden');
     loadAdminDashboard();
@@ -2563,6 +2570,7 @@ async function deleteGuru(username) {
   catch (err) { alert('Gagal: ' + err.message); }
 }
 function logoutAdmin() {
+  document.querySelector('nav').classList.remove('hidden');
   if (AppState.schedulerActive) {
     AppState.schedulerActive = false;
     if (AppState.schedulerInterval) { clearInterval(AppState.schedulerInterval); AppState.schedulerInterval = null; }
